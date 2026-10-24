@@ -47,18 +47,59 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
     return;
   }
 
+  const startTime = Date.now();
+  console.log(`[Narrative API] [Initial Story Start] User: ${userId}, Model: ${modelId}`);
+
   try {
     const narrative = await geminiService.generateInitialStory(req.body);
+    const elapsed = Date.now() - startTime;
+    console.log(`[Narrative API] [Initial Story Success] User: ${userId}, Model: ${modelId}, Elapsed: ${elapsed}ms`);
     res.json({
       success: true,
       modelUsed: modelId,
       narrative
     });
   } catch (err: any) {
-    console.error(`[Initial Story Generation Error] User: ${userId}`, err?.message || err);
+    const elapsed = Date.now() - startTime;
+    const msg = err?.message || String(err);
+    const isTimeout =
+      msg.toLowerCase().includes('timed out') ||
+      msg.toLowerCase().includes('timeout') ||
+      msg.toLowerCase().includes('aborted') ||
+      err?.name === 'AbortError' ||
+      err?.name === 'APIUserAbortError' ||
+      err?.name === 'APIConnectionTimeoutError';
+    const isQuota =
+      msg.includes('quota') ||
+      msg.includes('RESOURCE_EXHAUSTED') ||
+      err?.status === 429;
+
+    if (isTimeout) {
+      console.warn(`[Narrative API] [Initial Story Timeout] User: ${userId}, Elapsed: ${elapsed}ms`);
+      res.status(504).json({
+        error: 'AI storytelling request timed out.',
+        message: 'The Gemini AI model took longer than expected to respond. Please retry or continue in Demo Mode.',
+        timedOut: true,
+        fallbackToDemo: true
+      });
+      return;
+    }
+
+    if (isQuota) {
+      console.warn(`[Narrative API] [Initial Story Quota Exhausted] User: ${userId}, Elapsed: ${elapsed}ms`);
+      res.status(429).json({
+        error: 'AI model quota exceeded.',
+        message: msg,
+        quotaExhausted: true,
+        fallbackToDemo: true
+      });
+      return;
+    }
+
+    console.error(`[Narrative API] [Initial Story Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate initial story scene.',
-      message: err?.message?.includes('quota') ? err.message : 'AI service temporarily unavailable.',
+      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.',
       fallbackToDemo: true
     });
   } finally {
@@ -82,18 +123,59 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
     return;
   }
 
+  const startTime = Date.now();
+  console.log(`[Narrative API] [Story Turn Start] User: ${userId}, Model: ${modelId}`);
+
   try {
     const narrative = await geminiService.generateStoryTurn(req.body);
+    const elapsed = Date.now() - startTime;
+    console.log(`[Narrative API] [Story Turn Success] User: ${userId}, Model: ${modelId}, Elapsed: ${elapsed}ms`);
     res.json({
       success: true,
       modelUsed: modelId,
       narrative
     });
   } catch (err: any) {
-    console.error(`[Story Turn Generation Error] User: ${userId}`, err?.message || err);
+    const elapsed = Date.now() - startTime;
+    const msg = err?.message || String(err);
+    const isTimeout =
+      msg.toLowerCase().includes('timed out') ||
+      msg.toLowerCase().includes('timeout') ||
+      msg.toLowerCase().includes('aborted') ||
+      err?.name === 'AbortError' ||
+      err?.name === 'APIUserAbortError' ||
+      err?.name === 'APIConnectionTimeoutError';
+    const isQuota =
+      msg.includes('quota') ||
+      msg.includes('RESOURCE_EXHAUSTED') ||
+      err?.status === 429;
+
+    if (isTimeout) {
+      console.warn(`[Narrative API] [Story Turn Timeout] User: ${userId}, Elapsed: ${elapsed}ms`);
+      res.status(504).json({
+        error: 'AI storytelling request timed out.',
+        message: 'The Gemini AI model took longer than expected to respond. Please retry or continue in Demo Mode.',
+        timedOut: true,
+        fallbackToDemo: true
+      });
+      return;
+    }
+
+    if (isQuota) {
+      console.warn(`[Narrative API] [Story Turn Quota Exhausted] User: ${userId}, Elapsed: ${elapsed}ms`);
+      res.status(429).json({
+        error: 'AI model quota exceeded.',
+        message: msg,
+        quotaExhausted: true,
+        fallbackToDemo: true
+      });
+      return;
+    }
+
+    console.error(`[Narrative API] [Story Turn Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate turn narrative.',
-      message: err?.message?.includes('quota') ? err.message : 'AI service temporarily unavailable.',
+      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.',
       fallbackToDemo: true
     });
   } finally {

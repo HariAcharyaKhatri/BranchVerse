@@ -30,6 +30,21 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
     };
   }
 
+  if (
+    status === 504 ||
+    lower.includes('timed out') ||
+    lower.includes('timeout') ||
+    lower.includes('aborted') ||
+    lower.includes('gateway timeout')
+  ) {
+    return {
+      failureType: 'network',
+      title: 'AI Generation Timed Out',
+      message: 'The Gemini AI model took longer than expected to respond. Please tap Retry or switch to Local Demo Mode.',
+      retryable: true,
+    };
+  }
+
   if (status === 429 && (lower.includes('rate limit') || lower.includes('requests per minute') || lower.includes('too quickly'))) {
     return {
       failureType: 'rate_limit',

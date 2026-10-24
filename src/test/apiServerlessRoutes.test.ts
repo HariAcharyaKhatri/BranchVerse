@@ -138,8 +138,29 @@ describe('Vercel Serverless API Routes (/api)', () => {
       expect(res.body.narrative.sceneTitle).toBe('The Gates of Aethelgard');
     });
 
-    it('handles Gemini failure and returns 500 with fallbackToDemo: true', async () => {
-      const token = createMockToken('user_failing_prologue');
+    it('handles Gemini timeout and returns 504 with timedOut: true and fallbackToDemo: true', async () => {
+      const token = createMockToken('user_timeout_prologue');
+      const req: any = {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        body: {}
+      };
+      const res = createMockResponse();
+
+      vi.spyOn(geminiService, 'generateInitialStory').mockRejectedValue(
+        new Error('Gemini API request timed out after 25000ms.')
+      );
+
+      await initialNarrativeHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(504);
+      expect(res.body.timedOut).toBe(true);
+      expect(res.body.fallbackToDemo).toBe(true);
+      expect(res.body.error).toMatch(/timed out/i);
+    });
+
+    it('handles Gemini quota exhaustion and returns 429 with quotaExhausted: true and fallbackToDemo: true', async () => {
+      const token = createMockToken('user_quota_prologue');
       const req: any = {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
@@ -153,9 +174,30 @@ describe('Vercel Serverless API Routes (/api)', () => {
 
       await initialNarrativeHandler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(res.body.quotaExhausted).toBe(true);
       expect(res.body.fallbackToDemo).toBe(true);
       expect(res.body.message).toMatch(/quota/i);
+    });
+
+    it('handles generic server failure and returns 500 with fallbackToDemo: true', async () => {
+      const token = createMockToken('user_failing_prologue');
+      const req: any = {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        body: {}
+      };
+      const res = createMockResponse();
+
+      vi.spyOn(geminiService, 'generateInitialStory').mockRejectedValue(
+        new Error('Internal engine crash')
+      );
+
+      await initialNarrativeHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.body.fallbackToDemo).toBe(true);
+      expect(res.body.error).toMatch(/Failed to generate initial story scene/i);
     });
   });
 
@@ -224,7 +266,49 @@ describe('Vercel Serverless API Routes (/api)', () => {
       expect(res.body.narrative.sceneTitle).toBe('Shadows Recede');
     });
 
-    it('handles story turn failure and returns 500 with fallbackToDemo: true', async () => {
+    it('handles Gemini timeout and returns 504 with timedOut: true and fallbackToDemo: true', async () => {
+      const token = createMockToken('user_timeout_turn');
+      const req: any = {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        body: {}
+      };
+      const res = createMockResponse();
+
+      vi.spyOn(geminiService, 'generateStoryTurn').mockRejectedValue(
+        new Error('Gemini API request timed out after 25000ms.')
+      );
+
+      await turnNarrativeHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(504);
+      expect(res.body.timedOut).toBe(true);
+      expect(res.body.fallbackToDemo).toBe(true);
+      expect(res.body.error).toMatch(/timed out/i);
+    });
+
+    it('handles Gemini quota exhaustion and returns 429 with quotaExhausted: true and fallbackToDemo: true', async () => {
+      const token = createMockToken('user_quota_turn');
+      const req: any = {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        body: {}
+      };
+      const res = createMockResponse();
+
+      vi.spyOn(geminiService, 'generateStoryTurn').mockRejectedValue(
+        new Error('Model quota exhausted for gemini-3.1-flash-lite: 429 RESOURCE_EXHAUSTED')
+      );
+
+      await turnNarrativeHandler(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(res.body.quotaExhausted).toBe(true);
+      expect(res.body.fallbackToDemo).toBe(true);
+      expect(res.body.message).toMatch(/quota/i);
+    });
+
+    it('handles story turn generic failure and returns 500 with fallbackToDemo: true', async () => {
       const token = createMockToken('user_failing_turn');
       const req: any = {
         method: 'POST',
@@ -234,7 +318,7 @@ describe('Vercel Serverless API Routes (/api)', () => {
       const res = createMockResponse();
 
       vi.spyOn(geminiService, 'generateStoryTurn').mockRejectedValue(
-        new Error('Network connection timeout')
+        new Error('Internal turn failure')
       );
 
       await turnNarrativeHandler(req, res);

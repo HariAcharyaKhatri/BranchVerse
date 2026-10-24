@@ -10,6 +10,8 @@ export const CONFIG = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   GEMINI_INITIAL_MODEL: process.env.GEMINI_INITIAL_MODEL || 'gemini-3.8-flash',
   GEMINI_TURN_MODEL: process.env.GEMINI_TURN_MODEL || 'gemini-3.1-flash-lite',
+  GEMINI_TIMEOUT_MS: parseInt(process.env.GEMINI_TIMEOUT_MS || '25000', 10), // 25s timeout (safe within Vercel limits)
+  GEMINI_MAX_RETRIES: parseInt(process.env.GEMINI_MAX_RETRIES || '1', 10),  // 1 retry to prevent cumulative timeout
   AI_ENABLED: process.env.AI_ENABLED !== 'false',
 
   // Application-Level Rate Limits (Configurable)

@@ -83,7 +83,12 @@ export class GeminiService {
 
   constructor() {
     if (CONFIG.GEMINI_API_KEY) {
-      this.client = new GoogleGenAI({ apiKey: CONFIG.GEMINI_API_KEY });
+      this.client = new GoogleGenAI({
+        apiKey: CONFIG.GEMINI_API_KEY,
+        httpOptions: {
+          timeout: CONFIG.GEMINI_TIMEOUT_MS,
+        }
+      });
     }
   }
 
@@ -187,86 +192,148 @@ INSTRUCTIONS:
   }
 
   private async callWithRetry(model: string, input: string): Promise<string> {
-    const maxRetries = 2;
+    const maxRetries = CONFIG.GEMINI_MAX_RETRIES;
+    const timeoutMs = CONFIG.GEMINI_TIMEOUT_MS;
+    const deadline = Date.now() + timeoutMs;
     let attempt = 0;
 
     while (attempt <= maxRetries) {
+      const remainingTime = deadline - Date.now();
+      if (remainingTime <= 0) {
+        console.warn(`[GeminiService] [Timeout] Budget exhausted (${timeoutMs}ms) before attempt ${attempt + 1} for model: ${model}`);
+        throw new Error(`Gemini API request timed out after ${timeoutMs}ms.`);
+      }
+
+      const attemptTimeout = Math.min(remainingTime, timeoutMs);
+      const controller = new AbortController();
+      const timer = setTimeout(() => {
+        controller.abort(new Error(`Gemini request timed out after ${attemptTimeout}ms`));
+      }, attemptTimeout);
+
+      const requestStart = Date.now();
+      console.log(`[GeminiService] [Request Started] Model: ${model}, Attempt: ${attempt + 1}/${maxRetries + 1}, TimeoutBudget: ${attemptTimeout}ms`);
+
       try {
-        const interaction = await this.client!.interactions.create({
-          model,
-          input,
-          response_format: {
-            type: 'text',
-            mime_type: 'application/json',
-            schema: {
-              type: 'object',
-              properties: {
-                sceneTitle: { type: 'string' },
-                narrativeText: { type: 'string' },
-                dialogues: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      speaker: { type: 'string' },
-                      text: { type: 'string' },
-                      emotion: { type: 'string' }
-                    },
-                    required: ['speaker', 'text']
+        const interaction = await this.client!.interactions.create(
+          {
+            model,
+            input,
+            response_format: {
+              type: 'text',
+              mime_type: 'application/json',
+              schema: {
+                type: 'object',
+                properties: {
+                  sceneTitle: { type: 'string' },
+                  narrativeText: { type: 'string' },
+                  dialogues: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        speaker: { type: 'string' },
+                        text: { type: 'string' },
+                        emotion: { type: 'string' }
+                      },
+                      required: ['speaker', 'text']
+                    }
+                  },
+                  ambientVisual: { type: 'string' },
+                  proposedChoices: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        choiceId: { type: 'string' },
+                        text: { type: 'string' },
+                        consequenceHint: { type: 'string' },
+                        riskLevel: { type: 'string' },
+                        requiredStamina: { type: 'number' },
+                        actionIntent: { type: 'string' }
+                      },
+                      required: ['choiceId', 'text']
+                    }
                   }
                 },
-                ambientVisual: { type: 'string' },
-                proposedChoices: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      choiceId: { type: 'string' },
-                      text: { type: 'string' },
-                      consequenceHint: { type: 'string' },
-                      riskLevel: { type: 'string' },
-                      requiredStamina: { type: 'number' },
-                      actionIntent: { type: 'string' }
-                    },
-                    required: ['choiceId', 'text']
-                  }
-                }
-              },
-              required: ['sceneTitle', 'narrativeText', 'proposedChoices']
+                required: ['sceneTitle', 'narrativeText', 'proposedChoices']
+              }
             }
+          },
+          {
+            timeout: attemptTimeout,
+            fetchOptions: { signal: controller.signal },
+            retries: { strategy: 'none' }
           }
-        });
+        );
 
+        clearTimeout(timer);
+        const elapsed = Date.now() - requestStart;
         const outputText = interaction.output_text;
         if (!outputText) {
           throw new Error('Gemini API returned an empty response.');
         }
 
+        console.log(`[GeminiService] [Request Success] Model: ${model}, Elapsed: ${elapsed}ms, OutputChars: ${outputText.length}`);
         return outputText;
       } catch (err: any) {
+        clearTimeout(timer);
+        const elapsed = Date.now() - requestStart;
+
+        const isTimeout =
+          controller.signal.aborted ||
+          err?.name === 'AbortError' ||
+          err?.name === 'APIUserAbortError' ||
+          err?.name === 'APIConnectionTimeoutError' ||
+          err?.name === 'TimeoutError' ||
+          err?.message?.toLowerCase().includes('timeout') ||
+          err?.message?.toLowerCase().includes('aborted');
+
+        if (isTimeout) {
+          console.warn(`[GeminiService] [Request Timeout] Model: ${model}, Attempt: ${attempt + 1}, Elapsed: ${elapsed}ms`);
+          throw new Error(`Gemini API request timed out after ${attemptTimeout}ms.`);
+        }
+
         attempt++;
 
         // Fail fast on quota exhaustion (do not retry 429)
         if (err?.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED')) {
+          console.warn(`[GeminiService] [Quota Exhausted] Model: ${model}, Elapsed: ${elapsed}ms, Status: 429`);
           throw new Error(`Model quota exhausted for ${model}: ${err.message}`);
         }
 
-        // Retry transient errors with backoff
-        if (attempt <= maxRetries) {
-          const delay = attempt * 1500;
+        // Fail fast on client authentication or bad request errors (4xx)
+        if (err?.status && err.status >= 400 && err.status < 500) {
+          console.warn(`[GeminiService] [Client Error] Model: ${model}, Status: ${err.status}, Elapsed: ${elapsed}ms`);
+          throw new Error(`Gemini API request rejected with status ${err.status}: ${err.message}`);
+        }
+
+        console.warn(`[GeminiService] [Attempt Failed] Model: ${model}, Attempt: ${attempt}/${maxRetries + 1}, Elapsed: ${elapsed}ms, Error: ${err?.message || err}`);
+
+        // Retry transient server errors only if budget allows
+        const timeLeft = deadline - Date.now();
+        if (attempt <= maxRetries && timeLeft > 2500) {
+          const delay = Math.min(attempt * 1000, timeLeft - 1500);
+          console.log(`[GeminiService] [Retrying] Model: ${model}, Waiting: ${delay}ms before next attempt`);
           await new Promise((r) => setTimeout(r, delay));
         } else {
-          throw new Error(`Gemini API call failed after ${maxRetries + 1} attempts: ${err.message}`);
+          throw new Error(`Gemini API call failed after ${attempt} attempt(s): ${err.message}`);
         }
       }
     }
 
-    throw new Error('Unexpected execution end in callWithRetry.');
+    throw new Error(`Gemini API request timed out after ${timeoutMs}ms.`);
   }
 
   private parseAndValidateNarrative(raw: string, _storyLanguage: SupportedLanguage): GeneratedNarrative {
     try {
-      const parsed = JSON.parse(raw);
+      let cleaned = raw.trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      const parsed = JSON.parse(cleaned);
 
       return {
         sceneTitle: String(parsed.sceneTitle || 'Chronicle Chapter'),
