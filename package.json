@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "tsx server/index.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc --project api/tsconfig.json && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint",
