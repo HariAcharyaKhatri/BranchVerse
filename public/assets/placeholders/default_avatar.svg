@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="avbg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0a0d14"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" rx="32" fill="url(#avbg)"/>
+  <circle cx="200" cy="180" r="70" fill="#312e81" stroke="#6366f1" stroke-width="4"/>
+  <path d="M100 420 C100 300, 300 300, 300 420" fill="#312e81" stroke="#6366f1" stroke-width="4"/>
+  <circle cx="200" cy="180" r="30" fill="#f59e0b" opacity="0.8"/>
+  <text x="200" y="470" fill="#94a3b8" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">HERO AVATAR</text>
+</svg>

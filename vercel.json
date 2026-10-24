@@ -1,0 +1,23 @@
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/api/narrative/initial",
+      "destination": "/api/narrative/initial"
+    },
+    {
+      "source": "/api/narrative/turn",
+      "destination": "/api/narrative/turn"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

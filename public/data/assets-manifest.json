@@ -1,0 +1,496 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-23T18:30:09.737Z",
+  "characters": [
+    {
+      "id": "hari_swordsman",
+      "name": "Hari (Blademaster)",
+      "category": "protagonists",
+      "gender": "Male",
+      "defaultPath": "/assets/characters/protagonists/hari_default.png",
+      "expressions": {
+        "normal": "/assets/characters/protagonists/hari_default.png",
+        "serious": "/assets/characters/protagonists/hari_serious.png",
+        "angry": "/assets/characters/protagonists/hari_angry.png",
+        "happy": "/assets/characters/protagonists/hari_happy.png"
+      },
+      "tags": [
+        "swordsman",
+        "warrior",
+        "hero",
+        "white-hair",
+        "blade"
+      ],
+      "genres": [
+        "fantasy",
+        "anime",
+        "action",
+        "cultivation"
+      ],
+      "creator": "FALLiNG_AiR",
+      "source": "https://opengameart.org/content/visual-novel-character-sprite",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "aria_spellblade",
+      "name": "Aria (Spellblade)",
+      "category": "protagonists",
+      "gender": "Female",
+      "defaultPath": "/assets/characters/protagonists/aria_default.png",
+      "expressions": {
+        "normal": "/assets/characters/protagonists/aria_default.png",
+        "serious": "/assets/characters/protagonists/aria_default.png",
+        "happy": "/assets/characters/protagonists/aria_happy.png"
+      },
+      "tags": [
+        "spellblade",
+        "mage",
+        "heroine",
+        "sorceress"
+      ],
+      "genres": [
+        "fantasy",
+        "anime",
+        "school_life",
+        "isekai"
+      ],
+      "creator": "FALLiNG_AiR",
+      "source": "https://opengameart.org/content/visual-novel-character-sprite",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "mentor_shen",
+      "name": "Master Shen",
+      "category": "supporting",
+      "defaultPath": "/assets/characters/supporting/mentor_shen.png",
+      "tags": [
+        "mentor",
+        "master",
+        "elder",
+        "cultivator",
+        "monk"
+      ],
+      "genres": [
+        "cultivation",
+        "fantasy",
+        "action"
+      ],
+      "creator": "FALLiNG_AiR",
+      "source": "https://opengameart.org/content/visual-novel-character-sprite",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "expressions": {}
+    },
+    {
+      "id": "captain_ronald",
+      "name": "Captain Ronald",
+      "category": "supporting",
+      "defaultPath": "/assets/characters/supporting/ronald_guard.png",
+      "tags": [
+        "captain",
+        "knight",
+        "vanguard",
+        "soldier",
+        "guard"
+      ],
+      "genres": [
+        "fantasy",
+        "action"
+      ],
+      "creator": "FALLiNG_AiR",
+      "source": "https://opengameart.org/content/visual-novel-character-sprite",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "expressions": {}
+    },
+    {
+      "id": "masked_commander",
+      "name": "Masked Commander",
+      "category": "antagonists",
+      "defaultPath": "/assets/characters/antagonists/masked_commander.png",
+      "tags": [
+        "boss",
+        "antagonist",
+        "masked",
+        "commander",
+        "void"
+      ],
+      "genres": [
+        "fantasy",
+        "cyberpunk",
+        "cultivation"
+      ],
+      "creator": "FALLiNG_AiR",
+      "source": "https://opengameart.org/content/visual-novel-character-sprite",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "expressions": {}
+    }
+  ],
+  "backgrounds": [
+    {
+      "id": "bg_aethelgard_citadel",
+      "title": "Aethelgard Silver Citadel",
+      "path": "/assets/backgrounds/fantasy/aethelgard_citadel.jpg",
+      "category": "fantasy",
+      "tags": [
+        "citadel",
+        "palace",
+        "kingdom",
+        "throne",
+        "silver_spire"
+      ],
+      "worlds": [
+        "aethelgard"
+      ],
+      "genres": [
+        "fantasy",
+        "mythology",
+        "adventure"
+      ],
+      "creator": "olracadejup",
+      "source": "https://opengameart.org/content/mixed-fantasy-backgrounds",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "bg_crystal_temple",
+      "title": "Runic Crystal Temple",
+      "path": "/assets/backgrounds/fantasy/crystal_temple.jpg",
+      "category": "fantasy",
+      "tags": [
+        "temple",
+        "sanctuary",
+        "magic",
+        "ruins"
+      ],
+      "worlds": [
+        "aethelgard",
+        "kunlun"
+      ],
+      "genres": [
+        "fantasy",
+        "cultivation"
+      ],
+      "creator": "olracadejup",
+      "source": "https://opengameart.org/content/mixed-fantasy-backgrounds",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "bg_highland_mountains",
+      "title": "Highland Peaks & Vale",
+      "path": "/assets/backgrounds/fantasy/highland_mountains.jpg",
+      "category": "fantasy",
+      "tags": [
+        "mountain",
+        "peaks",
+        "valen",
+        "frontier",
+        "travel"
+      ],
+      "worlds": [
+        "aethelgard",
+        "kunlun"
+      ],
+      "genres": [
+        "fantasy",
+        "action",
+        "adventure"
+      ],
+      "creator": "olracadejup",
+      "source": "https://opengameart.org/content/mixed-fantasy-backgrounds",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "bg_canyon_frontier",
+      "title": "Canyon Frontier Pass",
+      "path": "/assets/backgrounds/fantasy/canyon_frontier.jpg",
+      "category": "fantasy",
+      "tags": [
+        "canyon",
+        "pass",
+        "rocks",
+        "desert",
+        "wasteland"
+      ],
+      "worlds": [
+        "aethelgard"
+      ],
+      "genres": [
+        "fantasy",
+        "post_apocalyptic",
+        "action"
+      ],
+      "creator": "olracadejup",
+      "source": "https://opengameart.org/content/mixed-fantasy-backgrounds",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "bg_whisperwood_mystic",
+      "title": "The Whisperwood Sanctuary",
+      "path": "/assets/backgrounds/forest/whisperwood_mystic.png",
+      "category": "forest",
+      "tags": [
+        "forest",
+        "woods",
+        "whisperwood",
+        "trees",
+        "nature"
+      ],
+      "worlds": [
+        "aethelgard"
+      ],
+      "genres": [
+        "fantasy",
+        "supernatural",
+        "adventure"
+      ],
+      "creator": "Tamara Ramsay (ramtam)",
+      "source": "https://opengameart.org/content/forest-background-art",
+      "license": "CC-BY-SA 3.0"
+    },
+    {
+      "id": "bg_whisperwood_dusk",
+      "title": "Whisperwood at Dusk",
+      "path": "/assets/backgrounds/forest/whisperwood_dusk.png",
+      "category": "forest",
+      "tags": [
+        "forest",
+        "dusk",
+        "evening",
+        "night",
+        "flame"
+      ],
+      "worlds": [
+        "aethelgard"
+      ],
+      "genres": [
+        "fantasy",
+        "horror",
+        "mystery"
+      ],
+      "creator": "Tamara Ramsay (ramtam)",
+      "source": "https://opengameart.org/content/forest-background-art",
+      "license": "CC-BY-SA 3.0"
+    },
+    {
+      "id": "bg_neokyoto_neon_street",
+      "title": "Neo-Kyoto District 4 Underbelly",
+      "path": "/assets/backgrounds/cyberpunk/neokyoto_neon_street.png",
+      "category": "cyberpunk",
+      "tags": [
+        "city",
+        "cyberpunk",
+        "neon",
+        "rain",
+        "street",
+        "shinjuku"
+      ],
+      "worlds": [
+        "neokyoto"
+      ],
+      "genres": [
+        "cyberpunk",
+        "scifi",
+        "action"
+      ],
+      "creator": "ansimuz",
+      "source": "https://opengameart.org/content/cyberpunk-street-environment",
+      "license": "CC-BY 3.0"
+    },
+    {
+      "id": "bg_cyber_sublevel_lab",
+      "title": "Arakawa Biotech Sub-Level",
+      "path": "/assets/backgrounds/cyberpunk/cyber_sublevel_lab.jpg",
+      "category": "cyberpunk",
+      "tags": [
+        "lab",
+        "vault",
+        "cyberdeck",
+        "scifi",
+        "tech",
+        "araka_tower"
+      ],
+      "worlds": [
+        "neokyoto"
+      ],
+      "genres": [
+        "cyberpunk",
+        "scifi"
+      ],
+      "creator": "ask4asset.com",
+      "source": "https://opengameart.org/content/sci-fi-background",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "bg_undercity_bar",
+      "title": "Underground Runner Lounge",
+      "path": "/assets/backgrounds/cyberpunk/undercity_bar.png",
+      "category": "cyberpunk",
+      "tags": [
+        "bar",
+        "club",
+        "lounge",
+        "tavern",
+        "fixer"
+      ],
+      "worlds": [
+        "neokyoto",
+        "aethelgard"
+      ],
+      "genres": [
+        "cyberpunk",
+        "slice_of_life",
+        "anime"
+      ],
+      "creator": "potat0",
+      "source": "https://opengameart.org/content/visual-novel-style-backgrounds",
+      "license": "CC-BY 3.0"
+    },
+    {
+      "id": "bg_ancestral_shrine",
+      "title": "Kunlun Ancestral Shrine",
+      "path": "/assets/backgrounds/cultivation/ancestral_shrine.jpg",
+      "category": "cultivation",
+      "tags": [
+        "shrine",
+        "pagoda",
+        "temple",
+        "daoist",
+        "kunlun",
+        "azure_peak"
+      ],
+      "worlds": [
+        "kunlun"
+      ],
+      "genres": [
+        "cultivation",
+        "mythology",
+        "martial_arts"
+      ],
+      "creator": "olracadejup",
+      "source": "https://opengameart.org/content/mixed-fantasy-backgrounds",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "bg_kunlun_mist",
+      "title": "Mount Kunlun Misty Ridge",
+      "path": "/assets/backgrounds/cultivation/kunlun_mist.jpg",
+      "category": "cultivation",
+      "tags": [
+        "mountain",
+        "mist",
+        "cloud",
+        "qi",
+        "thunder"
+      ],
+      "worlds": [
+        "kunlun"
+      ],
+      "genres": [
+        "cultivation",
+        "martial_arts"
+      ],
+      "creator": "olracadejup",
+      "source": "https://opengameart.org/content/mixed-fantasy-backgrounds",
+      "license": "CC0 1.0 Universal (Public Domain)"
+    },
+    {
+      "id": "bg_academy_hallway_day",
+      "title": "High School Hallway (Day)",
+      "path": "/assets/backgrounds/school/academy_hallway_day.png",
+      "category": "school",
+      "tags": [
+        "school",
+        "academy",
+        "hallway",
+        "day",
+        "classroom"
+      ],
+      "worlds": [
+        "aethelgard",
+        "neokyoto"
+      ],
+      "genres": [
+        "school_life",
+        "anime",
+        "comedy",
+        "romance"
+      ],
+      "creator": "Gunnar Klingen (Uncle Mugen)",
+      "source": "https://opengameart.org/content/hallway-daynight-background-for-visual-novels",
+      "license": "CC-BY 3.0"
+    },
+    {
+      "id": "bg_academy_hallway_night",
+      "title": "High School Hallway (Night)",
+      "path": "/assets/backgrounds/school/academy_hallway_night.png",
+      "category": "school",
+      "tags": [
+        "school",
+        "hallway",
+        "night",
+        "mystery",
+        "spooky"
+      ],
+      "worlds": [
+        "aethelgard",
+        "neokyoto"
+      ],
+      "genres": [
+        "mystery",
+        "horror",
+        "supernatural",
+        "school_life"
+      ],
+      "creator": "Gunnar Klingen (Uncle Mugen)",
+      "source": "https://opengameart.org/content/hallway-daynight-background-for-visual-novels",
+      "license": "CC-BY 3.0"
+    },
+    {
+      "id": "bg_academy_auditorium",
+      "title": "Academy Grand Auditorium",
+      "path": "/assets/backgrounds/school/academy_auditorium.png",
+      "category": "school",
+      "tags": [
+        "auditorium",
+        "stage",
+        "hall",
+        "tournament",
+        "ceremony"
+      ],
+      "worlds": [
+        "aethelgard"
+      ],
+      "genres": [
+        "school_life",
+        "anime"
+      ],
+      "creator": "Gunnar Klingen (Uncle Mugen)",
+      "source": "https://opengameart.org/content/visual-novel-background-auditorium",
+      "license": "CC-BY 3.0"
+    },
+    {
+      "id": "bg_ruined_battleground",
+      "title": "Ruined Outer Battleground",
+      "path": "/assets/backgrounds/battle/ruined_battleground.png",
+      "category": "battle",
+      "tags": [
+        "battle",
+        "ruins",
+        "flames",
+        "combat",
+        "war"
+      ],
+      "worlds": [
+        "aethelgard",
+        "kunlun",
+        "neokyoto"
+      ],
+      "genres": [
+        "action",
+        "fantasy",
+        "war"
+      ],
+      "creator": "potat0",
+      "source": "https://opengameart.org/content/visual-novel-style-backgrounds",
+      "license": "CC-BY 3.0"
+    }
+  ]
+}
