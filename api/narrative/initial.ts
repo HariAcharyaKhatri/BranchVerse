@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
-import { CONFIG } from '../../server/config';
-import { rateLimiter } from '../../server/rateLimiter';
-import { geminiService } from '../../server/geminiService';
+import { CONFIG } from '../../server/config.js';
+import { rateLimiter } from '../../server/rateLimiter.js';
+import { geminiService } from '../../server/geminiService.js';
 
 export default async function handler(req: Request, res: Response) {
   if (req.method !== 'POST') {

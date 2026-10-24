@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import { CONFIG } from './config';
-import { authMiddleware, AuthenticatedRequest } from './auth';
-import { rateLimiter } from './rateLimiter';
-import { geminiService } from './geminiService';
+import { CONFIG } from './config.js';
+import { authMiddleware, AuthenticatedRequest } from './auth.js';
+import { rateLimiter } from './rateLimiter.js';
+import { geminiService } from './geminiService.js';
 
 const app = express();
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RateLimiter } from '../../server/rateLimiter';
-import { CONFIG } from '../../server/config';
-import { authMiddleware, AuthenticatedRequest } from '../../server/auth';
+import { RateLimiter } from '../../server/rateLimiter.js';
+import { CONFIG } from '../../server/config.js';
+import { authMiddleware, AuthenticatedRequest } from '../../server/auth.js';
 import { GeminiNarrativeProvider } from '../engine/providers/GeminiNarrativeProvider';
 import { createNewStory, executeAdvancedStoryTurn } from '../features/story/storyEngine';
 import { HeroProfile } from '../types/character';

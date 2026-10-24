@@ -4,10 +4,11 @@
     "lib": ["ES2023"],
     "module": "esnext",
     "moduleResolution": "bundler",
+    "rootDir": "..",
     "skipLibCheck": true,
     "strict": true,
     "esModuleInterop": true,
     "noEmit": true
   },
-  "include": ["**/*.ts", "../server/**/*.ts", "../src/types/**/*.ts"]
+  "include": ["**/*.ts", "../server/**/*.ts"]
 }

@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
-import { CONFIG } from './config';
-import { SupportedLanguage, LANGUAGE_LABELS } from '../src/types/story';
+import { CONFIG } from './config.js';
+import { SupportedLanguage, LANGUAGE_LABELS } from './types.js';
 
 export interface InitialStoryContext {
   hero: {

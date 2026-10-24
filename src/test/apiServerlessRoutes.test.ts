@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import healthHandler from '../../api/health';
-import initialNarrativeHandler from '../../api/narrative/initial';
-import turnNarrativeHandler from '../../api/narrative/turn';
-import { geminiService } from '../../server/geminiService';
-import { CONFIG } from '../../server/config';
+import path from 'path';
+import { pathToFileURL } from 'url';
+import { execSync } from 'child_process';
+import healthHandler from '../../api/health.js';
+import initialNarrativeHandler from '../../api/narrative/initial.js';
+import turnNarrativeHandler from '../../api/narrative/turn.js';
+import { geminiService } from '../../server/geminiService.js';
+import { CONFIG } from '../../server/config.js';
 
 function createMockResponse() {
   const res: any = {
@@ -239,6 +242,48 @@ describe('Vercel Serverless API Routes (/api)', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.body.fallbackToDemo).toBe(true);
       expect(res.body.error).toMatch(/Failed to generate turn narrative/i);
+    });
+  });
+
+  describe('Node.js ESM Module Resolution Integrity', () => {
+    it('dynamically loads all serverless API endpoints and server modules via explicit .js extensions', async () => {
+      const [healthMod, initialMod, turnMod, configMod, rateLimiterMod, geminiMod] = await Promise.all([
+        import('../../api/health.js'),
+        import('../../api/narrative/initial.js'),
+        import('../../api/narrative/turn.js'),
+        import('../../server/config.js'),
+        import('../../server/rateLimiter.js'),
+        import('../../server/geminiService.js')
+      ]);
+
+      expect(typeof healthMod.default).toBe('function');
+      expect(typeof initialMod.default).toBe('function');
+      expect(typeof turnMod.default).toBe('function');
+      expect(configMod.CONFIG).toBeDefined();
+      expect(rateLimiterMod.rateLimiter).toBeDefined();
+      expect(geminiMod.geminiService).toBeDefined();
+    });
+
+    it('compiles api and server to JavaScript and verifies that emitted .js files resolve under Node.js ESM', async () => {
+      const outDir = path.resolve(process.cwd(), 'node_modules/.tmp/verify-emitted-api');
+
+      execSync(`npx tsc --project api/tsconfig.json --noEmit false --outDir "${outDir}"`, {
+        stdio: 'pipe'
+      });
+
+      const initialUrl = pathToFileURL(path.join(outDir, 'api/narrative/initial.js')).href;
+      const turnUrl = pathToFileURL(path.join(outDir, 'api/narrative/turn.js')).href;
+      const healthUrl = pathToFileURL(path.join(outDir, 'api/health.js')).href;
+
+      const [emittedInitial, emittedTurn, emittedHealth] = await Promise.all([
+        import(initialUrl),
+        import(turnUrl),
+        import(healthUrl)
+      ]);
+
+      expect(typeof emittedInitial.default).toBe('function');
+      expect(typeof emittedTurn.default).toBe('function');
+      expect(typeof emittedHealth.default).toBe('function');
     });
   });
 });
