@@ -5,6 +5,7 @@ import { CustomActionInput } from './CustomActionInput';
 import { getSceneBackground, getCharacterPortrait } from '../../features/assets/assetSelector';
 import { Sparkles, Sword, Shield, Flame, Zap, Eye, Cpu, Crown, Compass, BookOpen } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { NarratorAudio } from './NarratorAudio';
 
 interface NarrativeReaderProps {
   story: StoryDocument;
@@ -134,6 +135,18 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Chapter Controls & Audio Narration */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] text-dark-muted font-mono tracking-wider uppercase">
+                  Chapter {turn.chapterNumber} • Turn #{index + 1}
+                </span>
+                <NarratorAudio
+                  text={turn.narrativeText}
+                  sceneTitle={turn.sceneTitle}
+                  storyLanguage={story.storyLanguage || 'en'}
+                />
               </div>
 
               {/* Narrative Text */}

@@ -8,6 +8,8 @@ import { NarrativeReader } from '../components/story/NarrativeReader';
 import { CharacterSheetDrawer } from '../components/story/CharacterSheetDrawer';
 import { SaveIndicator } from '../components/story/SaveIndicator';
 import { ExportModal } from '../components/history/ExportModal';
+import { FateDiceRoller } from '../components/story/FateDiceRoller';
+import { AtmosphereSoundscape } from '../components/story/AtmosphereSoundscape';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { ChevronLeft, Shield, FileText, Download, AlertCircle, AlertTriangle, RefreshCw, BookOpen } from 'lucide-react';
@@ -202,11 +204,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     const item = story.state.inventory.find(i => i.id === itemId);
     if (!item) return;
 
-    // Use consumable
-    let hpGain = 30;
-    if (item.name.toLowerCase().includes('stim') || item.name.toLowerCase().includes('elixir')) {
-      hpGain = 40;
-    }
+    // Use consumable to restore stamina
+    const staminaGain = 35;
 
     const nextInventory = story.state.inventory
       .map(i => i.id === itemId ? { ...i, quantity: i.quantity - 1 } : i)
@@ -214,7 +213,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
     const nextState = {
       ...story.state,
-      health: Math.min(story.state.maxHealth, story.state.health + hpGain),
+      stamina: Math.min(100, story.state.stamina + staminaGain),
       inventory: nextInventory
     };
 
@@ -287,7 +286,17 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* D20 Fate Check Dice Roller */}
+            <FateDiceRoller
+              heroName={story.hero.name}
+              powerLevel={story.state.powerLevel}
+              onApplyToCustomAction={handleSubmitCustomAction}
+            />
+
+            {/* Ambient Soundscape Synthesizer */}
+            <AtmosphereSoundscape />
+
             {/* Character Sheet Trigger */}
             <button
               onClick={() => setIsDrawerOpen(true)}
@@ -296,7 +305,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             >
               <Shield className="w-4 h-4 text-brand-primary" />
               <span className="hidden sm:inline">Hero</span>
-              <span className="text-[10px] text-emerald-400 font-bold">{story.state.health} HP</span>
+              <span className="text-[10px] text-amber-400 font-bold">{story.state.stamina} ST</span>
             </button>
 
             {/* View Transcript */}

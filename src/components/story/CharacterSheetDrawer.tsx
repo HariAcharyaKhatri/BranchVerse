@@ -68,18 +68,18 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
           <div className="space-y-3.5">
             <div className="space-y-2 bg-dark-elevated/40 p-3 rounded-2xl border border-dark-border">
               <ProgressBar
-                label="Health Points (HP)"
-                sublabel={`${state.health} / ${state.maxHealth}`}
-                value={state.health}
-                max={state.maxHealth}
-                variant={state.health > 40 ? 'emerald' : 'red'}
-              />
-              <ProgressBar
-                label="Stamina / Energy"
+                label="Stamina & Narrative Focus"
                 sublabel={`${state.stamina} / 100`}
                 value={state.stamina}
                 max={100}
                 variant="amber"
+              />
+              <ProgressBar
+                label="Power Level & Mastery"
+                sublabel={`Level ${state.powerLevel}`}
+                value={Math.min(100, state.powerLevel * 2)}
+                max={100}
+                variant="indigo"
               />
             </div>
 

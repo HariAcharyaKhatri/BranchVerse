@@ -22,7 +22,14 @@ export const HeroWizard: React.FC<HeroWizardProps> = ({
   onCancel
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [heroDraft, setHeroDraft] = useState<Partial<HeroProfile>>(initialHero || {});
+  const [heroDraft, setHeroDraft] = useState<Partial<HeroProfile>>(() => ({
+    name: 'Hari Khatri',
+    gender: 'Male',
+    age: '20',
+    origin: 'Borderland Outpost',
+    race: 'Human',
+    ...(initialHero || {})
+  }));
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [promptText, setPromptText] = useState('');
   const [notification, setNotification] = useState<string | null>(null);

@@ -213,62 +213,113 @@ INSTRUCTIONS:
       const requestStart = Date.now();
       console.log(`[GeminiService] [Request Started] Model: ${model}, Attempt: ${attempt + 1}/${maxRetries + 1}, TimeoutBudget: ${attemptTimeout}ms`);
 
-      try {
-        const interaction = await this.client!.interactions.create(
-          {
-            model,
-            input,
-            response_format: {
-              type: 'text',
-              mime_type: 'application/json',
-              schema: {
-                type: 'object',
-                properties: {
-                  sceneTitle: { type: 'string' },
-                  narrativeText: { type: 'string' },
-                  dialogues: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        speaker: { type: 'string' },
-                        text: { type: 'string' },
-                        emotion: { type: 'string' }
-                      },
-                      required: ['speaker', 'text']
-                    }
-                  },
-                  ambientVisual: { type: 'string' },
-                  proposedChoices: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        choiceId: { type: 'string' },
-                        text: { type: 'string' },
-                        consequenceHint: { type: 'string' },
-                        riskLevel: { type: 'string' },
-                        requiredStamina: { type: 'number' },
-                        actionIntent: { type: 'string' }
-                      },
-                      required: ['choiceId', 'text']
-                    }
-                  }
-                },
-                required: ['sceneTitle', 'narrativeText', 'proposedChoices']
-              }
+      const narrativeSchema = {
+        type: 'object',
+        properties: {
+          sceneTitle: { type: 'string' },
+          narrativeText: { type: 'string' },
+          dialogues: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                speaker: { type: 'string' },
+                text: { type: 'string' },
+                emotion: { type: 'string' }
+              },
+              required: ['speaker', 'text']
             }
           },
-          {
-            timeout: attemptTimeout,
-            fetchOptions: { signal: controller.signal },
-            retries: { strategy: 'none' }
+          ambientVisual: { type: 'string' },
+          proposedChoices: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                choiceId: { type: 'string' },
+                text: { type: 'string' },
+                consequenceHint: { type: 'string' },
+                riskLevel: { type: 'string' },
+                requiredStamina: { type: 'number' },
+                actionIntent: { type: 'string' }
+              },
+              required: ['choiceId', 'text']
+            }
           }
-        );
+        },
+        required: ['sceneTitle', 'narrativeText', 'proposedChoices']
+      };
+
+      try {
+        let outputText = '';
+
+        if (this.client!.models && typeof this.client!.models.generateContent === 'function') {
+          try {
+            const response = await this.client!.models.generateContent({
+              model,
+              contents: input,
+              config: {
+                responseMimeType: 'application/json',
+                responseSchema: narrativeSchema,
+                abortSignal: controller.signal,
+                httpOptions: {
+                  timeout: attemptTimeout
+                }
+              }
+            });
+            outputText = response.text || '';
+          } catch (modelErr: any) {
+            // If models.generateContent timed out, abort immediately without fallback
+            if (controller.signal.aborted || modelErr?.name === 'AbortError') {
+              throw modelErr;
+            }
+            // Fall back to interactions API if available
+            if (this.client!.interactions && typeof this.client!.interactions.create === 'function') {
+              const interaction = await this.client!.interactions.create(
+                {
+                  model,
+                  input,
+                  response_format: {
+                    type: 'text',
+                    mime_type: 'application/json',
+                    schema: narrativeSchema
+                  }
+                },
+                {
+                  timeout: attemptTimeout,
+                  fetchOptions: { signal: controller.signal },
+                  retries: { strategy: 'none' }
+                }
+              );
+              outputText = interaction.output_text || '';
+            } else {
+              throw modelErr;
+            }
+          }
+        } else if (this.client!.interactions && typeof this.client!.interactions.create === 'function') {
+          const interaction = await this.client!.interactions.create(
+            {
+              model,
+              input,
+              response_format: {
+                type: 'text',
+                mime_type: 'application/json',
+                schema: narrativeSchema
+              }
+            },
+            {
+              timeout: attemptTimeout,
+              fetchOptions: { signal: controller.signal },
+              retries: { strategy: 'none' }
+            }
+          );
+          outputText = interaction.output_text || '';
+        } else {
+          throw new Error('Gemini API client has no supported generation method.');
+        }
 
         clearTimeout(timer);
         const elapsed = Date.now() - requestStart;
-        const outputText = interaction.output_text;
         if (!outputText) {
           throw new Error('Gemini API returned an empty response.');
         }

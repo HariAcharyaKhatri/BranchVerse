@@ -179,11 +179,9 @@ export function completeHeroProfile(existing: Partial<HeroProfile>): HeroProfile
   const randomWeakness = randomChoice(WEAKNESS_OPTIONS);
   const randomAlignment: MoralAlignment = randomChoice(ALIGNMENT_OPTIONS);
 
-  const namePool = ['Hari', 'Ren', 'Kaelen', 'Aria', 'Sora', 'Vesper', 'Lyra', 'Dante', 'Zephyr', 'Kira'];
-
   return {
     id: existing.id || `hero_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    name: existing.name?.trim() ? existing.name.trim() : randomChoice(namePool),
+    name: existing.name?.trim() ? existing.name.trim() : 'Hari Khatri',
     age: existing.age || '20',
     gender: existing.gender || 'Male',
     appearance: {

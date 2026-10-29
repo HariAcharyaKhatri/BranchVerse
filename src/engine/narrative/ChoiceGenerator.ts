@@ -40,7 +40,7 @@ export class ChoiceGenerator {
       choices.push({
         choiceId: `choice_use_item_${Date.now()}_3`,
         text: `Consume ${consumable.name} to stabilize your reserves before advancing.`,
-        consequenceHint: consumable.effectDescription || 'Recovers health or stamina.',
+        consequenceHint: consumable.effectDescription || 'Recovers stamina and clears fatigue.',
         riskLevel: 'safe',
         requiredItem: consumable.name,
         requiredStamina: 0,
@@ -51,7 +51,7 @@ export class ChoiceGenerator {
       choices.push({
         choiceId: `choice_stealth_${Date.now()}_3`,
         text: 'Slip into the shadows and observe without alerting anyone.',
-        consequenceHint: 'Avoids direct damage but tests your discretion.',
+        consequenceHint: 'Avoids confrontation and tests your discretion.',
         riskLevel: 'moderate',
         requiredStamina: 10,
         actionIntent: 'stealth'
@@ -59,11 +59,11 @@ export class ChoiceGenerator {
     }
 
     // 4. Strategic Retreat / Rest Option if stamina is low
-    if (state.stamina < 30 || state.health < 40) {
+    if (state.stamina < 30) {
       choices.push({
         choiceId: `choice_rest_${Date.now()}_4`,
-        text: 'Pull back to a fortified redoubt to mend wounds and catch your breath.',
-        consequenceHint: 'Restores stamina and vitality, but time marches forward.',
+        text: 'Pull back to a fortified redoubt to catch your breath and refocus.',
+        consequenceHint: 'Restores stamina and mental clarity, but time marches forward.',
         riskLevel: 'safe',
         requiredStamina: 0,
         actionIntent: 'rest'

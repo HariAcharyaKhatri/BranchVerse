@@ -113,7 +113,7 @@ describe('BranchVerse UI Components & Mobile Experience', () => {
       );
 
       expect(screen.getByText('Hari')).toBeInTheDocument();
-      expect(screen.getByText('85 / 100')).toBeInTheDocument();
+      expect(screen.getByText('70 / 100')).toBeInTheDocument();
 
       // Switch to Inventory tab
       const itemsTab = screen.getByText('Items');
@@ -131,14 +131,17 @@ describe('BranchVerse UI Components & Mobile Experience', () => {
 
       expect(screen.getByText('Identity & Roots')).toBeInTheDocument();
 
-      // Attempting to continue without name shows validation notification
+      const nameInput = screen.getByPlaceholderText('Hari Khatri');
+      expect((nameInput as HTMLInputElement).value).toBe('Hari Khatri');
+
+      // Clearing name and attempting to continue shows validation notification
+      fireEvent.change(nameInput, { target: { value: '' } });
       const continueBtn = screen.getByText('Continue');
       fireEvent.click(continueBtn);
       expect(screen.getByText(/Please enter a hero name/i)).toBeInTheDocument();
 
-      // Enter hero name
-      const nameInput = screen.getByPlaceholderText(/e\.g\. Hari/i);
-      fireEvent.change(nameInput, { target: { value: 'Hari' } });
+      // Re-enter hero name
+      fireEvent.change(nameInput, { target: { value: 'Hari Khatri' } });
 
       fireEvent.click(continueBtn);
       expect(screen.getByText('Powers & Arsenal')).toBeInTheDocument();
@@ -150,7 +153,7 @@ describe('BranchVerse UI Components & Mobile Experience', () => {
       // Final step -> onComplete
       fireEvent.click(screen.getByText('Choose Genre'));
       expect(onComplete).toHaveBeenCalled();
-      expect(onComplete.mock.calls[0][0].name).toBe('Hari');
+      expect(onComplete.mock.calls[0][0].name).toBe('Hari Khatri');
     });
   });
 

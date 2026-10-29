@@ -74,7 +74,7 @@ export const IdentityStep: React.FC<IdentityStepProps> = ({ hero, onChange }) =>
             type="text"
             value={hero.name || ''}
             onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="e.g. Hari, Ren, Aria"
+            placeholder="Hari Khatri"
             className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3.5 py-2.5 text-dark-text placeholder:text-dark-muted/50 focus:outline-none focus:border-brand-primary"
             required
           />
