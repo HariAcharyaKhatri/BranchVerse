@@ -184,7 +184,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }
             )}
           </div>
 
-          {user ? (
+          {user && user.providerId !== 'guest' ? (
             <div className="p-3 rounded-xl bg-dark-elevated border border-dark-border/80 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 {user.photoURL ? (
@@ -223,20 +223,33 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }
               <p className="text-xs text-dark-muted leading-relaxed">
                 You are currently exploring in Guest Mode. Sign in with Google to link your profile and verify your account.
               </p>
-              <Button
-                size="sm"
-                variant="primary"
-                fullWidth
-                onClick={() => {
-                  if (onNavigate) {
-                    onNavigate('#/login');
-                  } else {
-                    window.location.hash = '#/login';
-                  }
-                }}
-              >
-                <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In with Google
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  className="flex-1 text-xs"
+                  onClick={() => {
+                    if (onNavigate) {
+                      onNavigate('#/login');
+                    } else {
+                      window.location.hash = '#/login';
+                    }
+                  }}
+                >
+                  <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In with Google
+                </Button>
+                {user?.providerId === 'guest' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={signOut}
+                    disabled={authLoading}
+                    className="shrink-0 text-xs text-red-400 border-red-500/30 hover:bg-red-500/10"
+                  >
+                    <LogOut className="w-3.5 h-3.5 mr-1" /> Exit
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>

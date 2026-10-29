@@ -31,15 +31,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess, onDemoB
     initializationError,
     error,
     signInWithGoogle,
+    signInWithGoogleRedirect,
+    signInAsGuest,
     signOut,
     clearError
   } = useAuth();
 
+  // Auto-navigate into application as soon as user is authenticated
+  React.useEffect(() => {
+    if (user) {
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        window.location.hash = '#/';
+      }
+    }
+  }, [user, onSuccess]);
+
   const handleGoogleSignIn = async () => {
     clearError();
-    await signInWithGoogle();
-    if (onSuccess && user) {
+    const loggedUser = await signInWithGoogle();
+    if (loggedUser) {
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        window.location.hash = '#/';
+      }
+    }
+  };
+
+  const handleGoogleRedirectSignIn = async () => {
+    clearError();
+    await signInWithGoogleRedirect();
+  };
+
+  const handleGuestSignIn = () => {
+    clearError();
+    if (onDemoBypass) {
+      onDemoBypass();
+    } else {
+      signInAsGuest();
+    }
+    if (onSuccess) {
       onSuccess();
+    } else {
+      window.location.hash = '#/';
     }
   };
 
@@ -187,15 +223,34 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess, onDemoB
           <div className="space-y-4">
             {/* Operational Error Banner */}
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <p className="font-medium">{error}</p>
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex flex-col gap-2.5">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-medium text-red-200">{error}</p>
+                    <button
+                      onClick={clearError}
+                      className="text-[11px] underline text-red-300 hover:text-white"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1 border-t border-red-500/20">
                   <button
-                    onClick={clearError}
-                    className="text-[11px] underline text-red-200 hover:text-white"
+                    type="button"
+                    onClick={handleGoogleRedirectSignIn}
+                    className="px-2.5 py-1.5 rounded-lg bg-red-900/40 border border-red-500/30 text-[11px] text-red-200 hover:bg-red-900/60 transition-colors"
                   >
-                    Dismiss
+                    Try Redirect Sign-In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGuestSignIn}
+                    className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-[11px] text-amber-200 hover:bg-amber-500/30 transition-colors font-semibold"
+                  >
+                    Enter as Guest Mode
                   </button>
                 </div>
               </div>
@@ -285,6 +340,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess, onDemoB
                   <span>{t.login.googleSignIn}</span>
                 </>
               )}
+            </button>
+
+            {/* Direct Redirect Alternative for popup-restricted environments */}
+            {isReady && !loading && (
+              <button
+                type="button"
+                onClick={handleGoogleRedirectSignIn}
+                className="w-full text-center text-[11px] text-dark-muted hover:text-brand-glow transition-colors py-1 cursor-pointer"
+              >
+                Sign-in popup blocked or failing? Click to use full-page Google Redirect
+              </button>
+            )}
+
+            {/* Divider */}
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-dark-border/60" />
+              <span className="flex-shrink mx-3 text-[10px] text-dark-muted uppercase tracking-wider font-semibold">
+                Or
+              </span>
+              <div className="flex-grow border-t border-dark-border/60" />
+            </div>
+
+            {/* Always Available Guest Mode Access */}
+            <button
+              type="button"
+              onClick={handleGuestSignIn}
+              className="w-full h-12 px-4 rounded-xl border border-dark-border bg-dark-elevated hover:bg-dark-surface hover:border-brand-primary/60 text-dark-text font-medium text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4 text-amber-400" />
+              <span>Continue as Guest (Explore Local Demo Chronicles)</span>
             </button>
           </div>
         )}

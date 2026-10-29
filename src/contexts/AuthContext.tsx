@@ -17,6 +17,16 @@ export interface AuthUser {
   providerId: string;
 }
 
+export const GUEST_STORAGE_KEY = 'bv_guest_user';
+
+export const GUEST_USER: AuthUser = {
+  uid: 'guest_hero_local',
+  displayName: 'Guest Hero',
+  email: 'guest@branchverse.local',
+  photoURL: null,
+  providerId: 'guest'
+};
+
 export interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
@@ -24,7 +34,9 @@ export interface AuthContextType {
   isInitialized: boolean;
   initializationError: string | null;
   error: string | null;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<AuthUser | null>;
+  signInWithGoogleRedirect: () => Promise<void>;
+  signInAsGuest: () => AuthUser;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -33,7 +45,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const status = getFirebaseStatus();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem(GUEST_STORAGE_KEY) === 'true') {
+      return GUEST_USER;
+    }
+    return null;
+  });
   const [loading, setLoading] = useState<boolean>(status.isConfigured && status.isInitialized);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +68,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const formatAuthError = (err: any): string => {
     const code = err?.code || '';
     switch (code) {
-      case 'auth/unauthorized-domain':
-        return "This domain is not authorized for Google Sign-In. Add 'localhost' to Authorized Domains in Firebase Console (Authentication > Settings > Authorized domains).";
+      case 'auth/unauthorized-domain': {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+        return `Domain '${domain}' is not authorized in Firebase Console. Add '${domain}' under Firebase Console > Authentication > Settings > Authorized domains, or continue as Guest.`;
+      }
       case 'auth/popup-closed-by-user':
-        return 'Sign-in was cancelled before completion.';
+        return 'Sign-in popup was closed before completion. You can try Redirect Sign-In or continue as Guest.';
       case 'auth/popup-blocked':
-        return 'Sign-in popup was blocked by your browser. Attempting redirect sign-in...';
+        return 'Sign-in popup was blocked by browser. Attempting redirect sign-in...';
       case 'auth/cancelled-popup-request':
         return 'Sign-in window was closed by a newer request.';
       case 'auth/network-request-failed':
@@ -100,7 +119,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       auth,
       (firebaseUser) => {
         if (!isMounted) return;
-        setUser(mapFirebaseUser(firebaseUser));
+        if (firebaseUser) {
+          try {
+            localStorage.removeItem(GUEST_STORAGE_KEY);
+          } catch {}
+          setUser(mapFirebaseUser(firebaseUser));
+        } else {
+          // Fall back to guest session if active
+          let isGuest = false;
+          try {
+            isGuest = localStorage.getItem(GUEST_STORAGE_KEY) === 'true';
+          } catch {}
+          if (isGuest) {
+            setUser(GUEST_USER);
+          } else {
+            setUser(null);
+          }
+        }
         setLoading(false);
       },
       (err) => {
@@ -117,12 +152,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [status.isConfigured, status.isInitialized]);
 
-  const signInWithGoogle = async (): Promise<void> => {
+  const signInWithGoogle = async (): Promise<AuthUser | null> => {
     if (!status.isConfigured) {
       setError(
         'Firebase Authentication configuration is missing. Please supply VITE_FIREBASE_API_KEY and VITE_FIREBASE_PROJECT_ID in .env.local.'
       );
-      return;
+      return null;
     }
 
     if (!auth) {
@@ -130,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status.initializationError ||
         'Firebase Authentication failed to initialize. Please check console diagnostics.'
       );
-      return;
+      return null;
     }
 
     setLoading(true);
@@ -139,14 +174,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // First attempt: popup sign-in
       const result = await signInWithPopup(auth, googleProvider);
-      setUser(mapFirebaseUser(result.user));
+      const mapped = mapFirebaseUser(result.user);
+      try {
+        localStorage.removeItem(GUEST_STORAGE_KEY);
+      } catch {}
+      setUser(mapped);
       setError(null);
+      return mapped;
     } catch (err: any) {
-      // If mobile browser blocks popups, fallback to redirect flow
-      if (err?.code === 'auth/popup-blocked') {
+      // If mobile browser blocks popups or popup closed, try fallback to redirect flow
+      if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
         try {
           await signInWithRedirect(auth, googleProvider);
-          return; // Redirecting away from page
+          return null; // Redirecting away from page
         } catch (redirectErr: any) {
           console.error('Redirect fallback error:', redirectErr);
           setError(formatAuthError(redirectErr));
@@ -155,12 +195,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Google sign-in error:', err);
         setError(formatAuthError(err));
       }
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
+  const signInWithGoogleRedirect = async (): Promise<void> => {
+    if (!status.isConfigured || !auth) {
+      setError('Firebase is not configured for redirect sign-in.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (err: any) {
+      console.error('Direct redirect sign-in error:', err);
+      setError(formatAuthError(err));
+      setLoading(false);
+    }
+  };
+
+  const signInAsGuest = (): AuthUser => {
+    try {
+      localStorage.setItem(GUEST_STORAGE_KEY, 'true');
+    } catch {}
+    setUser(GUEST_USER);
+    setError(null);
+    return GUEST_USER;
+  };
+
   const signOut = async (): Promise<void> => {
+    try {
+      localStorage.removeItem(GUEST_STORAGE_KEY);
+    } catch {}
+
     if (!auth) {
       setUser(null);
       return;
@@ -194,6 +266,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initializationError: status.initializationError,
         error,
         signInWithGoogle,
+        signInWithGoogleRedirect,
+        signInAsGuest,
         signOut,
         clearError
       }}

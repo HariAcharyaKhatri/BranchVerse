@@ -147,5 +147,61 @@ describe('BranchVerse Google Authentication Flow', () => {
       expect(() => render(<TestConsumer />)).toThrow('useAuth must be used within an AuthProvider');
       consoleError.mockRestore();
     });
+
+    it('allows entering as Guest and persists guest state', async () => {
+      const GuestConsumer: React.FC = () => {
+        const { user, signInAsGuest, signOut } = useAuth();
+        return (
+          <div>
+            <span data-testid="guest-name">{user ? user.displayName : 'none'}</span>
+            <button onClick={signInAsGuest}>Enter Guest</button>
+            <button onClick={signOut}>Exit</button>
+          </div>
+        );
+      };
+
+      render(
+        <AuthProvider>
+          <GuestConsumer />
+        </AuthProvider>
+      );
+
+      expect(screen.getByTestId('guest-name')).toHaveTextContent('none');
+
+      fireEvent.click(screen.getByText('Enter Guest'));
+      expect(screen.getByTestId('guest-name')).toHaveTextContent('Guest Hero');
+      expect(localStorage.getItem('bv_guest_user')).toBe('true');
+
+      fireEvent.click(screen.getByText('Exit'));
+      await waitFor(() => {
+        expect(screen.getByTestId('guest-name')).toHaveTextContent('none');
+      });
+      expect(localStorage.getItem('bv_guest_user')).toBeNull();
+    });
+  });
+
+  describe('LoginPage Auto-Navigation & Guest Access', () => {
+    it('always renders "Continue as Guest" so users are never locked out', () => {
+      render(
+        <AuthProvider>
+          <LoginPage />
+        </AuthProvider>
+      );
+
+      expect(screen.getByText(/Continue as Guest/i)).toBeInTheDocument();
+    });
+
+    it('calls onSuccess when Continue as Guest is clicked', () => {
+      const onSuccess = vi.fn();
+      render(
+        <AuthProvider>
+          <LoginPage onSuccess={onSuccess} />
+        </AuthProvider>
+      );
+
+      const guestBtn = screen.getByText(/Continue as Guest/i);
+      fireEvent.click(guestBtn);
+      expect(onSuccess).toHaveBeenCalled();
+    });
   });
 });

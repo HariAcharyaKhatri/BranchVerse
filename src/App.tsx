@@ -27,7 +27,7 @@ import { I18nProvider } from './i18n';
 import { BottomNav } from './components/navigation/BottomNav';
 
 const AppContent: React.FC = () => {
-  const { user, loading, isConfigured } = useAuth();
+  const { user, loading } = useAuth();
   const [demoBypass, setDemoBypass] = useState<boolean>(false);
 
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
@@ -74,6 +74,13 @@ const AppContent: React.FC = () => {
     };
     refreshCount();
   }, [currentRoute, user, demoBypass]);
+
+  // If user is authenticated or bypassed and still on #/login, automatically navigate to #/
+  useEffect(() => {
+    if ((user || demoBypass) && (currentRoute === '#/login' || currentRoute === '#login')) {
+      navigate('#/');
+    }
+  }, [user, demoBypass, currentRoute]);
 
   // Apply saved theme on startup
   useEffect(() => {
@@ -219,7 +226,7 @@ const AppContent: React.FC = () => {
       <div className="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-dark-bg text-dark-text relative shadow-2xl overflow-hidden font-sans select-none">
         <LoginPage
           onSuccess={() => navigate('#/')}
-          onDemoBypass={!isConfigured ? () => setDemoBypass(true) : undefined}
+          onDemoBypass={() => setDemoBypass(true)}
         />
       </div>
     );
@@ -325,6 +332,17 @@ const AppContent: React.FC = () => {
         <SettingsPage
           onBack={() => navigate('#/')}
           onNavigate={navigate}
+        />
+      );
+    }
+
+    // 6. Explicit Login Route: #/login or #login
+    if (currentRoute === '#/login' || currentRoute === '#login') {
+      return (
+        <LoginPage
+          onBack={() => navigate('#/')}
+          onSuccess={() => navigate('#/')}
+          onDemoBypass={() => setDemoBypass(true)}
         />
       );
     }
