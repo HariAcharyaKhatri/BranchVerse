@@ -46,9 +46,6 @@ export class StoryTransaction {
     }
 
     // Apply delta to staged state
-    if (typeof stateDelta.health === 'number') {
-      this.stagedState.health = Math.max(0, Math.min(this.stagedState.maxHealth, stateDelta.health));
-    }
     if (typeof stateDelta.stamina === 'number') {
       this.stagedState.stamina = Math.max(0, Math.min(100, stateDelta.stamina));
     }
@@ -66,12 +63,6 @@ export class StoryTransaction {
     }
     if (stateDelta.worldFlags) {
       this.stagedState.worldFlags = { ...this.stagedState.worldFlags, ...stateDelta.worldFlags };
-    }
-
-    // Check game over
-    if (this.stagedState.health <= 0) {
-      this.stagedState.isStoryComplete = true;
-      this.stagedState.unlockedEndingId = 'ending_tragic_sacrifice';
     }
 
     this.status = 'PLANNED';

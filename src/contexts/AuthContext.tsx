@@ -17,16 +17,6 @@ export interface AuthUser {
   providerId: string;
 }
 
-export const GUEST_STORAGE_KEY = 'bv_guest_user';
-
-export const GUEST_USER: AuthUser = {
-  uid: 'guest_hero_local',
-  displayName: 'Guest Hero',
-  email: 'guest@branchverse.local',
-  photoURL: null,
-  providerId: 'guest'
-};
-
 export interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
@@ -36,7 +26,6 @@ export interface AuthContextType {
   error: string | null;
   signInWithGoogle: () => Promise<AuthUser | null>;
   signInWithGoogleRedirect: () => Promise<void>;
-  signInAsGuest: () => AuthUser;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -45,12 +34,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const status = getFirebaseStatus();
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem(GUEST_STORAGE_KEY) === 'true') {
-      return GUEST_USER;
-    }
-    return null;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(status.isConfigured && status.isInitialized);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,10 +54,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     switch (code) {
       case 'auth/unauthorized-domain': {
         const domain = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
-        return `Domain '${domain}' is not authorized in Firebase Console. Add '${domain}' under Firebase Console > Authentication > Settings > Authorized domains, or continue as Guest.`;
+        return `Domain '${domain}' is not authorized in Firebase Console. Add '${domain}' under Firebase Console > Authentication > Settings > Authorized domains.`;
       }
       case 'auth/popup-closed-by-user':
-        return 'Sign-in popup was closed before completion. You can try Redirect Sign-In or continue as Guest.';
+        return 'Sign-in popup was closed before completion. You can try Redirect Sign-In.';
       case 'auth/popup-blocked':
         return 'Sign-in popup was blocked by browser. Attempting redirect sign-in...';
       case 'auth/cancelled-popup-request':
@@ -120,21 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (firebaseUser) => {
         if (!isMounted) return;
         if (firebaseUser) {
-          try {
-            localStorage.removeItem(GUEST_STORAGE_KEY);
-          } catch {}
           setUser(mapFirebaseUser(firebaseUser));
         } else {
-          // Fall back to guest session if active
-          let isGuest = false;
-          try {
-            isGuest = localStorage.getItem(GUEST_STORAGE_KEY) === 'true';
-          } catch {}
-          if (isGuest) {
-            setUser(GUEST_USER);
-          } else {
-            setUser(null);
-          }
+          setUser(null);
         }
         setLoading(false);
       },
@@ -175,9 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // First attempt: popup sign-in
       const result = await signInWithPopup(auth, googleProvider);
       const mapped = mapFirebaseUser(result.user);
-      try {
-        localStorage.removeItem(GUEST_STORAGE_KEY);
-      } catch {}
       setUser(mapped);
       setError(null);
       return mapped;
@@ -219,20 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInAsGuest = (): AuthUser => {
-    try {
-      localStorage.setItem(GUEST_STORAGE_KEY, 'true');
-    } catch {}
-    setUser(GUEST_USER);
-    setError(null);
-    return GUEST_USER;
-  };
-
   const signOut = async (): Promise<void> => {
-    try {
-      localStorage.removeItem(GUEST_STORAGE_KEY);
-    } catch {}
-
     if (!auth) {
       setUser(null);
       return;
@@ -267,7 +223,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         signInWithGoogle,
         signInWithGoogleRedirect,
-        signInAsGuest,
         signOut,
         clearError
       }}

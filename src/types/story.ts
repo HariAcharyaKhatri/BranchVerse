@@ -30,8 +30,8 @@ export interface Quest {
 }
 
 export interface StoryState {
-  health: number; // 0 - 100
-  maxHealth: number;
+  health?: number; // Deprecated/purged: retained as optional for backward compatibility
+  maxHealth?: number;
   stamina: number; // 0 - 100
   powerLevel: number;
   inventory: InventoryItem[];

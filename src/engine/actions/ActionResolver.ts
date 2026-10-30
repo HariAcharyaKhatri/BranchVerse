@@ -23,22 +23,19 @@ export class ActionResolver {
 
     switch (action.intent) {
       case 'rest': {
-        const hpGain = Math.min(25, state.maxHealth - state.health);
         const staminaGain = Math.min(35, 100 - state.stamina);
-        delta.health = state.health + hpGain;
         delta.stamina = state.stamina + staminaGain;
-        consequences.push(`Restored ${hpGain} Health and ${staminaGain} Stamina through focused rest.`);
+        consequences.push(`Restored ${staminaGain} Stamina and focus through rest.`);
         break;
       }
 
       case 'combat': {
         const staminaCost = 15;
         delta.stamina = Math.max(0, state.stamina - staminaCost);
-        // Hero takes slight counter-damage if power level < 30
         if (state.powerLevel < 25) {
-          const hpLoss = 10;
-          delta.health = Math.max(0, state.health - hpLoss);
-          consequences.push(`Engaged in fierce combat! Spent ${staminaCost} stamina and suffered ${hpLoss} recoil damage.`);
+          const extraStrain = 10;
+          delta.stamina = Math.max(0, delta.stamina - extraStrain);
+          consequences.push(`Engaged in fierce combat! Spent ${staminaCost + extraStrain} stamina against overwhelming odds.`);
         } else {
           // Combat victory
           delta.powerLevel = Math.min(100, state.powerLevel + 2);

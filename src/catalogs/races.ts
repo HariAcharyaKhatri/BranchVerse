@@ -53,7 +53,7 @@ export const RACE_CATALOG: RaceOption[] = [
     id: 'celestial',
     name: 'Star-Touched Celestial',
     description: 'Beings woven from fallen stardust with natural restorative light.',
-    innateBonus: 'Passive health regeneration and radiant warding.',
+    innateBonus: 'Passive stamina recovery and radiant warding.',
     commonOrigin: 'Astral Sanctuaries or Celestial Temples'
   }
 ];

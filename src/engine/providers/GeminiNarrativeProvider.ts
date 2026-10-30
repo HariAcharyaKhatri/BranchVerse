@@ -48,7 +48,6 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
           hero: {
             name: context.hero.name,
             powerLevel: context.hero.powerLevel,
-            health: context.hero.health,
             stamina: context.hero.stamina,
             inventory: context.inventoryItems,
           },

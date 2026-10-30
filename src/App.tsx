@@ -4,6 +4,9 @@ import { WorldDefinition } from './types/world';
 import { StorySettings } from './types/story';
 import { storyRepository } from './lib/storage/storyRepository';
 import { createNewStory } from './features/story/storyEngine';
+import { completeHeroProfile } from './features/story/naturalPromptParser';
+import { WORLD_CATALOG } from './catalogs/worlds';
+import { GENRE_CATALOG } from './catalogs/genres';
 import { auth } from './lib/firebase/firebase';
 import { classifyAiError } from './engine';
 
@@ -25,10 +28,10 @@ import { I18nProvider } from './i18n';
 
 // Navigation
 import { BottomNav } from './components/navigation/BottomNav';
+import { Sparkles } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
-  const [demoBypass, setDemoBypass] = useState<boolean>(false);
 
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     return window.location.hash || '#/';
@@ -46,11 +49,11 @@ const AppContent: React.FC = () => {
     message: string;
     retryable: boolean;
   } | null>(null);
-  const [pendingLaunchParams, setPendingLaunchParams] = useState<{
-    title: string;
-    settings: StorySettings;
-    generationMode?: 'demo' | 'ai';
-  } | null>(null);
+
+  const navigate = (path: string) => {
+    window.location.hash = path;
+    setCurrentRoute(path);
+  };
 
   // Synchronize route with browser hash changes
   useEffect(() => {
@@ -63,7 +66,7 @@ const AppContent: React.FC = () => {
 
   // Update story count badge when user is in the app
   useEffect(() => {
-    if (!user && !demoBypass) return;
+    if (!user) return;
     const refreshCount = async () => {
       try {
         const stories = await storyRepository.listStories();
@@ -73,14 +76,14 @@ const AppContent: React.FC = () => {
       }
     };
     refreshCount();
-  }, [currentRoute, user, demoBypass]);
+  }, [currentRoute, user]);
 
-  // If user is authenticated or bypassed and still on #/login, automatically navigate to #/
+  // If user is authenticated and on #/login, automatically navigate to #/
   useEffect(() => {
-    if ((user || demoBypass) && (currentRoute === '#/login' || currentRoute === '#login')) {
+    if (user && (currentRoute === '#/login' || currentRoute === '#login')) {
       navigate('#/');
     }
-  }, [user, demoBypass, currentRoute]);
+  }, [user, currentRoute]);
 
   // Apply saved theme on startup
   useEffect(() => {
@@ -91,10 +94,6 @@ const AppContent: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, []);
-
-  const navigate = (path: string) => {
-    window.location.hash = path;
-  };
 
   // Creation Flow Handlers
   const handleHeroCreated = (hero: HeroProfile) => {
@@ -115,90 +114,119 @@ const AppContent: React.FC = () => {
   const handleLaunchStory = async (params: {
     title: string;
     settings: StorySettings;
-    generationMode?: 'demo' | 'ai';
+    generationMode?: 'ai';
+    overrideHero?: HeroProfile;
+    overrideWorld?: WorldDefinition;
+    overrideGenres?: string[];
   }) => {
-    if (!heroDraft || !selectedWorld) return;
+    const targetHero = params.overrideHero || heroDraft;
+    const targetWorld = params.overrideWorld || selectedWorld;
+    const targetGenres = params.overrideGenres || selectedGenres;
+
+    if (!targetHero || !targetWorld) return;
     setLaunchError(null);
-    setPendingLaunchParams(params);
 
     let initialNarrative: any = undefined;
 
-    // Model A: Initial Story Generation with gemini-3.8-flash if AI mode is selected
-    if (params.generationMode === 'ai') {
-      setIsGeneratingStory(true);
-      try {
-        let token = '';
-        if (auth && auth.currentUser) {
-          token = await auth.currentUser.getIdToken();
-        }
+    // Model A: Initial Story Generation with gemini-3.8-flash (Live AI Chronicle)
+    setIsGeneratingStory(true);
+    try {
+      let token = '';
+      if (auth && auth.currentUser) {
+        token = await auth.currentUser.getIdToken();
+      }
 
-        const res = await fetch('/api/narrative/initial', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+      const res = await fetch('/api/narrative/initial', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          hero: {
+            name: targetHero.name,
+            race: targetHero.race,
+            origin: targetHero.origin,
+            backstory: targetHero.backstory,
+            personality: targetHero.personality,
+            skills: targetHero.skills
           },
-          body: JSON.stringify({
-            hero: {
-              name: heroDraft.name,
-              race: heroDraft.race,
-              origin: heroDraft.origin,
-              backstory: heroDraft.backstory,
-              personality: heroDraft.personality,
-              skills: heroDraft.skills
-            },
-            genres: selectedGenres,
-            worldName: selectedWorld.name,
-            tone: params.settings.tone,
-            pacing: params.settings.pacing,
-            difficulty: params.settings.difficulty,
-            storyLanguage: params.settings.storyLanguage || 'en'
-          })
-        });
+          genres: targetGenres,
+          worldName: targetWorld.name,
+          tone: params.settings.tone,
+          pacing: params.settings.pacing,
+          difficulty: params.settings.difficulty,
+          storyLanguage: params.settings.storyLanguage || 'en'
+        })
+      });
 
-        if (!res.ok) {
-          let errData: any = {};
-          try {
-            errData = await res.json();
-          } catch {
-            // ignore
-          }
-          const failure = classifyAiError(errData?.error || res.statusText, res.status);
-          setLaunchError(failure);
-          return;
+      if (!res.ok) {
+        let errData: any = {};
+        try {
+          errData = await res.json();
+        } catch {
+          // ignore
         }
-
-        const data = await res.json();
-        if (data.narrative) {
-          initialNarrative = data.narrative;
-        } else {
-          setLaunchError(classifyAiError(new Error('AI Narrative service did not return an opening scene.')));
-          return;
-        }
-      } catch (err: any) {
-        console.warn('Initial AI generation failed:', err);
-        const failure = classifyAiError(err);
+        const failure = classifyAiError(errData?.error || res.statusText, res.status);
         setLaunchError(failure);
         return;
-      } finally {
-        setIsGeneratingStory(false);
       }
+
+      const data = await res.json();
+      if (data.narrative) {
+        initialNarrative = data.narrative;
+      } else {
+        setLaunchError(classifyAiError(new Error('AI Narrative service did not return an opening scene.')));
+        return;
+      }
+    } catch (err: any) {
+      console.warn('Initial AI generation failed:', err);
+      const failure = classifyAiError(err);
+      setLaunchError(failure);
+      return;
+    } finally {
+      setIsGeneratingStory(false);
     }
 
     const newStory = createNewStory({
       title: params.title,
-      hero: heroDraft,
-      genres: selectedGenres,
-      worldId: selectedWorld.id,
-      worldName: selectedWorld.name,
+      hero: targetHero,
+      genres: targetGenres,
+      worldId: targetWorld.id,
+      worldName: targetWorld.name,
       settings: params.settings,
-      generationMode: params.generationMode || 'demo',
+      generationMode: 'ai',
       storyLanguage: params.settings.storyLanguage || 'en',
       initialNarrative
     });
 
     await storyRepository.saveStory(newStory);
     navigate(`#/reader/${newStory.id}`);
+  };
+
+  // Quick Play / 1-Tap Instant Journey with Live Gemini AI
+  const handleQuickPlay = async () => {
+    const randomHero = completeHeroProfile({ name: 'Hari Khatri' });
+    const randomWorld = WORLD_CATALOG[Math.floor(Math.random() * WORLD_CATALOG.length)];
+    const randomGenre = GENRE_CATALOG.find(g => g.id === randomWorld.primaryGenreId) || GENRE_CATALOG[0];
+
+    setHeroDraft(randomHero);
+    setSelectedGenres([randomGenre.name]);
+    setSelectedWorld(randomWorld);
+
+    await handleLaunchStory({
+      title: `${randomHero.name}’s Chronicle in ${randomWorld.name}`,
+      settings: {
+        tone: 'Epic Fantasy',
+        pacing: 'Balanced Narrative',
+        difficulty: 'Adventurer (Standard)',
+        storyLanguage: 'en'
+      },
+      generationMode: 'ai',
+      overrideHero: randomHero,
+      overrideWorld: randomWorld,
+      overrideGenres: [randomGenre.name]
+    });
   };
 
   // 1. Loading Splash Screen
@@ -220,14 +248,11 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // 2. Strict Authentication Gate: Without login, the app does not open!
-  if (!user && !demoBypass) {
+  // 2. Strict Authentication Gate: Without Google login, the app does not open!
+  if (!user) {
     return (
       <div className="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-dark-bg text-dark-text relative shadow-2xl overflow-hidden font-sans select-none">
-        <LoginPage
-          onSuccess={() => navigate('#/')}
-          onDemoBypass={() => setDemoBypass(true)}
-        />
+        <LoginPage onSuccess={() => navigate('#/')} />
       </div>
     );
   }
@@ -302,15 +327,6 @@ const AppContent: React.FC = () => {
           isGenerating={isGeneratingStory}
           launchError={launchError}
           onDismissError={() => setLaunchError(null)}
-          onSwitchToDemoAndLaunch={() => {
-            if (pendingLaunchParams) {
-              setLaunchError(null);
-              handleLaunchStory({
-                ...pendingLaunchParams,
-                generationMode: 'demo'
-              });
-            }
-          }}
         />
       );
     }
@@ -336,22 +352,12 @@ const AppContent: React.FC = () => {
       );
     }
 
-    // 6. Explicit Login Route: #/login or #login
-    if (currentRoute === '#/login' || currentRoute === '#login') {
-      return (
-        <LoginPage
-          onBack={() => navigate('#/')}
-          onSuccess={() => navigate('#/')}
-          onDemoBypass={() => setDemoBypass(true)}
-        />
-      );
-    }
-
     // Default: Home Page (#/)
     return (
       <HomePage
         onNavigate={navigate}
         onOpenStory={(id) => navigate(`#/reader/${id}`)}
+        onQuickPlay={handleQuickPlay}
       />
     );
   };
@@ -364,6 +370,27 @@ const AppContent: React.FC = () => {
       <main className={`flex-1 overflow-hidden ${!isReaderActive ? 'pb-16' : ''}`}>
         {renderCurrentScreen()}
       </main>
+
+      {/* Full-Screen Immersive Gemini AI Generation Modal */}
+      {isGeneratingStory && (
+        <div className="absolute inset-0 z-50 bg-dark-bg/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-brand-primary via-indigo-500 to-amber-400 p-0.5 shadow-2xl shadow-brand-primary/40 animate-pulse">
+              <div className="w-full h-full bg-dark-surface rounded-[22px] flex items-center justify-center">
+                <Sparkles className="w-9 h-9 text-brand-glow animate-bounce" />
+              </div>
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center">
+              <span className="w-3.5 h-3.5 border-2 border-dark-bg border-t-transparent rounded-full animate-spin" />
+            </div>
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <h3 className="font-extrabold text-base text-white">Weaving Your Grand Chronicle</h3>
+            <p className="text-xs text-indigo-300 font-medium">Gemini AI is crafting your novelistic opening chapter...</p>
+            <p className="text-[11px] text-dark-muted pt-1">Sensory worldbuilding • Hero psyche • Tactical choices</p>
+          </div>
+        </div>
+      )}
 
       {/* Persistent Bottom Navigation Bar (rendered only for authenticated users) */}
       <BottomNav

@@ -12,15 +12,7 @@ export class StoryValidator {
   public static validateStateInvariants(state: EngineAuthoritativeState): InvariantValidationResult {
     const errors: string[] = [];
 
-    // 1. Health constraints
-    if (state.health < 0) {
-      errors.push(`Health cannot be negative (current: ${state.health}).`);
-    }
-    if (state.health > state.maxHealth) {
-      errors.push(`Health (${state.health}) exceeds maxHealth (${state.maxHealth}).`);
-    }
-
-    // 2. Stamina constraints
+    // 1. Stamina constraints
     if (state.stamina < 0 || state.stamina > 100) {
       errors.push(`Stamina must be between 0 and 100 (current: ${state.stamina}).`);
     }

@@ -17,7 +17,7 @@ export function validateActionFeasibility(
     return { isValid: false, reason: 'The story has ended. Restart or load a prior chapter to continue.' };
   }
 
-  if (state.health <= 0) {
+  if (typeof state.health === 'number' && state.health <= 0) {
     return { isValid: false, reason: 'Hero is incapacitated and cannot perform rigorous actions.' };
   }
 
@@ -61,9 +61,9 @@ export function applyStateDelta(
     statusEffects: [...currentState.statusEffects]
   };
 
-  // 1. Health adjustment with clamping
+  // 1. Health adjustment with clamping (if delta provides health)
   if (typeof delta.health === 'number') {
-    next.health = Math.max(0, Math.min(next.maxHealth, delta.health));
+    next.health = Math.max(0, Math.min(next.maxHealth ?? 100, delta.health));
   }
 
   // 2. Stamina adjustment
@@ -126,12 +126,6 @@ export function applyStateDelta(
     next.timelineStep = delta.timelineStep;
   } else {
     next.timelineStep += 1;
-  }
-
-  // 10. Check game over conditions
-  if (next.health <= 0) {
-    next.isGameOver = true;
-    next.endingType = 'tragedy';
   }
 
   return next;

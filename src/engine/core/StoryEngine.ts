@@ -71,10 +71,10 @@ export class StoryEngine {
           name: 'Restorative Salve',
           quantity: 2,
           category: 'consumable',
-          description: 'Herbal compound that binds lacerations (+30 HP).',
+          description: 'Herbal compound that revitalizes fatigue (+35 Stamina).',
           isUnique: false,
           isEquipped: false,
-          effectDescription: 'Restores 30 Health on consumption.'
+          effectDescription: 'Restores 35 Stamina on consumption.'
         }
       ],
       quests: {

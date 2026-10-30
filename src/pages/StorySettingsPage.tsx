@@ -3,7 +3,7 @@ import { StorySettings, SupportedLanguage, LANGUAGE_LABELS } from '../types/stor
 import { ScreenHeader } from '../components/navigation/ScreenHeader';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { Play, Sparkles, Cpu, BookOpen, Globe, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Play, Sparkles, Globe, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 interface StorySettingsPageProps {
@@ -11,13 +11,12 @@ interface StorySettingsPageProps {
   onLaunchStory: (params: {
     title: string;
     settings: StorySettings;
-    generationMode: 'demo' | 'ai';
+    generationMode: 'ai';
   }) => void;
   onBack: () => void;
   isGenerating?: boolean;
   launchError?: { title: string; message: string; retryable: boolean } | null;
   onDismissError?: () => void;
-  onSwitchToDemoAndLaunch?: () => void;
 }
 
 const TONES: StorySettings['tone'][] = [
@@ -47,7 +46,6 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
   isGenerating = false,
   launchError = null,
   onDismissError,
-  onSwitchToDemoAndLaunch,
 }) => {
   const { t, language: appLang } = useI18n();
   const [title, setTitle] = useState(defaultTitle);
@@ -55,7 +53,6 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
   const [pacing, setPacing] = useState<StorySettings['pacing']>('Balanced Narrative');
   const [difficulty, setDifficulty] = useState<StorySettings['difficulty']>('Adventurer (Standard)');
   const [storyLanguage, setStoryLanguage] = useState<SupportedLanguage>(appLang || 'en');
-  const [generationMode, setGenerationMode] = useState<'demo' | 'ai'>('ai');
 
   const handleLaunch = () => {
     onLaunchStory({
@@ -66,7 +63,7 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
         difficulty,
         storyLanguage,
       },
-      generationMode,
+      generationMode: 'ai',
     });
   };
 
@@ -119,46 +116,19 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
           </div>
         </div>
 
-        {/* Story Generation Engine Mode */}
-        <div>
-          <label className="block text-xs font-semibold text-dark-muted mb-1 flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5 text-brand-glow" /> {t.create.generationMode}
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setGenerationMode('ai')}
-              className={`p-3 rounded-xl border text-left transition-all space-y-1 ${
-                generationMode === 'ai'
-                  ? 'bg-brand-primary/20 border-brand-primary ring-1 ring-brand-primary/50 text-white'
-                  : 'bg-dark-surface border-dark-border text-dark-muted hover:border-dark-muted'
-              }`}
-            >
-              <div className="flex items-center gap-1.5 font-bold text-xs text-brand-glow">
-                <Sparkles className="w-3.5 h-3.5 text-brand-accent" /> Live AI Chronicle
-              </div>
-              <p className="text-[10px] text-dark-muted leading-tight">
-                Gemini 3.8 Flash + 3.1 Flash-Lite dual routing.
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setGenerationMode('demo')}
-              className={`p-3 rounded-xl border text-left transition-all space-y-1 ${
-                generationMode === 'demo'
-                  ? 'bg-amber-500/20 border-amber-500 ring-1 ring-amber-500/50 text-amber-200'
-                  : 'bg-dark-surface border-dark-border text-dark-muted hover:border-dark-muted'
-              }`}
-            >
-              <div className="flex items-center gap-1.5 font-bold text-xs text-amber-400">
-                <BookOpen className="w-3.5 h-3.5" /> Local Demo Mode
-              </div>
-              <p className="text-[10px] text-dark-muted leading-tight">
-                Offline deterministic scenario with zero API limits.
-              </p>
-            </button>
+        {/* Story Generation Engine: Dual Gemini AI Engine */}
+        <div className="p-3.5 rounded-2xl bg-brand-primary/10 border border-brand-primary/30 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-brand-accent" /> Live Gemini AI Chronicle
+            </span>
+            <span className="text-[10px] bg-brand-primary/20 text-brand-glow font-semibold px-2 py-0.5 rounded-full border border-brand-primary/40">
+              Dual Engine
+            </span>
           </div>
+          <p className="text-[11px] text-dark-muted leading-relaxed">
+            Every chapter is generated live with Google Gemini 3.8 Flash (novelistic prologue) and Gemini 3.1 Flash-Lite (dynamic turns). No static pre-generated blurbs.
+          </p>
         </div>
 
         {/* Narrative Tone */}
@@ -210,7 +180,7 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
         {/* Difficulty */}
         <div>
           <label className="block text-xs font-semibold text-dark-muted mb-1.5">
-            Rules & Consequence Severity
+            Difficulty & Risk Sensitivity
           </label>
           <div className="space-y-1.5">
             {DIFFICULTIES.map((d) => (
@@ -220,7 +190,7 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
                 onClick={() => setDifficulty(d)}
                 className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all ${
                   difficulty === d
-                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-semibold'
+                    ? 'bg-brand-primary/20 border-brand-primary text-white font-semibold'
                     : 'bg-dark-surface border-dark-border text-dark-muted hover:border-dark-muted'
                 }`}
               >
@@ -231,17 +201,18 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
         </div>
       </div>
 
-      <div className="p-4 border-t border-dark-border/60 bg-dark-surface/90 safe-area-bottom">
+      {/* Sticky Bottom Launch Button */}
+      <div className="p-4 bg-dark-surface/90 border-t border-dark-border/80 backdrop-blur-md safe-area-bottom">
         <div className="max-w-md mx-auto">
           <Button
-            variant="amber"
+            variant="primary"
             fullWidth
             size="lg"
             onClick={handleLaunch}
             disabled={isGenerating}
             iconLeft={
               isGenerating ? (
-                <span className="w-5 h-5 border-2 border-dark-bg border-t-transparent rounded-full animate-spin" />
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Play className="w-5 h-5 fill-current" />
               )
@@ -251,12 +222,13 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
           </Button>
         </div>
       </div>
-      {/* Initial AI Generation Failure Modal */}
+
+      {/* AI Narrative Launch Failure Modal */}
       {launchError && (
         <Modal
           isOpen={true}
           onClose={onDismissError || (() => {})}
-          title={launchError.title || 'AI Story Generation Notice'}
+          title="Narrative Generation Notice"
           maxWidth="sm"
           footer={
             <div className="flex flex-col gap-2 w-full">
@@ -270,22 +242,12 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Retry with Gemini 3.8 Flash
                 </Button>
               )}
-              {onSwitchToDemoAndLaunch && (
-                <Button
-                  variant="amber"
-                  onClick={onSwitchToDemoAndLaunch}
-                  disabled={isGenerating}
-                  className="w-full justify-center text-xs"
-                >
-                  <BookOpen className="w-3.5 h-3.5 mr-1.5" /> Continue in Local Demo Mode
-                </Button>
-              )}
               <Button
                 variant="outline"
                 onClick={onDismissError || (() => {})}
                 className="w-full justify-center text-xs"
               >
-                Cancel
+                Dismiss
               </Button>
             </div>
           }
@@ -299,7 +261,7 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
               </div>
             </div>
             <p className="text-dark-muted leading-relaxed">
-              Your hero and settings are completely preserved. You can retry calling Gemini or switch to Local Demo Mode to immediately start your chronicle offline.
+              Your hero and settings are completely preserved. Please verify your network or retry calling Gemini to generate your opening scene.
             </p>
           </div>
         </Modal>

@@ -17,8 +17,6 @@ export interface NarrativePromptContext {
     alignment: string;
     powers: string[];
     weapons: string[];
-    health: number;
-    maxHealth: number;
     stamina: number;
     powerLevel: number;
     statusEffects: string[];
@@ -105,8 +103,6 @@ export class NarrativeContextBuilder {
         alignment: state.hero.alignment,
         powers: state.hero.powers,
         weapons: state.hero.weapons,
-        health: state.health,
-        maxHealth: state.maxHealth,
         stamina: state.stamina,
         powerLevel: state.powerLevel,
         statusEffects: state.statusEffects

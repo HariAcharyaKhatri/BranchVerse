@@ -137,7 +137,6 @@ interface CustomActionInterpretation {
   dialogues?: Array<{ speaker: string; text: string; emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm' }>;
   ambientVisual?: string;
   stateDelta: {
-    health?: number;
     stamina?: number;
     powerLevel?: number;
     itemsAdded?: any[];
@@ -208,7 +207,6 @@ function interpretCustomAction(story: StoryDocument, actionText: string): Custom
       ambientVisual: 'Sword',
       stateDelta: {
         stamina: Math.max(10, story.state.stamina - 30),
-        health: Math.max(15, story.state.health - 5),
         powerLevel: Math.min(100, story.state.powerLevel + 2)
       },
       choices: [

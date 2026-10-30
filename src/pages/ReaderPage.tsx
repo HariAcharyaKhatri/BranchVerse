@@ -12,7 +12,7 @@ import { FateDiceRoller } from '../components/story/FateDiceRoller';
 import { AtmosphereSoundscape } from '../components/story/AtmosphereSoundscape';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
-import { ChevronLeft, Shield, FileText, Download, AlertCircle, AlertTriangle, RefreshCw, BookOpen } from 'lucide-react';
+import { ChevronLeft, Shield, FileText, Download, AlertCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface PendingTurnAction {
   type: 'choice' | 'custom';
@@ -159,43 +159,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       handleSelectChoice(pending.choiceId);
     } else if (pending.type === 'custom' && pending.customActionText) {
       handleSubmitCustomAction(pending.customActionText);
-    }
-  };
-
-  const handleSwitchToDemoAndExecute = async () => {
-    if (!story || !aiFailureState) return;
-    const pending = aiFailureState.pendingAction;
-    setAiFailureState(null);
-    setIsProcessingTurn(true);
-    setSaveStatus('saving');
-
-    try {
-      // 1. Explicitly switch chronicle to demo mode
-      const updatedModeStory: StoryDocument = {
-        ...story,
-        generationMode: 'demo',
-        updatedAt: Date.now()
-      };
-
-      // 2. Execute turn with LocalNarrativeProvider
-      const result = await executeAdvancedStoryTurn(
-        updatedModeStory,
-        {
-          choiceId: pending.choiceId,
-          customActionText: pending.customActionText
-        },
-        new LocalNarrativeProvider()
-      );
-
-      setStory(result.updatedStory);
-      await storyRepository.saveStory(result.updatedStory);
-      setSaveStatus('saved');
-      setLastSavedAt(Date.now());
-    } catch (err: any) {
-      console.error('Demo switch execution error:', err);
-      setErrorMessage(`Failed to continue in demo mode: ${err.message}`);
-    } finally {
-      setIsProcessingTurn(false);
     }
   };
 
@@ -385,14 +348,6 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 </Button>
               )}
               <Button
-                variant="amber"
-                onClick={handleSwitchToDemoAndExecute}
-                disabled={isProcessingTurn}
-                className="w-full justify-center text-xs"
-              >
-                <BookOpen className="w-3.5 h-3.5 mr-1.5" /> Switch Chronicle to Local Demo Mode
-              </Button>
-              <Button
                 variant="outline"
                 onClick={() => setAiFailureState(null)}
                 className="w-full justify-center text-xs"
@@ -411,7 +366,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               </div>
             </div>
             <p className="text-dark-muted leading-relaxed">
-              Your story state has been preserved. You can retry with Gemini or switch this story to Local Demo Mode to continue playing with offline scenarios.
+              Your story state has been preserved. Please retry to continue weaving your tale with Gemini AI.
             </p>
           </div>
         </Modal>

@@ -60,7 +60,6 @@ export function exportStoryToMarkdown(story: StoryDocument): string {
 
   lines.push(`\n---\n`);
   lines.push(`## Final Hero Status`);
-  lines.push(`- **Health:** ${story.state.health}/${story.state.maxHealth}`);
   lines.push(`- **Stamina:** ${story.state.stamina}/100`);
   lines.push(`- **Power Level:** ${story.state.powerLevel}/100`);
   lines.push(`- **Current Location:** ${story.state.currentLocation}`);

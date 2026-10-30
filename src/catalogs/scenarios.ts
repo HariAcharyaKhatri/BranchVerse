@@ -36,7 +36,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
       powerLevel: hero.powerLevel || 35,
       inventory: [
         { id: 'start_weapon', name: hero.weapons[0] || 'Iron Bastard Sword', quantity: 1, description: 'A reliable blade balanced for battle.', category: 'weapon' },
-        { id: 'healing_salve', name: 'Elder-Leaf Healing Salve', quantity: 2, description: 'Restores 30 Health when applied to wounds.', category: 'consumable', effectDescription: '+30 HP' },
+        { id: 'healing_salve', name: 'Elder-Leaf Healing Salve', quantity: 2, description: 'Restores 35 Stamina when applied to wounds.', category: 'consumable', effectDescription: '+35 Stamina' },
         { id: 'silver_talisman', name: 'Silver Vanguard Talisman', quantity: 1, description: 'An insignia proving allegiance to the realm’s protectors.', category: 'artifact' }
       ],
       activeQuests: [
@@ -247,7 +247,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             riskLevel: 'safe',
             stateImpact: {
               inventory: [
-                { id: 'sunstone', name: 'Celestial Sunstone', quantity: 1, description: 'An ancient relic that pulses with warm solar energy.', category: 'artifact', effectDescription: 'Grants passive health regeneration.' }
+                { id: 'sunstone', name: 'Celestial Sunstone', quantity: 1, description: 'An ancient relic that pulses with warm solar energy.', category: 'artifact', effectDescription: 'Grants steady stamina recovery and resilience.' }
               ],
               activeQuests: [
                 { id: 'quest_save_village', title: 'Defend Valen’s Crossing', giver: 'Captain Ronald', objective: 'Repel the void-rift marauders.', status: 'completed' }
@@ -293,10 +293,9 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
           {
             choiceId: 'choice_camp_rest',
             text: 'Set camp under the starlit sky, sharpen your blades, and reflect on the road ahead.',
-            consequenceHint: 'Fully restores health and stamina.',
+            consequenceHint: 'Fully restores stamina and battle focus.',
             riskLevel: 'safe',
             stateImpact: {
-              health: 100,
               stamina: 100
             },
             nextSceneId: 'node_1'
@@ -315,7 +314,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
       powerLevel: hero.powerLevel || 40,
       inventory: [
         { id: 'cyber_sidearm', name: hero.weapons[0] || 'Arakawa Heavy Rail Pistol', quantity: 1, description: 'Armor-piercing sidearm with smart-targeting optic.', category: 'weapon' },
-        { id: 'trauma_stim', name: 'Militech Combat Stim', quantity: 2, description: 'Restores 40 HP and boosts sensory reflexes.', category: 'consumable', effectDescription: '+40 HP' },
+        { id: 'trauma_stim', name: 'Militech Combat Stim', quantity: 2, description: 'Restores 40 Stamina and boosts sensory reflexes.', category: 'consumable', effectDescription: '+40 Stamina' },
         { id: 'cyberdeck', name: 'Arasaka MK-IV Neural Cyberdeck', quantity: 1, description: 'Direct neural interface loaded with counter-intrusion daemons.', category: 'artifact' }
       ],
       activeQuests: [

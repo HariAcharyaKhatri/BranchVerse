@@ -22,8 +22,8 @@ export class ActionValidator {
       };
     }
 
-    // 2. Is protagonist alive?
-    if (state.health <= 0) {
+    // 2. Is protagonist incapacitated?
+    if (typeof state.health === 'number' && state.health <= 0) {
       return {
         isValid: false,
         reason: 'Your protagonist is incapacitated. You must revive or restart to take further action.'

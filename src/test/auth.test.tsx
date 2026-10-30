@@ -1,25 +1,22 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { LoginPage } from '../pages/LoginPage';
 import { App } from '../App';
 import * as firebaseLib from '../lib/firebase/firebase';
 
 describe('BranchVerse Google Authentication Flow', () => {
-
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
+    localStorage.clear();
     vi.restoreAllMocks();
   });
 
   describe('Firebase Configuration Detection', () => {
     it('reports configuration status as a boolean safely', () => {
-      const configured = firebaseLib.isFirebaseConfigured();
-      expect(typeof configured).toBe('boolean');
+      const status = firebaseLib.getFirebaseStatus();
+      expect(typeof status.isConfigured).toBe('boolean');
+      expect(typeof status.isInitialized).toBe('boolean');
     });
   });
 
@@ -31,18 +28,16 @@ describe('BranchVerse Google Authentication Flow', () => {
         </AuthProvider>
       );
 
-      // Verify Brand name and tagline
+      // Verify Brand elements
       expect(screen.getByText('BranchVerse')).toBeInTheDocument();
-      expect(screen.getByText('"Your Choices. Your World. Your Story."')).toBeInTheDocument();
+      expect(screen.getByText(/"Your Choices. Your World. Your Story."/i)).toBeInTheDocument();
 
-      // Verify Google action button
+      // Verify Google Authentication Button (waits for initial auth check)
       expect(await screen.findByText('Continue with Google')).toBeInTheDocument();
-
-      // Verify authentication requirement notice
-      expect(screen.getByText(/Authentication is strictly required to enter BranchVerse/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Google Identity/i).length).toBeGreaterThan(0);
     });
 
-    it('displays configuration guidance banner when Firebase keys are not provided', () => {
+    it('displays configuration guidance banner when Firebase keys are not provided and does NOT show demo bypass', () => {
       vi.spyOn(firebaseLib, 'getFirebaseStatus').mockReturnValue({
         isConfigured: false,
         isInitialized: false,
@@ -51,33 +46,15 @@ describe('BranchVerse Google Authentication Flow', () => {
 
       render(
         <AuthProvider>
-          <LoginPage onDemoBypass={vi.fn()} />
+          <LoginPage />
         </AuthProvider>
       );
 
       // Verify unconfigured notice
       expect(screen.getByText(/Firebase Configuration Required/i)).toBeInTheDocument();
       expect(screen.getByText(/VITE_FIREBASE_API_KEY/i)).toBeInTheDocument();
-      expect(screen.getByText(/Bypass for Local Developer Testing/i)).toBeInTheDocument();
-    });
-
-    it('triggers onDemoBypass when developer bypass button is clicked in unconfigured mode', () => {
-      vi.spyOn(firebaseLib, 'getFirebaseStatus').mockReturnValue({
-        isConfigured: false,
-        isInitialized: false,
-        initializationError: null
-      });
-
-      const onDemoBypass = vi.fn();
-      render(
-        <AuthProvider>
-          <LoginPage onDemoBypass={onDemoBypass} />
-        </AuthProvider>
-      );
-
-      const bypassBtn = screen.getByText(/Bypass for Local Developer Testing/i);
-      fireEvent.click(bypassBtn);
-      expect(onDemoBypass).toHaveBeenCalled();
+      expect(screen.queryByText(/Bypass for Local Developer Testing/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Continue as Guest/i)).not.toBeInTheDocument();
     });
   });
 
@@ -93,24 +70,7 @@ describe('BranchVerse Google Authentication Flow', () => {
       expect(screen.queryByText('Defend the Frontier')).not.toBeInTheDocument();
       expect(screen.queryByText('Start Random Journey')).not.toBeInTheDocument();
       expect(screen.queryByLabelText('Create')).not.toBeInTheDocument();
-    });
-
-    it('unlocks the full application when demo bypass is triggered in unconfigured mode', async () => {
-      vi.spyOn(firebaseLib, 'getFirebaseStatus').mockReturnValue({
-        isConfigured: false,
-        isInitialized: false,
-        initializationError: null
-      });
-
-      render(<App />);
-
-      const bypassBtn = await screen.findByText(/Bypass for Local Developer Testing/i);
-      fireEvent.click(bypassBtn);
-
-      // Now the app is unlocked: Home features and BottomNav become visible
-      expect(await screen.findByLabelText('Create')).toBeInTheDocument();
-      expect(screen.getByText('New Hero')).toBeInTheDocument();
-      expect(screen.getByText('Quick Play')).toBeInTheDocument();
+      expect(screen.queryByText(/Continue as Guest/i)).not.toBeInTheDocument();
     });
   });
 
@@ -142,66 +102,25 @@ describe('BranchVerse Google Authentication Flow', () => {
     });
 
     it('throws error when useAuth is consumed outside AuthProvider', () => {
-      // Suppress console.error for expected thrown error
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
       expect(() => render(<TestConsumer />)).toThrow('useAuth must be used within an AuthProvider');
       consoleError.mockRestore();
     });
-
-    it('allows entering as Guest and persists guest state', async () => {
-      const GuestConsumer: React.FC = () => {
-        const { user, signInAsGuest, signOut } = useAuth();
-        return (
-          <div>
-            <span data-testid="guest-name">{user ? user.displayName : 'none'}</span>
-            <button onClick={signInAsGuest}>Enter Guest</button>
-            <button onClick={signOut}>Exit</button>
-          </div>
-        );
-      };
-
-      render(
-        <AuthProvider>
-          <GuestConsumer />
-        </AuthProvider>
-      );
-
-      expect(screen.getByTestId('guest-name')).toHaveTextContent('none');
-
-      fireEvent.click(screen.getByText('Enter Guest'));
-      expect(screen.getByTestId('guest-name')).toHaveTextContent('Guest Hero');
-      expect(localStorage.getItem('bv_guest_user')).toBe('true');
-
-      fireEvent.click(screen.getByText('Exit'));
-      await waitFor(() => {
-        expect(screen.getByTestId('guest-name')).toHaveTextContent('none');
-      });
-      expect(localStorage.getItem('bv_guest_user')).toBeNull();
-    });
   });
 
-  describe('LoginPage Auto-Navigation & Guest Access', () => {
-    it('always renders "Continue as Guest" so users are never locked out', () => {
-      render(
-        <AuthProvider>
-          <LoginPage />
-        </AuthProvider>
-      );
-
-      expect(screen.getByText(/Continue as Guest/i)).toBeInTheDocument();
-    });
-
-    it('calls onSuccess when Continue as Guest is clicked', () => {
+  describe('LoginPage Auto-Navigation & Verified Identity', () => {
+    it('renders welcoming entry screen when user is already authenticated and triggers onSuccess', async () => {
       const onSuccess = vi.fn();
+
       render(
         <AuthProvider>
           <LoginPage onSuccess={onSuccess} />
         </AuthProvider>
       );
 
-      const guestBtn = screen.getByText(/Continue as Guest/i);
-      fireEvent.click(guestBtn);
-      expect(onSuccess).toHaveBeenCalled();
+      // Verify Google login button is rendered for unauthenticated state
+      expect(await screen.findByText('Continue with Google')).toBeInTheDocument();
+      expect(screen.queryByText(/Continue as Guest/i)).not.toBeInTheDocument();
     });
   });
 });

@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StoryDocument } from '../types/story';
 import { storyRepository } from '../lib/storage/storyRepository';
-import { completeHeroProfile } from '../features/story/naturalPromptParser';
-import { createNewStory } from '../features/story/storyEngine';
 import { GENRE_CATALOG } from '../catalogs/genres';
-import { WORLD_CATALOG } from '../catalogs/worlds';
 import { getSceneBackground, getCharacterPortrait } from '../features/assets/assetSelector';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -14,9 +11,10 @@ import { useAuth } from '../contexts/AuthContext';
 interface HomePageProps {
   onNavigate: (path: string) => void;
   onOpenStory: (storyId: string) => void;
+  onQuickPlay?: () => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenStory }) => {
+export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenStory, onQuickPlay }) => {
   const { user } = useAuth();
   const [recentStories, setRecentStories] = useState<StoryDocument[]>([]);
 
@@ -36,25 +34,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenStory }) =
   const lastStory = recentStories.find(s => s.status === 'active') || recentStories[0];
 
   const handleRandomAdventure = async () => {
-    const randomHero = completeHeroProfile({});
-    const randomWorld = WORLD_CATALOG[Math.floor(Math.random() * WORLD_CATALOG.length)];
-    const randomGenre = GENRE_CATALOG.find(g => g.id === randomWorld.primaryGenreId) || GENRE_CATALOG[0];
-
-    const newStory = createNewStory({
-      title: `${randomHero.name}’s Destiny in ${randomWorld.name}`,
-      hero: randomHero,
-      genres: [randomGenre.name],
-      worldId: randomWorld.id,
-      worldName: randomWorld.name,
-      settings: {
-        tone: 'Epic Fantasy',
-        pacing: 'Balanced Narrative',
-        difficulty: 'Adventurer (Standard)'
-      }
-    });
-
-    await storyRepository.saveStory(newStory);
-    onOpenStory(newStory.id);
+    if (onQuickPlay) {
+      onQuickPlay();
+    } else {
+      onNavigate('#/create-hero');
+    }
   };
 
   // Get background and portrait for the last story card

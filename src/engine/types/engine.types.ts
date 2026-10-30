@@ -201,8 +201,8 @@ export interface EngineAuthoritativeState {
 
   // Protagonist
   hero: HeroProfile;
-  health: number;
-  maxHealth: number;
+  health?: number;
+  maxHealth?: number;
   stamina: number;
   powerLevel: number;
   statusEffects: string[];

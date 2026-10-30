@@ -26,7 +26,6 @@ export interface StoryTurnContext {
   hero: {
     name: string;
     powerLevel: number;
-    health: number;
     stamina: number;
     inventory: string[];
   };
@@ -113,7 +112,7 @@ export class GeminiService {
     const langInstruction = this.getLanguagePromptInstruction(context.storyLanguage);
 
     const prompt = `You are the master AI Narrative Director for BranchVerse, a mobile-first interactive storytelling platform.
-Establish the grand prologue and opening chapter for a new chronicle.
+Establish a grand, novelistic prologue and opening chapter for a new chronicle.
 
 HERO PROFILE:
 - Name: ${context.hero.name}
@@ -132,12 +131,14 @@ WORLD & CAMPAIGN:
 
 ${langInstruction}
 
-TASKS:
-1. Craft an evocative opening scene title.
-2. Write 2-3 immersive paragraphs establishing the atmosphere, the immediate situation, and a compelling inciting tension.
-3. Include 1-2 character dialogues with emotional cues (calm, furious, mysterious, terrified, warm).
-4. Propose 3 distinct, meaningful first choices with varied risk levels (safe, moderate, perilous) and stamina costs (4 to 15).
-5. Establish 1 starting quest and 1-2 core world facts.`;
+CRITICAL LENGTH & NOVELISTIC REQUIREMENTS:
+1. Write a substantial, novel-length opening prologue (450 to 650 words across 4 to 6 rich, immersive paragraphs). Do NOT provide a brief synopsis or short blurb.
+2. Infuse deep sensory worldbuilding: describe environmental atmospheric details (weather, ambient scents, lighting, architectural lore, and tactile sensations).
+3. Ground the protagonist's psychology: weave ${context.hero.name}'s internal thoughts, doubts, and motivations into the narrative prose.
+4. Stage a gripping inciting incident with rising stakes that demands immediate action.
+5. Include 2-3 authentic, emotionally charged character dialogues with emotional cues (calm, furious, mysterious, terrified, warm).
+6. Propose 3 distinct, tactical first choices with varied risk levels (safe, moderate, perilous) and stamina costs (4 to 15).
+7. Establish 1 starting quest and 1-2 core world facts.`;
 
     const rawJson = await this.callWithRetry(modelId, prompt);
     return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
@@ -162,11 +163,11 @@ TASKS:
       .map((t, idx) => `[Turn -${context.recentTurns.length - idx}]: ${t.sceneTitle} | Action: ${t.actionTaken} | Outcome: ${t.narrativeSummary}`)
       .join('\n');
 
-    const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing chronicle.
+    const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing chronicle with novel-grade depth.
 
 PROTAGONIST:
 - Name: ${context.hero.name}
-- Health: ${context.hero.health}/100 | Stamina: ${context.hero.stamina}/100 | Power: ${context.hero.powerLevel}
+- Stamina: ${context.hero.stamina}/100 | Power: ${context.hero.powerLevel}
 - Location: ${context.currentLocation}
 - Inventory Items: ${context.hero.inventory.join(', ') || 'None'}
 
@@ -181,11 +182,12 @@ ${actionDescription}
 
 ${langInstruction}
 
-INSTRUCTIONS:
-1. Describe the immediate dramatic outcome of the player's action.
-2. Advance the plot logically without resetting the world or repeating earlier introductions.
-3. Include 1-2 character dialogues reacting authentically to the player's choice.
-4. Offer 3 varied, contextual next choices reflecting the new situation.`;
+CRITICAL LENGTH & NOVELISTIC INSTRUCTIONS:
+1. Write a detailed, long-form narrative continuation (350 to 500 words across 3 to 5 immersive paragraphs). Never summarize or provide a brief 1-paragraph reply.
+2. Viscerally describe the immediate kinetic outcome and ripple effects of the player's action.
+3. Advance the plot organically: explore environmental transformations, NPC reactions, physical strain, and rising tension.
+4. Include 2-3 authentic spoken dialogues responding directly to the player's move with distinct emotional tones.
+5. Offer 3 varied, contextual next choices reflecting the altered tactical scenario (with riskLevel and requiredStamina).`;
 
     const rawJson = await this.callWithRetry(modelId, prompt);
     return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
@@ -261,6 +263,7 @@ INSTRUCTIONS:
               config: {
                 responseMimeType: 'application/json',
                 responseSchema: narrativeSchema,
+                maxOutputTokens: 3000,
                 abortSignal: controller.signal,
                 httpOptions: {
                   timeout: attemptTimeout

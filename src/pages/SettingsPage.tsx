@@ -15,7 +15,7 @@ interface SettingsPageProps {
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }) => {
   const { language, setLanguage, t } = useI18n();
-  const { user, loading: authLoading, isConfigured, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('bv_theme') as any) || 'dark';
   });
@@ -169,22 +169,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }
             <span className="text-xs font-semibold text-dark-muted uppercase tracking-wider flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-brand-primary" /> Account & Identity
             </span>
-            {user ? (
+            {user && (
               <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" /> Google Verified
-              </span>
-            ) : isConfigured ? (
-              <span className="text-[10px] text-dark-muted font-medium bg-dark-elevated px-2 py-0.5 rounded-full border border-dark-border">
-                Guest Mode
-              </span>
-            ) : (
-              <span className="text-[10px] text-amber-400/90 font-medium bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                Demo Mode
               </span>
             )}
           </div>
 
-          {user && user.providerId !== 'guest' ? (
+          {user ? (
             <div className="p-3 rounded-xl bg-dark-elevated border border-dark-border/80 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 {user.photoURL ? (
@@ -200,7 +192,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }
                 )}
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-white truncate">
-                    {user.displayName || 'Adventurer'}
+                    {user.displayName || 'Hari Khatri'}
                   </div>
                   <div className="text-[11px] text-dark-muted truncate">
                     {user.email || 'Google Account'}
@@ -221,35 +213,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }
           ) : (
             <div className="p-3 rounded-xl bg-dark-elevated border border-dark-border/80 space-y-2">
               <p className="text-xs text-dark-muted leading-relaxed">
-                You are currently exploring in Guest Mode. Sign in with Google to link your profile and verify your account.
+                Sign in with your Google account to access your hero legacy.
               </p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  className="flex-1 text-xs"
-                  onClick={() => {
-                    if (onNavigate) {
-                      onNavigate('#/login');
-                    } else {
-                      window.location.hash = '#/login';
-                    }
-                  }}
-                >
-                  <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In with Google
-                </Button>
-                {user?.providerId === 'guest' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={signOut}
-                    disabled={authLoading}
-                    className="shrink-0 text-xs text-red-400 border-red-500/30 hover:bg-red-500/10"
-                  >
-                    <LogOut className="w-3.5 h-3.5 mr-1" /> Exit
-                  </Button>
-                )}
-              </div>
+              <Button
+                size="sm"
+                variant="primary"
+                className="w-full text-xs"
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate('#/login');
+                  } else {
+                    window.location.hash = '#/login';
+                  }
+                }}
+              >
+                <LogIn className="w-3.5 h-3.5 mr-1.5" /> Sign In with Google
+              </Button>
             </div>
           )}
         </div>

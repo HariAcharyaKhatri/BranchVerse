@@ -69,8 +69,8 @@ export const QuestSchema = z.object({
 });
 
 export const StoryStateSchema = z.object({
-  health: z.number().min(0).max(100).default(100),
-  maxHealth: z.number().default(100),
+  health: z.number().min(0).max(100).optional().default(100),
+  maxHealth: z.number().optional().default(100),
   stamina: z.number().min(0).max(100).default(100),
   powerLevel: z.number().default(10),
   inventory: z.array(InventoryItemSchema).default([]),
