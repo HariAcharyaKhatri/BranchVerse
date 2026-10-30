@@ -31,6 +31,25 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
   }
 
   if (
+    status === 503 ||
+    lower.includes('gemini_api_key') ||
+    lower.includes('api key') ||
+    lower.includes('not configured') ||
+    lower.includes('api_key_invalid') ||
+    lower.includes('invalid api key')
+  ) {
+    return {
+      failureType: 'server',
+      title: 'Gemini API Key Required',
+      message:
+        msg.length > 10 && (lower.includes('api key') || lower.includes('gemini') || lower.includes('configured'))
+          ? msg
+          : 'GEMINI_API_KEY is not configured or is invalid on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local).',
+      retryable: true,
+    };
+  }
+
+  if (
     status === 504 ||
     lower.includes('timed out') ||
     lower.includes('timeout') ||
@@ -40,7 +59,7 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
     return {
       failureType: 'network',
       title: 'AI Generation Timed Out',
-      message: 'The Gemini AI model took longer than expected to respond. Please tap Retry or switch to Local Demo Mode.',
+      message: 'The Gemini AI model took longer than expected to respond. Please check your connection and tap Retry.',
       retryable: true,
     };
   }
@@ -58,7 +77,7 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
     return {
       failureType: 'quota',
       title: 'AI Daily Quota Reached',
-      message: 'The daily free-tier quota for this Gemini model has been exhausted. You can retry later or switch this story to Local Demo Mode to continue playing immediately.',
+      message: 'The daily free-tier quota for this Gemini model has been exhausted. Please retry later.',
       retryable: false,
     };
   }
@@ -81,7 +100,7 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
   return {
     failureType: 'server',
     title: 'AI Service Temporarily Unavailable',
-    message: msg.length > 10 ? msg : 'The AI Narrative Director encountered an unexpected error. Please retry or switch to Demo Mode.',
+    message: msg.length > 10 ? msg : 'The AI Narrative Director encountered an unexpected issue. Please tap Retry.',
     retryable: true,
   };
 }

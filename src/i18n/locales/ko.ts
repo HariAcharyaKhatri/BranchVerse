@@ -124,9 +124,9 @@ export const ko: TranslationDictionary = {
   errors: {
     rateLimitUser: '일시적인 요청 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.',
     rateLimitGlobal: 'BranchVerse 전체에 트래픽이 많습니다. 잠시 후 다시 시도해 주세요.',
-    modelQuotaExhausted: 'AI 모델의 일일 사용량이 모두 소진되었습니다. 로컬 데모 모드로 계속 플레이할 수 있습니다.',
-    aiUnavailable: '라이브 AI 생성을 일시적으로 사용할 수 없습니다. 로컬 데모 모드가 활성화됩니다.',
-    aiDisabledFallback: 'AI 스토리텔링이 현재 비활성화되어 있습니다. 오프라인 시나리오를 즐겨보세요.',
+    modelQuotaExhausted: 'AI 모델의 일일 사용량이 모두 소진되었습니다. 나중에 다시 시도해 주세요.',
+    aiUnavailable: '라이브 AI 생성을 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+    aiDisabledFallback: 'AI 스토리텔링이 현재 비활성화되어 있습니다. 나중에 다시 확인해 주세요.',
     networkError: '네트워크 연결 문제입니다. 인터넷 연결을 확인하세요.',
     unauthorized: '인증이 만료되었거나 올바르지 않습니다. 다시 로그인해 주세요.',
   },

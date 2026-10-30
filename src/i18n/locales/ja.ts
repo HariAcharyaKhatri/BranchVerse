@@ -124,9 +124,9 @@ export const ja: TranslationDictionary = {
   errors: {
     rateLimitUser: '一時的なリクエスト制限に達しました。少し待ってから再度お試しください。',
     rateLimitGlobal: 'BranchVerse全体でアクセスが集中しています。しばらくしてから再試行してください。',
-    modelQuotaExhausted: 'AIモデルの1日のクォータに達しました。ローカルデモモードでプレイを継続できます。',
-    aiUnavailable: 'ライブAI生成は一時的に利用できません。ローカルデモモードが有効です。',
-    aiDisabledFallback: 'AIストーリーテリングは現在停止中です。オフラインシナリオをお楽しみください。',
+    modelQuotaExhausted: 'AIモデルの1日のクォータに達しました。後ほど再試行してください。',
+    aiUnavailable: 'ライブAI生成は一時的に利用できません。しばらくしてから再試行してください。',
+    aiDisabledFallback: 'AIストーリーテリングは現在停止中です。後ほどご確認ください。',
     networkError: 'ネットワーク接続の問題です。インターネット接続を確認してください。',
     unauthorized: '認証の有効期限が切れたか無効です。再度ログインしてください。',
   },

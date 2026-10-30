@@ -124,9 +124,9 @@ export const en: TranslationDictionary = {
   errors: {
     rateLimitUser: 'You have reached the temporary rate limit. Please wait a moment before sending another action.',
     rateLimitGlobal: 'BranchVerse is experiencing high global traffic. Please retry in a few moments.',
-    modelQuotaExhausted: 'The AI model daily quota has been reached. You can continue playing in Local Demo Mode.',
-    aiUnavailable: 'Live AI generation is temporarily unavailable. Local Demo Mode is active.',
-    aiDisabledFallback: 'AI storytelling is currently disabled. Enjoying offline scenario mode.',
+    modelQuotaExhausted: 'The AI model daily quota has been reached. Please retry later.',
+    aiUnavailable: 'Live AI generation is temporarily unavailable. Please retry shortly.',
+    aiDisabledFallback: 'AI storytelling is currently disabled. Please check back later.',
     networkError: 'Network connection issue. Please check your internet connection.',
     unauthorized: 'Authentication expired or invalid. Please sign in again.',
   },

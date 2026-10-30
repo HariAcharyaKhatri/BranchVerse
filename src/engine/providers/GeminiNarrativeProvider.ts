@@ -80,7 +80,7 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        const rawMsg = errJson.error || errJson.message || `AI generation failed with status ${response.status}`;
+        const rawMsg = errJson.message || errJson.error || `AI generation failed with status ${response.status}`;
         const details = classifyAiError(rawMsg, response.status);
         throw new AiNarrativeError(details);
       }

@@ -167,7 +167,8 @@ const AppContent: React.FC = () => {
         } catch {
           // ignore
         }
-        const failure = classifyAiError(errData?.error || res.statusText, res.status);
+        const errorText = errData?.message || errData?.error || res.statusText;
+        const failure = classifyAiError(errorText, res.status);
         setLaunchError(failure);
         return;
       }

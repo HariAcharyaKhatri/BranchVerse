@@ -32,7 +32,7 @@ export class RateLimiter {
     if (!CONFIG.AI_ENABLED) {
       return {
         allowed: false,
-        reason: 'Live AI storytelling is currently disabled by administrator. Please play in Local Demo Mode.'
+        reason: 'Live AI storytelling is currently disabled by administrator. Please check back later.'
       };
     }
 
@@ -72,7 +72,7 @@ export class RateLimiter {
     if (userDay.length >= CONFIG.LIMITS.MAX_USER_RPD) {
       return {
         allowed: false,
-        reason: `Daily limit reached: Max ${CONFIG.LIMITS.MAX_USER_RPD} requests per user per day. Local Demo Mode is available!`
+        reason: `Daily limit reached: Max ${CONFIG.LIMITS.MAX_USER_RPD} requests per user per day. Please retry tomorrow.`
       };
     }
 
@@ -91,7 +91,7 @@ export class RateLimiter {
     if (this.globalDayRequests.length >= CONFIG.LIMITS.MAX_GLOBAL_RPD) {
       return {
         allowed: false,
-        reason: 'Global daily AI capacity reached (400 req/day). Please enjoy Local Demo Mode.'
+        reason: 'Global daily AI capacity reached (400 req/day). Please retry tomorrow.'
       };
     }
 
@@ -103,7 +103,7 @@ export class RateLimiter {
       if (modelDay.length >= modelTarget.rpd) {
         return {
           allowed: false,
-          reason: `Daily quota for model "${modelId}" has been reached (${modelTarget.rpd} RPD). Try continuing in Local Demo Mode.`
+          reason: `Daily quota for model "${modelId}" has been reached (${modelTarget.rpd} RPD). Please retry later.`
         };
       }
     }

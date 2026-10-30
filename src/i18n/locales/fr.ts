@@ -124,9 +124,9 @@ export const fr: TranslationDictionary = {
   errors: {
     rateLimitUser: 'Limite temporaire de requêtes atteinte. Veuillez patienter un instant.',
     rateLimitGlobal: 'BranchVerse connaît une forte affluence. Veuillez réessayer dans quelques instants.',
-    modelQuotaExhausted: 'Le quota quotidien du modèle IA est atteint. Vous pouvez continuer en Mode Démo Locale.',
-    aiUnavailable: 'La génération IA est temporairement indisponible. Mode Démo Local actif.',
-    aiDisabledFallback: 'La narration IA est actuellement désactivée. Profitez du mode hors ligne.',
+    modelQuotaExhausted: 'Le quota quotidien du modèle IA est atteint. Veuillez réessayer plus tard.',
+    aiUnavailable: 'La génération IA est temporairement indisponible. Veuillez réessayer sous peu.',
+    aiDisabledFallback: 'La narration IA est actuellement désactivée. Veuillez revenir plus tard.',
     networkError: 'Problème de connexion réseau. Veuillez vérifier votre connexion Internet.',
     unauthorized: 'Authentification expirée ou invalide. Veuillez vous reconnecter.',
   },

@@ -29,13 +29,20 @@ export default async function handler(req: Request, res: Response) {
     return;
   }
 
+  if (!geminiService.isConfigured()) {
+    res.status(503).json({
+      error: 'Gemini API key is not configured on the backend server.',
+      message: 'GEMINI_API_KEY is not configured on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local for local testing).'
+    });
+    return;
+  }
+
   const modelId = CONFIG.GEMINI_INITIAL_MODEL;
   const slot = rateLimiter.acquireSlot(userId, modelId);
   if (!slot.allowed) {
     res.status(429).json({
       error: slot.reason,
-      retryAfterMs: slot.retryAfterMs,
-      fallbackToDemo: true
+      retryAfterMs: slot.retryAfterMs
     });
     return;
   }
@@ -71,9 +78,8 @@ export default async function handler(req: Request, res: Response) {
       console.warn(`[Narrative API] [Initial Story Timeout] User: ${userId}, Elapsed: ${elapsed}ms`);
       res.status(504).json({
         error: 'AI storytelling request timed out.',
-        message: 'The Gemini AI model took longer than expected to respond. Please retry or continue in Demo Mode.',
-        timedOut: true,
-        fallbackToDemo: true
+        message: 'The Gemini AI model took longer than expected to respond. Please check your connection and tap Retry.',
+        timedOut: true
       });
       return;
     }
@@ -83,8 +89,7 @@ export default async function handler(req: Request, res: Response) {
       res.status(429).json({
         error: 'AI model quota exceeded.',
         message: msg,
-        quotaExhausted: true,
-        fallbackToDemo: true
+        quotaExhausted: true
       });
       return;
     }
@@ -92,8 +97,7 @@ export default async function handler(req: Request, res: Response) {
     console.error(`[Narrative API] [Initial Story Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate initial story scene.',
-      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.',
-      fallbackToDemo: true
+      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.'
     });
   } finally {
     slot.release?.();

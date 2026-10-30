@@ -33,6 +33,14 @@ app.get('/api/health', (_req, res) => {
 
 // Model A: Initial Story Generation (gemini-3.8-flash)
 app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  if (!geminiService.isConfigured()) {
+    res.status(503).json({
+      error: 'Gemini API key is not configured on the backend server.',
+      message: 'GEMINI_API_KEY is not configured on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local for local testing).'
+    });
+    return;
+  }
+
   const userId = req.userId!;
   const modelId = CONFIG.GEMINI_INITIAL_MODEL;
 
@@ -41,8 +49,7 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
   if (!slot.allowed) {
     res.status(429).json({
       error: slot.reason,
-      retryAfterMs: slot.retryAfterMs,
-      fallbackToDemo: true
+      retryAfterMs: slot.retryAfterMs
     });
     return;
   }
@@ -78,9 +85,8 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
       console.warn(`[Narrative API] [Initial Story Timeout] User: ${userId}, Elapsed: ${elapsed}ms`);
       res.status(504).json({
         error: 'AI storytelling request timed out.',
-        message: 'The Gemini AI model took longer than expected to respond. Please retry or continue in Demo Mode.',
-        timedOut: true,
-        fallbackToDemo: true
+        message: 'The Gemini AI model took longer than expected to respond. Please check your connection and tap Retry.',
+        timedOut: true
       });
       return;
     }
@@ -90,8 +96,7 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
       res.status(429).json({
         error: 'AI model quota exceeded.',
         message: msg,
-        quotaExhausted: true,
-        fallbackToDemo: true
+        quotaExhausted: true
       });
       return;
     }
@@ -99,8 +104,7 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
     console.error(`[Narrative API] [Initial Story Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate initial story scene.',
-      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.',
-      fallbackToDemo: true
+      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.'
     });
   } finally {
     slot.release?.();
@@ -109,6 +113,14 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
 
 // Model B: Subsequent Story Turns (gemini-3.1-flash-lite)
 app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  if (!geminiService.isConfigured()) {
+    res.status(503).json({
+      error: 'Gemini API key is not configured on the backend server.',
+      message: 'GEMINI_API_KEY is not configured on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local for local testing).'
+    });
+    return;
+  }
+
   const userId = req.userId!;
   const modelId = CONFIG.GEMINI_TURN_MODEL;
 
@@ -117,8 +129,7 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
   if (!slot.allowed) {
     res.status(429).json({
       error: slot.reason,
-      retryAfterMs: slot.retryAfterMs,
-      fallbackToDemo: true
+      retryAfterMs: slot.retryAfterMs
     });
     return;
   }
@@ -154,9 +165,8 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
       console.warn(`[Narrative API] [Story Turn Timeout] User: ${userId}, Elapsed: ${elapsed}ms`);
       res.status(504).json({
         error: 'AI storytelling request timed out.',
-        message: 'The Gemini AI model took longer than expected to respond. Please retry or continue in Demo Mode.',
-        timedOut: true,
-        fallbackToDemo: true
+        message: 'The Gemini AI model took longer than expected to respond. Please check your connection and tap Retry.',
+        timedOut: true
       });
       return;
     }
@@ -166,8 +176,7 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
       res.status(429).json({
         error: 'AI model quota exceeded.',
         message: msg,
-        quotaExhausted: true,
-        fallbackToDemo: true
+        quotaExhausted: true
       });
       return;
     }
@@ -175,8 +184,7 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
     console.error(`[Narrative API] [Story Turn Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate turn narrative.',
-      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.',
-      fallbackToDemo: true
+      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.'
     });
   } finally {
     slot.release?.();
