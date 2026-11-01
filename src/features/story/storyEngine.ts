@@ -4,6 +4,7 @@ import { STARTER_SCENARIOS } from '../../catalogs/scenarios';
 import { applyStateDelta, validateActionFeasibility } from './stateMachine';
 import { StorySession, NarrativeProvider, LocalNarrativeProvider, GeminiNarrativeProvider } from '../../engine';
 import { detectLanguageChangeIntent } from './naturalPromptParser';
+import { preferencesService } from '../preferences/preferencesService';
 
 export interface ProcessTurnResult {
   updatedStory: StoryDocument;
@@ -390,6 +391,12 @@ export function createNewStory(params: {
         timestamp: Date.now()
       };
 
+  const effectiveLanguage: SupportedLanguage =
+    params.storyLanguage ||
+    params.settings?.storyLanguage ||
+    preferencesService.getStoryLanguage() ||
+    'hi';
+
   return {
     id: `story_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
     title: params.title || `${params.hero.name}’s Chronicle`,
@@ -399,14 +406,17 @@ export function createNewStory(params: {
     genres: params.genres,
     worldId: params.worldId,
     worldName: params.worldName,
-    settings: params.settings,
+    settings: {
+      ...params.settings,
+      storyLanguage: effectiveLanguage,
+    },
     state: initialState,
     turns: [initialTurn],
     status: 'active',
     version: 1,
     generationMode: params.generationMode || 'demo',
     mode: params.mode || (params.settings as any)?.mode || 'story',
-    storyLanguage: params.storyLanguage || params.settings.storyLanguage || 'hi'
+    storyLanguage: effectiveLanguage
   };
 }
 
@@ -427,6 +437,15 @@ export async function executeAdvancedStoryTurn(
   provider?: NarrativeProvider
 ): Promise<ProcessTurnResult> {
   let activeStory: StoryDocument = { ...story };
+  const effectiveLang: SupportedLanguage =
+    activeStory.storyLanguage ||
+    activeStory.settings?.storyLanguage ||
+    preferencesService.getStoryLanguage() ||
+    'hi';
+  activeStory.storyLanguage = effectiveLang;
+  if (activeStory.settings) {
+    activeStory.settings = { ...activeStory.settings, storyLanguage: effectiveLang };
+  }
 
   // Detect dynamic language change request in user action
   if (action.customActionText) {
@@ -465,6 +484,9 @@ export async function executeAdvancedStoryTurn(
   updatedStory.generationMode = activeStory.generationMode || 'demo';
   updatedStory.mode = activeStory.mode || 'story';
   updatedStory.storyLanguage = activeStory.storyLanguage || 'hi';
+  if (updatedStory.settings) {
+    updatedStory.settings.storyLanguage = activeStory.storyLanguage || 'hi';
+  }
 
   const projectedTurn: StoryTurn = {
     turnId: newTurn.turnId,

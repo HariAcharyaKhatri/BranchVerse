@@ -40,7 +40,7 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
           tone: context.tone,
           pacing: 'Balanced Narrative',
           difficulty: context.difficulty,
-          storyLanguage: context.storyLanguage || 'en',
+          storyLanguage: context.storyLanguage || 'hi',
           narrativeLength: context.narrativeLength || 'balanced',
         }
       : {
@@ -55,7 +55,7 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
           },
           genre: context.genre,
           tone: context.tone,
-          storyLanguage: context.storyLanguage || 'en',
+          storyLanguage: context.storyLanguage || 'hi',
           narrativeLength: context.narrativeLength || 'balanced',
           activeQuests: context.activeQuests.map((q) => ({
             title: q.title,

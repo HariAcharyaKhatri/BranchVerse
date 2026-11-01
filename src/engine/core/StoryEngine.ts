@@ -41,6 +41,7 @@ export class StoryEngine {
       tone: params.settings.tone,
       difficulty: params.settings.difficulty,
       pacing: params.settings.pacing,
+      storyLanguage: params.settings.storyLanguage || 'hi',
 
       currentChapter: 1,
       currentSceneId: 'prologue_awakening',

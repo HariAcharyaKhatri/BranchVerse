@@ -3,7 +3,8 @@ import {
   EngineTurnRecord,
   PlayerActionInput
 } from '../types/engine.types';
-import { StoryDocument } from '../../types/story';
+import { StoryDocument, SupportedLanguage } from '../../types/story';
+import { preferencesService } from '../../features/preferences/preferencesService';
 import { WorldFactStore } from '../world/WorldFactStore';
 import { CharacterManager } from '../characters/CharacterManager';
 import { InventoryManager } from '../inventory/InventoryManager';
@@ -142,6 +143,7 @@ export class StorySession {
         this.factStore
       );
       promptContext.signal = input.signal;
+      promptContext.storyLanguage = transaction.getStagedState().storyLanguage || 'hi';
       if (customActionConstraint) {
         promptContext.authoritativeConstraints = [customActionConstraint];
       }
@@ -200,6 +202,7 @@ export class StorySession {
         tone: (this.state.tone as any) || 'Epic Fantasy',
         pacing: (this.state.pacing as any) || 'Balanced Narrative',
         difficulty: (this.state.difficulty as any) || 'Adventurer (Standard)',
+        storyLanguage: this.state.storyLanguage || 'hi',
       },
       state: {
         health: this.state.health,
@@ -251,6 +254,7 @@ export class StorySession {
         customActionText: t.playerInput?.customActionText,
         timestamp: t.timestamp
       })),
+      storyLanguage: this.state.storyLanguage || 'hi',
       status: this.state.isStoryComplete ? 'completed' : 'active',
       version: this.state.version
     };
@@ -263,6 +267,12 @@ export class StorySession {
     doc: StoryDocument,
     narrativeProvider?: NarrativeProvider
   ): StorySession {
+    const effectiveLanguage: SupportedLanguage =
+      doc.storyLanguage ||
+      doc.settings?.storyLanguage ||
+      preferencesService.getStoryLanguage() ||
+      'hi';
+
     const authoritativeState: EngineAuthoritativeState = {
       version: doc.version || 1,
       storyId: doc.id,
@@ -274,6 +284,7 @@ export class StorySession {
       tone: doc.settings?.tone || 'Epic Fantasy',
       difficulty: doc.settings?.difficulty || 'Adventurer (Standard)',
       pacing: doc.settings?.pacing || 'Balanced Narrative',
+      storyLanguage: effectiveLanguage,
 
       currentChapter: doc.turns[doc.turns.length - 1]?.chapterNumber || 1,
       currentSceneId: 'scene_active',

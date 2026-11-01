@@ -1,5 +1,6 @@
 import { EngineAuthoritativeState } from '../types/engine.types';
 import { WorldFactStore } from '../world/WorldFactStore';
+import { SupportedLanguage } from '../../types/story';
 
 export interface NarrativePromptContext {
   storyTitle: string;
@@ -7,6 +8,7 @@ export interface NarrativePromptContext {
   worldName: string;
   tone: string;
   difficulty: string;
+  storyLanguage: SupportedLanguage;
   chapterNumber: number;
   currentTurnNumber: number;
   location: string;
@@ -113,6 +115,7 @@ export class NarrativeContextBuilder {
       worldName: state.worldName,
       tone: state.tone,
       difficulty: state.difficulty,
+      storyLanguage: state.storyLanguage || 'hi',
       chapterNumber: state.currentChapter,
       currentTurnNumber: state.currentTurnNumber,
       location: state.currentLocation,

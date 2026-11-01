@@ -296,9 +296,18 @@ export class GeminiService {
     return ordered.length > 0 ? ordered : candidates;
   }
 
-  private getLanguagePromptInstruction(lang: SupportedLanguage): string {
+  public getLanguagePromptInstruction(lang: SupportedLanguage): string {
+    if (lang === 'hi') {
+      return `CRITICAL LANGUAGE REQUIREMENT: You MUST deliver ALL scene titles, prose narrative, spoken dialogues, and proposed player choices primarily in natural, modern Hindi using Devanagari script.
+- Maintain this language consistently throughout the entire story.
+- Avoid unnecessarily difficult, overly formal, highly Sanskritized, or archaic vocabulary.
+- Keep sentences flowing, immersive, conversational, and easy to read.
+- Common fantasy, RPG, gaming, sci-fi, and modern storytelling terms (e.g., Magic, Mage, Guild, Quest, Kingdom, Level, Skill, Boss, Dungeon, Portal, System, Inventory) may remain in natural English when that sounds more natural and engaging to contemporary readers.
+- Proper character and realm names may remain phonetically natural.`;
+    }
+
     const info = LANGUAGE_LABELS[lang] || LANGUAGE_LABELS.en;
-    return `CRITICAL LANGUAGE REQUIREMENT: You MUST deliver ALL scene titles, prose narrative, spoken dialogues, and proposed player choices in ${info.label} (${info.native}). Do NOT produce English unless the user explicitly requested English. Proper character and realm names may remain phonetically natural.`;
+    return `CRITICAL LANGUAGE REQUIREMENT: You MUST deliver ALL scene titles, prose narrative, spoken dialogues, and proposed player choices in ${info.label} (${info.native}). Do NOT produce English unless the user explicitly requested English. Proper character and realm names may remain phonetically natural. Maintain this language consistently throughout the entire story.`;
   }
 
   /**

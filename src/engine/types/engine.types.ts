@@ -1,4 +1,5 @@
 import { HeroProfile } from '../../types/character';
+import { SupportedLanguage } from '../../types/story';
 
 export type TurnLifecycleStatus =
   | 'RECEIVED'
@@ -201,6 +202,7 @@ export interface EngineAuthoritativeState {
   tone: string;
   difficulty: string;
   pacing: string;
+  storyLanguage: SupportedLanguage;
 
   // Progression
   currentChapter: number;

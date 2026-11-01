@@ -3,6 +3,7 @@ import { StoryDocument, NarrativeLength } from '../types/story';
 import { SaveStatus } from '../types/storage';
 import { storyRepository } from '../lib/storage/storyRepository';
 import { executeStoryTurn, executeAdvancedStoryTurn } from '../features/story/storyEngine';
+import { preferencesService } from '../features/preferences/preferencesService';
 import { LocalNarrativeProvider, AiNarrativeError, classifyAiError, AiFailureDetails } from '../engine';
 import { NarrativeReader } from '../components/story/NarrativeReader';
 import { CharacterSheetDrawer } from '../components/story/CharacterSheetDrawer';
@@ -82,6 +83,11 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         if (!doc) {
           setErrorMessage('Story not found or corrupted.');
         } else {
+          const effectiveLang = doc.storyLanguage || doc.settings?.storyLanguage || preferencesService.getStoryLanguage() || 'hi';
+          doc.storyLanguage = effectiveLang;
+          if (doc.settings) {
+            doc.settings.storyLanguage = effectiveLang;
+          }
           setStory(doc);
         }
       })
