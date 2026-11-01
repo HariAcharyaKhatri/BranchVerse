@@ -372,43 +372,57 @@ Do NOT generate an entire long story. Generate only the immediate opening scene 
     }
 
     // Role-play input discrimination (Action vs Dialogue vs Thought vs Choice)
-    const actionType = context.playerAction.type || (context.playerAction.choiceText ? 'choice' : 'action');
+    const playerAction = context.playerAction || {};
+    const actionType = playerAction.type || (playerAction.choiceText ? 'choice' : 'action');
     let actionInstruction = '';
 
     if (actionType === 'dialogue') {
-      const target = context.playerAction.targetNpc ? ` to ${context.playerAction.targetNpc}` : '';
+      const target = playerAction.targetNpc ? ` to ${playerAction.targetNpc}` : '';
       actionInstruction = `PLAYER DIALOGUE (Spoken aloud${target}):
-"${context.playerAction.customActionText || ''}"
+"${playerAction.customActionText || ''}"
 -> ROLE-PLAY DIRECTIVE: Nearby characters hear and reply verbally with authentic emotion!`;
     } else if (actionType === 'thought') {
       actionInstruction = `PLAYER INNER THOUGHT:
-"${context.playerAction.customActionText || ''}"
+"${playerAction.customActionText || ''}"
 -> INNER MONOLOGUE DIRECTIVE: Reflect silently and advance scene.`;
     } else if (actionType === 'action') {
       actionInstruction = `PLAYER PHYSICAL ACTION:
-"${context.playerAction.customActionText || ''}"
+"${playerAction.customActionText || ''}"
 -> ACTION DIRECTIVE: Describe physical outcome, impact, and reaction.`;
     } else {
       actionInstruction = `PLAYER SELECTED CHOICE:
-"${context.playerAction.choiceText || context.playerAction.customActionText || 'Proceed'}"`;
+"${playerAction.choiceText || playerAction.customActionText || 'Proceed'}"`;
     }
 
-    const recentHistoryText = context.recentTurns
+    const recentTurns = Array.isArray(context.recentTurns) ? context.recentTurns : [];
+    const recentHistoryText = recentTurns
       .slice(-2) // Only 2 most recent turns to minimize latency & token budget
-      .map((t, idx) => `[Turn -${Math.min(2, context.recentTurns.length) - idx}]: ${t.sceneTitle} | Action: ${t.actionTaken} -> Outcome: ${t.narrativeSummary.slice(0, 120)}`)
+      .map((t: any, idx) => {
+        const rawSummary = String(t.narrativeSummary || t.narrativeText || t.sceneTitle || '');
+        const summary = rawSummary.slice(0, 120);
+        return `[Turn -${Math.min(2, recentTurns.length) - idx}]: ${t.sceneTitle || 'Scene'} | Action: ${t.actionTaken || 'None'} -> Outcome: ${summary}`;
+      })
       .join('\n');
 
-    const npcContextText = context.npcRelationships && context.npcRelationships.length > 0
+    const npcContextText = Array.isArray(context.npcRelationships) && context.npcRelationships.length > 0
       ? `\nKNOWN NPCS: ${context.npcRelationships.slice(0, 3).map(n => `${n.name} (Trust:${n.trust})`).join(', ')}`
       : '';
 
-    const factsText = context.importantFacts && context.importantFacts.length > 0
+    const factsText = Array.isArray(context.importantFacts) && context.importantFacts.length > 0
       ? `\nFACTS: ${context.importantFacts.slice(-2).join('; ')}`
       : '';
 
+    const heroName = context.hero?.name || 'Protagonist';
+    const heroStamina = typeof context.hero?.stamina === 'number' ? context.hero.stamina : 100;
+    const heroPower = typeof context.hero?.powerLevel === 'number' ? context.hero.powerLevel : 30;
+    const location = context.currentLocation || 'Unknown Realm';
+    const inventoryText = Array.isArray(context.hero?.inventory) && context.hero.inventory.length > 0
+      ? context.hero.inventory.slice(0, 5).join(', ')
+      : 'None';
+
     const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing role-playing chronicle.
 
-PROTAGONIST: ${context.hero.name} | Stamina: ${context.hero.stamina}/100 | Power: ${context.hero.powerLevel} | Location: ${context.currentLocation} | Items: ${context.hero.inventory.slice(0, 5).join(', ') || 'None'}${npcContextText}${factsText}
+PROTAGONIST: ${heroName} | Stamina: ${heroStamina}/100 | Power: ${heroPower} | Location: ${location} | Items: ${inventoryText}${npcContextText}${factsText}
 
 RECENT CONTEXT:
 ${recentHistoryText || 'Story commenced.'}
