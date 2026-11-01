@@ -126,11 +126,9 @@ const AppContent: React.FC = () => {
     overrideGenres?: string[];
     userPromptDescription?: string;
   }) => {
-    const targetHero = params.overrideHero || heroDraft;
-    const targetWorld = params.overrideWorld || selectedWorld;
-    const targetGenres = params.overrideGenres || selectedGenres;
-
-    if (!targetHero || !targetWorld) return;
+    const targetHero = params.overrideHero || heroDraft || completeHeroProfile({ name: 'Hari Khatri' });
+    const targetWorld = params.overrideWorld || selectedWorld || WORLD_CATALOG[0];
+    const targetGenres = params.overrideGenres || (selectedGenres && selectedGenres.length > 0 ? selectedGenres : ['High Fantasy']);
     if (isGeneratingStory) {
       console.warn('Story generation is already running. Ignoring duplicate request.');
       return;
@@ -150,6 +148,7 @@ const AppContent: React.FC = () => {
     // Model A: Initial Story Generation with dynamic Gemini 3 fallback cascade
     setIsGeneratingStory(true);
     try {
+      console.log('[StoryCreationFlow] Stage 1: Initiating story generation request to /api/narrative/initial...');
       let token = '';
       if (auth && auth.currentUser) {
         token = await auth.currentUser.getIdToken();
@@ -190,6 +189,7 @@ const AppContent: React.FC = () => {
         signal: abortController.signal
       });
 
+      console.log(`[StoryCreationFlow] Stage 2: Received response with status ${res.status}`);
       if (!res.ok) {
         let errData: any = {};
         try {
@@ -204,41 +204,46 @@ const AppContent: React.FC = () => {
       }
 
       const data = await res.json();
+      console.log('[StoryCreationFlow] Stage 3: Response parsed. Validating narrative payload...');
       if (data.narrative) {
         initialNarrative = data.narrative;
       } else {
-        setLaunchError(classifyAiError(new Error('AI Narrative service did not return an opening scene.')));
-        return;
+        throw new Error('AI Narrative service did not return an opening scene.');
       }
+
+      console.log('[StoryCreationFlow] Stage 4: Creating new StoryDocument with normalized choices...');
+      const newStory = createNewStory({
+        title: params.title,
+        hero: targetHero,
+        genres: targetGenres,
+        worldId: targetWorld.id,
+        worldName: targetWorld.name,
+        settings: params.settings,
+        generationMode: 'ai',
+        mode: params.settings.mode || 'story',
+        storyLanguage: params.settings.storyLanguage || 'en',
+        initialNarrative
+      });
+      newStory.mode = params.settings.mode || 'story';
+
+      console.log(`[StoryCreationFlow] Stage 5: Saving story to local storage / IndexedDB (${newStory.id})...`);
+      await storyRepository.saveStory(newStory);
+
+      console.log(`[StoryCreationFlow] Stage 6: Story saved successfully! Navigating to Reader: #/reader/${newStory.id}`);
+      setLaunchError(null);
+      navigate(`#/reader/${newStory.id}`);
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        console.log('Story generation cancelled by user.');
+        console.log('[StoryCreationFlow] Story generation cancelled by user.');
         return;
       }
-      console.warn('Initial AI generation failed:', err);
+      console.error('[StoryCreationFlow] Story generation or persistence failed:', err);
       const failure = classifyAiError(err);
       setLaunchError(failure);
-      return;
     } finally {
       setIsGeneratingStory(false);
       storyAbortControllerRef.current = null;
     }
-
-    const newStory = createNewStory({
-      title: params.title,
-      hero: targetHero,
-      genres: targetGenres,
-      worldId: targetWorld.id,
-      worldName: targetWorld.name,
-      settings: params.settings,
-      generationMode: 'ai',
-      storyLanguage: params.settings.storyLanguage || 'en',
-      initialNarrative
-    });
-    newStory.mode = params.settings.mode || 'story';
-
-    await storyRepository.saveStory(newStory);
-    navigate(`#/reader/${newStory.id}`);
   };
 
   const handleRetryStoryLaunch = () => {

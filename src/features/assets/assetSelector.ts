@@ -96,7 +96,7 @@ export interface CharacterPortraitResult {
 export function getCharacterPortrait(
   speaker: string,
   hero?: HeroProfile,
-  emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm'
+  emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm' | string
 ): CharacterPortraitResult | null {
   if (!speaker) return null;
 

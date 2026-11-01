@@ -76,10 +76,18 @@ export interface GeneratedNarrative {
   dialogues: Array<{
     speaker: string;
     text: string;
-    emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm';
+    emotion?: string;
   }>;
   ambientVisual?: string;
   proposedChoices: Array<{
+    choiceId: string;
+    text: string;
+    consequenceHint?: string;
+    riskLevel?: 'safe' | 'moderate' | 'perilous';
+    requiredStamina?: number;
+    actionIntent?: string;
+  }>;
+  choices?: Array<{
     choiceId: string;
     text: string;
     consequenceHint?: string;
@@ -712,6 +720,31 @@ ROLE-PLAY INSTRUCTIONS:
       const rawChoices = parsed.proposedChoices || parsed.choices;
       const narrativeText = String(parsed.narrativeText || parsed.narrative || '');
 
+      const normalizedChoices: Array<{
+        choiceId: string;
+        text: string;
+        consequenceHint?: string;
+        riskLevel?: 'safe' | 'moderate' | 'perilous';
+        requiredStamina?: number;
+        actionIntent?: string;
+      }> = Array.isArray(rawChoices) && rawChoices.length > 0
+        ? rawChoices.map((c: any, idx: number) => ({
+            choiceId: c.choiceId || `choice_ai_${Date.now()}_${idx}`,
+            text: String(c.text || 'Advance with caution'),
+            consequenceHint: c.consequenceHint || undefined,
+            riskLevel: (['safe', 'moderate', 'perilous'].includes(c.riskLevel) ? c.riskLevel : 'moderate') as 'safe' | 'moderate' | 'perilous',
+            requiredStamina: typeof c.requiredStamina === 'number' ? c.requiredStamina : 8,
+            actionIntent: c.actionIntent || 'explore'
+          }))
+        : [
+            {
+              choiceId: `choice_fallback_${Date.now()}_1`,
+              text: 'Press onward cautiously into the unknown.',
+              riskLevel: 'safe',
+              requiredStamina: 5
+            }
+          ];
+
       return {
         sceneTitle: String(parsed.sceneTitle || 'Chronicle Chapter'),
         narrativeText,
@@ -723,23 +756,8 @@ ROLE-PLAY INSTRUCTIONS:
             }))
           : [],
         ambientVisual: parsed.ambientVisual || undefined,
-        proposedChoices: Array.isArray(rawChoices) && rawChoices.length > 0
-          ? rawChoices.map((c: any, idx: number) => ({
-              choiceId: c.choiceId || `choice_ai_${Date.now()}_${idx}`,
-              text: String(c.text || 'Advance with caution'),
-              consequenceHint: c.consequenceHint || undefined,
-              riskLevel: ['safe', 'moderate', 'perilous'].includes(c.riskLevel) ? c.riskLevel : 'moderate',
-              requiredStamina: typeof c.requiredStamina === 'number' ? c.requiredStamina : 8,
-              actionIntent: c.actionIntent || 'explore'
-            }))
-          : [
-              {
-                choiceId: `choice_fallback_${Date.now()}_1`,
-                text: 'Press onward cautiously into the unknown.',
-                riskLevel: 'safe',
-                requiredStamina: 5
-              }
-            ],
+        proposedChoices: normalizedChoices,
+        choices: normalizedChoices,
         initialQuests: parsed.initialQuests || undefined,
         worldFacts: parsed.worldFacts || undefined,
         stateChanges: parsed.stateChanges || undefined,

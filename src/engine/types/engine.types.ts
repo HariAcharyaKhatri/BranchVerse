@@ -165,7 +165,7 @@ export interface EngineTurnRecord {
   dialogues: Array<{
     speaker: string;
     text: string;
-    emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm';
+    emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm' | string;
   }>;
   ambientVisual?: string;
   choices: Array<{

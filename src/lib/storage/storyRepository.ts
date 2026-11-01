@@ -4,10 +4,24 @@ import { StoryDocumentSchema } from '../validation/storySchema';
 
 export const storyRepository = {
   async saveStory(story: StoryDocument): Promise<void> {
-    // Validate schema before persisting
-    const validated = StoryDocumentSchema.parse(story);
-    const db = await getDB();
-    await db.put('stories', validated);
+    try {
+      // Validate schema before persisting
+      const parseResult = StoryDocumentSchema.safeParse(story);
+      const storyToSave = parseResult.success ? parseResult.data : story;
+      if (!parseResult.success) {
+        console.warn('[storyRepository] Schema validation warning on saveStory (persisting with fallback):', parseResult.error.format());
+      }
+      const db = await getDB();
+      await db.put('stories', storyToSave);
+    } catch (err: any) {
+      console.error('[storyRepository] Error in saveStory, attempting raw persistence:', err);
+      try {
+        const db = await getDB();
+        await db.put('stories', story);
+      } catch (dbErr: any) {
+        throw new Error(`Failed to save story to local storage: ${dbErr?.message || dbErr}`);
+      }
+    }
   },
 
   async getStory(id: string): Promise<StoryDocument | null> {
@@ -15,7 +29,8 @@ export const storyRepository = {
       const db = await getDB();
       const story = await db.get('stories', id);
       if (!story) return null;
-      return StoryDocumentSchema.parse(story);
+      const parseResult = StoryDocumentSchema.safeParse(story);
+      return parseResult.success ? parseResult.data : story;
     } catch (err) {
       console.error(`Failed to retrieve story with ID "${id}":`, err);
       return null;

@@ -319,28 +319,57 @@ export function createNewStory(params: {
   worldName: string;
   settings: StoryDocument['settings'];
   generationMode?: 'demo' | 'ai';
+  mode?: 'story' | 'roleplay';
   storyLanguage?: SupportedLanguage;
   initialNarrative?: {
     sceneTitle: string;
     narrativeText: string;
     dialogues?: StoryDocument['turns'][0]['dialogues'];
     ambientVisual?: string;
-    choices: ChoiceOption[];
+    choices?: ChoiceOption[];
+    proposedChoices?: ChoiceOption[];
   };
 }): StoryDocument {
   const scenario = STARTER_SCENARIOS[params.worldId] || STARTER_SCENARIOS['aethelgard'];
   const initialState = scenario.initialState(params.hero);
   const startNode = scenario.nodes['node_1'];
 
+  const rawChoices =
+    params.initialNarrative?.choices ||
+    params.initialNarrative?.proposedChoices ||
+    (params.initialNarrative as any)?.choices ||
+    (params.initialNarrative as any)?.proposedChoices ||
+    [];
+
+  const formattedChoices: ChoiceOption[] = Array.isArray(rawChoices) && rawChoices.length > 0
+    ? rawChoices.map((c: any, idx: number) => ({
+        choiceId: c.choiceId || c.id || `choice_${idx + 1}`,
+        text: c.text || c.choiceText || `Option ${idx + 1}`,
+        consequenceHint: c.consequenceHint,
+        riskLevel: ['safe', 'moderate', 'perilous'].includes(c.riskLevel) ? c.riskLevel : 'moderate',
+        requiredItem: c.requiredItem,
+        requiredStamina: typeof c.requiredStamina === 'number' ? c.requiredStamina : 8,
+        stateImpact: c.stateImpact,
+        nextSceneId: c.nextSceneId
+      }))
+    : startNode.choices.map(c => ({
+        choiceId: c.choiceId,
+        text: c.text,
+        consequenceHint: c.consequenceHint,
+        riskLevel: c.riskLevel,
+        stateImpact: c.stateImpact,
+        nextSceneId: c.nextSceneId
+      }));
+
   const initialTurn: StoryTurn = params.initialNarrative
     ? {
         turnId: `turn_start_${Date.now()}`,
         chapterNumber: 1,
-        sceneTitle: params.initialNarrative.sceneTitle,
-        narrativeText: params.initialNarrative.narrativeText,
+        sceneTitle: params.initialNarrative.sceneTitle || startNode.sceneTitle,
+        narrativeText: params.initialNarrative.narrativeText || startNode.narrativeText,
         dialogues: params.initialNarrative.dialogues,
         ambientVisual: params.initialNarrative.ambientVisual || startNode.ambientVisual,
-        choices: params.initialNarrative.choices,
+        choices: formattedChoices,
         timestamp: Date.now()
       }
     : {
@@ -376,6 +405,7 @@ export function createNewStory(params: {
     status: 'active',
     version: 1,
     generationMode: params.generationMode || 'demo',
+    mode: params.mode || (params.settings as any)?.mode || 'story',
     storyLanguage: params.storyLanguage || params.settings.storyLanguage || 'en'
   };
 }

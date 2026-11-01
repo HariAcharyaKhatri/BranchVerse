@@ -242,4 +242,71 @@ describe('Story Creation & Role-Play Platform Features', () => {
       }
     });
   });
+
+  describe('Story Creation Flow & Persistence Integrity', () => {
+    it('creates and persists story with proposedChoices, custom emotion, and extended settings without error', async () => {
+      const hero = completeHeroProfile({ name: 'Hari Khatri' });
+      const initialNarrative = {
+        sceneTitle: 'Echoes of the High Spire',
+        narrativeText: 'You stand before the forbidden archives as ancient runes awaken.',
+        dialogues: [
+          { speaker: 'Elena', text: 'Be careful, Hari!', emotion: 'melancholic' }
+        ],
+        proposedChoices: [
+          {
+            choiceId: 'choice_1',
+            text: 'Touch the glowing rune cautiously.',
+            riskLevel: 'safe' as const,
+            requiredStamina: 5
+          },
+          {
+            choiceId: 'choice_2',
+            text: 'Cast an incantation to dispel the barrier.',
+            riskLevel: 'moderate' as const,
+            requiredStamina: 10
+          }
+        ]
+      };
+
+      const story = createNewStory({
+        title: 'Arcane Awakening',
+        hero,
+        genres: ['High Fantasy'],
+        worldId: 'aethelgard',
+        worldName: 'Aethelgard High Realm',
+        settings: {
+          tone: 'Mystery & Suspense',
+          pacing: 'Balanced Narrative',
+          difficulty: 'Adventurer (Standard)',
+          storyLanguage: 'en',
+          mode: 'story',
+          timePeriod: 'Age of Sorcery',
+          romanceLevel: 'Light',
+          actionLevel: 'Moderate',
+          mysteryLevel: 'High',
+          mainObjective: 'Uncover the lost library secrets.'
+        },
+        generationMode: 'ai',
+        mode: 'story',
+        initialNarrative: initialNarrative as any
+      });
+
+      expect(story.turns[0].choices.length).toBe(2);
+      expect(story.turns[0].choices[0].text).toBe('Touch the glowing rune cautiously.');
+      expect(story.turns[0].dialogues?.[0].emotion).toBe('melancholic');
+      expect(story.settings.mode).toBe('story');
+      expect(story.settings.tone).toBe('Mystery & Suspense');
+
+      // Persistence in IndexedDB / storyRepository must succeed without throwing ZodError
+      await storyRepository.saveStory(story);
+
+      const loaded = await storyRepository.getStory(story.id);
+      expect(loaded).not.toBeNull();
+      expect(loaded?.id).toBe(story.id);
+      expect(loaded?.turns[0].choices.length).toBe(2);
+      expect(loaded?.settings.tone).toBe('Mystery & Suspense');
+
+      await storyRepository.deleteStory(story.id);
+    });
+  });
 });

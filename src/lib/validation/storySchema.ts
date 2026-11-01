@@ -98,15 +98,15 @@ export const ChoiceOptionSchema = z.object({
 export const StoryDialogueSchema = z.object({
   speaker: z.string(),
   text: z.string(),
-  emotion: z.enum(['calm', 'furious', 'mysterious', 'terrified', 'warm']).optional(),
-});
+  emotion: z.string().optional(),
+}).passthrough();
 
 export const StoryTurnSchema = z.object({
   turnId: z.string(),
   chapterNumber: z.number(),
   sceneTitle: z.string(),
   narrativeText: z.string(),
-  dialogues: z.array(StoryDialogueSchema).optional(),
+  dialogues: z.array(StoryDialogueSchema).default([]).optional(),
   ambientVisual: z.string().optional(),
   choices: z.array(ChoiceOptionSchema).default([]),
   selectedChoiceId: z.string().optional(),
@@ -121,16 +121,26 @@ export const StoryTurnSchema = z.object({
     trustChanges: z.record(z.string(), z.number()).optional(),
   }).optional(),
   timestamp: z.number(),
-});
+}).passthrough();
 
 export const SupportedLanguageSchema = z.enum(['en', 'hi', 'es', 'fr', 'ja', 'ko']);
 
 export const StorySettingsSchema = z.object({
-  tone: z.enum(['Anime Shonen', 'Epic Fantasy', 'Dark & Gritty', 'Cyberpunk Noir', 'Lighthearted Isekai']),
-  pacing: z.enum(['Fast-paced Action', 'Balanced Narrative', 'Deep Lore Exploration']),
-  difficulty: z.enum(['Adventurer (Standard)', 'Heroic (Tactical)', 'Hardcore Iron (Unforgiving)']),
+  tone: z.string(),
+  pacing: z.string().default('Balanced Narrative'),
+  difficulty: z.string().default('Adventurer (Standard)'),
   storyLanguage: SupportedLanguageSchema.default('en').optional(),
-});
+  narrativeLength: z.enum(['concise', 'balanced', 'detailed']).default('balanced').optional(),
+  mode: z.enum(['story', 'roleplay']).default('story').optional(),
+  timePeriod: z.string().optional(),
+  storyStyle: z.string().optional(),
+  romanceLevel: z.string().optional(),
+  actionLevel: z.string().optional(),
+  mysteryLevel: z.string().optional(),
+  mainObjective: z.string().optional(),
+  supportingCharacters: z.array(z.string()).default([]).optional(),
+  userPromptDescription: z.string().optional(),
+}).passthrough();
 
 export const StoryDocumentSchema = z.object({
   id: z.string(),
@@ -144,11 +154,12 @@ export const StoryDocumentSchema = z.object({
   settings: StorySettingsSchema,
   state: StoryStateSchema,
   turns: z.array(StoryTurnSchema),
-  status: z.enum(['active', 'completed', 'archived']),
+  status: z.enum(['active', 'completed', 'archived']).default('active'),
   version: z.number().default(1),
   generationMode: z.enum(['demo', 'ai']).default('demo'),
   storyLanguage: SupportedLanguageSchema.default('en'),
-});
+  mode: z.enum(['story', 'roleplay']).default('story').optional(),
+}).passthrough();
 
 export const BackupEnvelopeSchema = z.object({
   app: z.literal('BranchVerse'),

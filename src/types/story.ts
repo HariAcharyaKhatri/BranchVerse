@@ -74,7 +74,7 @@ export interface ChoiceOption {
 export interface StoryDialogue {
   speaker: string;
   text: string;
-  emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm';
+  emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm' | string;
 }
 
 export interface StoryTurn {
@@ -102,17 +102,17 @@ export interface StoryTurn {
 }
 
 export interface StorySettings {
-  tone: 'Anime Shonen' | 'Epic Fantasy' | 'Dark & Gritty' | 'Cyberpunk Noir' | 'Lighthearted Isekai' | 'Mystery & Suspense' | 'Epic Saga';
-  pacing: 'Fast-paced Action' | 'Balanced Narrative' | 'Deep Lore Exploration';
-  difficulty: 'Adventurer (Standard)' | 'Heroic (Tactical)' | 'Hardcore Iron (Unforgiving)';
+  tone: 'Anime Shonen' | 'Epic Fantasy' | 'Dark & Gritty' | 'Cyberpunk Noir' | 'Lighthearted Isekai' | 'Mystery & Suspense' | 'Epic Saga' | string;
+  pacing: 'Fast-paced Action' | 'Balanced Narrative' | 'Deep Lore Exploration' | string;
+  difficulty: 'Adventurer (Standard)' | 'Heroic (Tactical)' | 'Hardcore Iron (Unforgiving)' | string;
   storyLanguage?: SupportedLanguage;
   narrativeLength?: 'concise' | 'balanced' | 'detailed';
   mode?: 'story' | 'roleplay';
   timePeriod?: string;
   storyStyle?: string;
-  romanceLevel?: 'None' | 'Light' | 'Prominent';
-  actionLevel?: 'Low' | 'Moderate' | 'High';
-  mysteryLevel?: 'Low' | 'Moderate' | 'High';
+  romanceLevel?: 'None' | 'Light' | 'Prominent' | string;
+  actionLevel?: 'Low' | 'Moderate' | 'High' | string;
+  mysteryLevel?: 'Low' | 'Moderate' | 'High' | string;
   mainObjective?: string;
   supportingCharacters?: string[];
   userPromptDescription?: string;
