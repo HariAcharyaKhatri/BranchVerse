@@ -39,7 +39,11 @@ export function executeStoryTurn(
     });
 
     if (!feasibility.isValid) {
-      throw new Error(feasibility.reason || 'Action cannot be performed.');
+      if (feasibility.reason?.toLowerCase().includes('stamina')) {
+        story.state.stamina = 15;
+      } else {
+        throw new Error(feasibility.reason || 'Action cannot be performed.');
+      }
     }
 
     // Determine target node
@@ -92,7 +96,8 @@ export function executeStoryTurn(
     }
 
     if (story.state.stamina < 10) {
-      throw new Error('You are completely exhausted (stamina < 10). Rest or use a consumable to recover.');
+      // Story-First: Grant second wind to push through fatigue without halting chronicle
+      story.state.stamina = 15;
     }
 
     // Interpret user's custom action

@@ -108,12 +108,11 @@ export class StorySession {
 
       let customActionConstraint: string | undefined;
 
-      if (parsedAction.isCustomAction && !validation.isValid && !isTerminalFailure) {
-        // STORY-FIRST SYSTEM: The story must never stop.
-        // User input expresses intent/attempt, but does not control reality.
-        // A player can attempt almost anything (e.g. using a missing item, acting while fatigued,
-        // or speaking to a dead NPC), but cannot declare reality into existence.
-        // The authoritative constraint is preserved and passed to the Narrative Director.
+      if (!validation.isValid && !isTerminalFailure) {
+        // STORY-FIRST RESILIENCE: The story must never stop.
+        // User action (whether a clicked choice or custom input) expresses intent/attempt.
+        // If a precondition fails (e.g. low stamina, missing item, or fatigue),
+        // DO NOT crash or throw! Instead, preserve the constraint and pass it to the Narrative Director.
         customActionConstraint = validation.reason;
         transaction.stageValidation({ isValid: true });
       } else {

@@ -353,4 +353,36 @@ describe('Story Language Persistence & Natural Hindi Narration', () => {
     expect(result.updatedStory.storyLanguage).toBe('en');
     expect(result.updatedStory.settings.storyLanguage).toBe('en');
   });
+
+  it('12. Prevents Story Generation Paused crash when player stamina is depleted after many turns', async () => {
+    const exhaustedStory = createNewStory({
+      title: 'Exhausted Hero Chronicle',
+      hero: mockHero,
+      genres: ['Fantasy'],
+      worldId: 'aethelgard',
+      worldName: 'Aethelgard',
+      settings: {
+        tone: 'Epic Fantasy',
+        pacing: 'Balanced Narrative',
+        difficulty: 'Adventurer (Standard)',
+        storyLanguage: 'hi',
+      },
+      storyLanguage: 'hi',
+    });
+
+    // Artificially deplete stamina to 0 (simulating 15+ turns of continuous adventuring)
+    exhaustedStory.state.stamina = 0;
+
+    // Player selects a choice costing stamina
+    const choiceId = exhaustedStory.turns[0].choices[0].choiceId;
+    const result = await executeAdvancedStoryTurn(
+      exhaustedStory,
+      { choiceId },
+      new LocalNarrativeProvider()
+    );
+
+    expect(result.updatedStory.turns.length).toBe(2);
+    expect(result.updatedStory.storyLanguage).toBe('hi');
+    expect(result.updatedStory.state.stamina).toBeGreaterThanOrEqual(10);
+  });
 });

@@ -86,6 +86,12 @@ export class ActionResolver {
       }
     }
 
+    // Story-First: Ensure stamina never permanently dead-locks at 0
+    if (typeof delta.stamina === 'number' && delta.stamina < 12 && action.intent !== 'rest') {
+      delta.stamina = Math.max(12, delta.stamina);
+      consequences.push('Pushed through physical exhaustion with adrenaline and fierce resolve.');
+    }
+
     // Story-First Invariant Guards on State Alteration
     if (action.isGrandClaim) {
       consequences.push('Expressed grand claim: established resources and numbers remain unchanged.');
