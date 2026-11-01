@@ -10,8 +10,6 @@ export const CONFIG = {
   GEMINI_API_KEY:
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_API_KEY ||
-    process.env.VITE_GEMINI_API_KEY ||
-    process.env.VITE_GOOGLE_API_KEY ||
     '',
   GEMINI_INITIAL_MODEL: process.env.GEMINI_INITIAL_MODEL || 'gemini-3.8-flash',
   GEMINI_TURN_MODEL: process.env.GEMINI_TURN_MODEL || 'gemini-3.1-flash-lite',
@@ -32,6 +30,8 @@ export const CONFIG = {
   // Official Free-Tier Quota Targets (Model-specific tracking)
   MODEL_QUOTAS: {
     'gemini-3.8-flash': { rpm: 5, tpm: 250000, rpd: 20 },
+    'gemini-3.6-flash': { rpm: 10, tpm: 250000, rpd: 100 },
+    'gemini-3.5-flash-lite': { rpm: 15, tpm: 250000, rpd: 500 },
     'gemini-3.1-flash-lite': { rpm: 15, tpm: 250000, rpd: 500 },
   }
 };

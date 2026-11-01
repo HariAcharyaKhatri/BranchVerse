@@ -43,11 +43,12 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
 
   try {
     const narrative = await geminiService.generateInitialStory(req.body);
+    const actualModelUsed = narrative.modelUsed || modelId;
     const elapsed = Date.now() - startTime;
-    console.log(`[Narrative API] [Initial Story Success] User: ${userId}, Model: ${modelId}, Elapsed: ${elapsed}ms`);
+    console.log(`[Narrative API] [Initial Story Success] User: ${userId}, Model: ${actualModelUsed}, Elapsed: ${elapsed}ms`);
     res.json({
       success: true,
-      modelUsed: modelId,
+      modelUsed: actualModelUsed,
       narrative
     });
   } catch (err: any) {
@@ -124,11 +125,12 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
 
   try {
     const narrative = await geminiService.generateStoryTurn(req.body);
+    const actualModelUsed = narrative.modelUsed || modelId;
     const elapsed = Date.now() - startTime;
-    console.log(`[Narrative API] [Story Turn Success] User: ${userId}, Model: ${modelId}, Elapsed: ${elapsed}ms`);
+    console.log(`[Narrative API] [Story Turn Success] User: ${userId}, Model: ${actualModelUsed}, Elapsed: ${elapsed}ms`);
     res.json({
       success: true,
-      modelUsed: modelId,
+      modelUsed: actualModelUsed,
       narrative
     });
   } catch (err: any) {

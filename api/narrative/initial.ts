@@ -53,11 +53,12 @@ export default async function handler(req: Request, res: Response) {
 
   try {
     const narrative = await geminiService.generateInitialStory(req.body);
+    const actualModelUsed = narrative.modelUsed || modelId;
     const elapsed = Date.now() - startTime;
-    console.log(`[Narrative API] [Initial Story Success] User: ${userId}, Model: ${modelId}, Elapsed: ${elapsed}ms`);
+    console.log(`[Narrative API] [Initial Story Success] User: ${userId}, Model: ${actualModelUsed}, Elapsed: ${elapsed}ms`);
     res.status(200).json({
       success: true,
-      modelUsed: modelId,
+      modelUsed: actualModelUsed,
       narrative
     });
   } catch (err: any) {

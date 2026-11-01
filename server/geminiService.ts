@@ -115,10 +115,23 @@ export interface GeneratedNarrative {
     importantFacts?: string[];
   };
   memorySummary?: string;
+  modelUsed?: string;
 }
 
 export class GeminiService {
   private client: GoogleGenAI | null = null;
+  private discoveredModelsCache: string[] | null = null;
+  private discoveredModelsTimestamp: number = 0;
+  private readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour cache
+
+  // Models that are known to return 404, deprecated, or unavailable to new users
+  private unavailableModels: Set<string> = new Set([
+    'gemini-2.5-flash',     // Explicitly excluded: returns 404 (no longer available to new users)
+    'gemini-2.0-flash',     // Deprecated/shut down
+    'gemini-2.0-flash-lite',// Shut down
+    'gemini-1.5-flash',     // Deprecated
+    'gemini-1.5-pro'        // Deprecated
+  ]);
 
   constructor() {
     if (CONFIG.GEMINI_API_KEY) {
@@ -135,13 +148,119 @@ export class GeminiService {
     return Boolean(CONFIG.GEMINI_API_KEY && CONFIG.GEMINI_API_KEY.trim() !== '');
   }
 
+  /**
+   * Discovers currently available Gemini models via official SDK API.
+   * Results are cached in memory for 1 hour to prevent latency overhead.
+   */
+  public async getAvailableModels(): Promise<string[]> {
+    const now = Date.now();
+    if (
+      this.discoveredModelsCache &&
+      this.discoveredModelsCache.length > 0 &&
+      now - this.discoveredModelsTimestamp < this.CACHE_TTL_MS
+    ) {
+      return this.discoveredModelsCache.filter((m) => !this.unavailableModels.has(m));
+    }
+
+    if (!this.client || !this.isConfigured()) {
+      return this.getStaticVerifiedModels();
+    }
+
+    try {
+      if (this.client.models && typeof this.client.models.list === 'function') {
+        console.log('[GeminiService] Discovering available Gemini models via official SDK API...');
+        const discovered: string[] = [];
+        const pager = await this.client.models.list();
+
+        for await (const model of pager) {
+          const rawName = (model as any)?.name;
+          if (!rawName) continue;
+          const normalized = rawName.replace(/^models\//, '');
+
+          // Verify it's an active Gemini model and not in our blacklist
+          if (normalized.startsWith('gemini-') && !this.unavailableModels.has(normalized)) {
+            discovered.push(normalized);
+          }
+        }
+
+        if (discovered.length > 0) {
+          console.log(`[GeminiService] Discovered ${discovered.length} available models:`, discovered.join(', '));
+          this.discoveredModelsCache = discovered;
+          this.discoveredModelsTimestamp = now;
+          return discovered;
+        }
+      }
+    } catch (listErr: any) {
+      console.warn('[GeminiService] Model discovery API call failed (using verified fallback list):', listErr?.message || listErr);
+    }
+
+    const staticList = this.getStaticVerifiedModels();
+    this.discoveredModelsCache = staticList;
+    this.discoveredModelsTimestamp = now;
+    return staticList;
+  }
+
+  /**
+   * Verified active Gemini 3 generation models (strictly excluding 404 deprecated models).
+   */
+  public getStaticVerifiedModels(): string[] {
+    const activeGemini3Models = [
+      'gemini-3.8-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite'
+    ];
+    return activeGemini3Models.filter((m) => !this.unavailableModels.has(m));
+  }
+
+  /**
+   * Builds an ordered list of candidate models for story execution:
+   * 1. Primary requested model (if not blacklisted)
+   * 2. Verified fallback models ordered by suitability for the role
+   */
+  public async buildModelCascade(primaryModel: string, role: 'initial' | 'turn'): Promise<string[]> {
+    const available = await this.getAvailableModels();
+
+    // Role-specific fallback preferences:
+    // Initial scene benefits from deeper reasoning (gemini-3.8-flash, gemini-3.6-flash)
+    // Story turns benefit from rapid throughput (gemini-3.1-flash-lite, gemini-3.5-flash-lite)
+    const fallbackPreferences =
+      role === 'initial'
+        ? ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
+        : ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash'];
+
+    const candidates: string[] = [];
+
+    if (!this.unavailableModels.has(primaryModel)) {
+      candidates.push(primaryModel);
+    }
+
+    for (const pref of fallbackPreferences) {
+      if (!candidates.includes(pref) && !this.unavailableModels.has(pref) && available.includes(pref)) {
+        candidates.push(pref);
+      }
+    }
+
+    for (const model of available) {
+      if (!candidates.includes(model) && !this.unavailableModels.has(model)) {
+        candidates.push(model);
+      }
+    }
+
+    if (candidates.length === 0) {
+      candidates.push(role === 'initial' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite');
+    }
+
+    return candidates;
+  }
+
   private getLanguagePromptInstruction(lang: SupportedLanguage): string {
     const info = LANGUAGE_LABELS[lang] || LANGUAGE_LABELS.en;
     return `CRITICAL LANGUAGE REQUIREMENT: You MUST deliver ALL scene titles, prose narrative, spoken dialogues, and proposed player choices in ${info.label} (${info.native}). Do NOT produce English unless the user explicitly requested English. Proper character and realm names may remain phonetically natural.`;
   }
 
   /**
-   * Model A: Initial Story Generation (gemini-3.8-flash)
+   * Model A: Initial Story Generation (gemini-3.8-flash with dynamic fallback cascade)
    */
   public async generateInitialStory(context: InitialStoryContext): Promise<GeneratedNarrative> {
     if (!this.client || !this.isConfigured()) {
@@ -194,17 +313,14 @@ CRITICAL PACING & ROLE-PLAY RULES:
 4. Propose 3 tactical, distinct choices with risk levels (safe, moderate, perilous) and stamina costs (4 to 12).
 5. Establish 1 starting quest, 1-2 world facts, and provide initial state changes if relevant.`;
 
-    const rawJson = await this.callWithRetry(
-      modelId,
-      prompt,
-      maxTokens,
-      ['gemini-2.5-flash', 'gemini-2.0-flash']
-    );
-    return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
+    const result = await this.callWithRetry(modelId, prompt, maxTokens, 'initial');
+    const narrative = this.parseAndValidateNarrative(result.text, context.storyLanguage);
+    narrative.modelUsed = result.modelUsed;
+    return narrative;
   }
 
   /**
-   * Model B: Regular Story Turns (gemini-3.1-flash-lite)
+   * Model B: Regular Story Turns (gemini-3.1-flash-lite with dynamic fallback cascade)
    */
   public async generateStoryTurn(context: StoryTurnContext): Promise<GeneratedNarrative> {
     if (!this.client || !this.isConfigured()) {
@@ -287,33 +403,37 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
 4. Offer 3 varied, contextual next choices with riskLevel and stamina cost.
 5. In 'stateChanges', record any location shift, item acquired/spent, or NPC relationship shifts.`;
 
-    const rawJson = await this.callWithRetry(
-      modelId,
-      prompt,
-      maxTokens,
-      ['gemini-2.5-flash', 'gemini-2.0-flash']
-    );
-    return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
+    const result = await this.callWithRetry(modelId, prompt, maxTokens, 'turn');
+    const narrative = this.parseAndValidateNarrative(result.text, context.storyLanguage);
+    narrative.modelUsed = result.modelUsed;
+    return narrative;
   }
 
   private async callWithRetry(
     model: string,
     input: string,
     maxTokens: number = 1500,
-    fallbackModels: string[] = []
-  ): Promise<string> {
-    const candidateModels = [model, ...fallbackModels.filter(m => m !== model)];
+    role: 'initial' | 'turn' = 'initial'
+  ): Promise<{ text: string; modelUsed: string }> {
+    const candidateModels = await this.buildModelCascade(model, role);
     let candidateIndex = 0;
-    const maxRetries = Math.max(CONFIG.GEMINI_MAX_RETRIES, candidateModels.length > 1 ? 1 : 0);
     const timeoutMs = CONFIG.GEMINI_TIMEOUT_MS;
     const deadline = Date.now() + timeoutMs;
     let attempt = 0;
+    const maxRetries = Math.max(CONFIG.GEMINI_MAX_RETRIES, candidateModels.length > 1 ? candidateModels.length - 1 : 1);
+    let lastError: any = null;
 
-    while (attempt <= maxRetries) {
-      const currentModel = candidateModels[candidateIndex] || candidateModels[0];
+    while (candidateIndex < candidateModels.length) {
+      const currentModel = candidateModels[candidateIndex];
+
+      if (this.unavailableModels.has(currentModel)) {
+        candidateIndex++;
+        continue;
+      }
+
       const remainingTime = deadline - Date.now();
       if (remainingTime <= 0) {
-        console.warn(`[GeminiService] [Timeout] Budget exhausted (${timeoutMs}ms) before attempt ${attempt + 1} for model: ${currentModel}`);
+        console.warn(`[GeminiService] [Timeout] Total budget exhausted (${timeoutMs}ms) before attempt for model: ${currentModel}`);
         throw new Error(`Gemini API request timed out after ${timeoutMs}ms.`);
       }
 
@@ -324,7 +444,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
       }, attemptTimeout);
 
       const requestStart = Date.now();
-      console.log(`[GeminiService] [Request Started] Model: ${currentModel}, Attempt: ${attempt + 1}/${maxRetries + 1}, TimeoutBudget: ${attemptTimeout}ms`);
+      console.log(`[GeminiService] [Request Started] Model: ${currentModel}, Attempt: ${attempt + 1}, TimeoutBudget: ${attemptTimeout}ms`);
 
       const narrativeSchema = {
         type: 'object',
@@ -408,11 +528,9 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
             });
             outputText = response.text || '';
           } catch (modelErr: any) {
-            // If models.generateContent timed out, abort immediately without fallback
             if (controller.signal.aborted || modelErr?.name === 'AbortError') {
               throw modelErr;
             }
-            // Fall back to interactions API if available
             if (this.client!.interactions && typeof this.client!.interactions.create === 'function') {
               const interaction = await this.client!.interactions.create(
                 {
@@ -460,14 +578,15 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
         clearTimeout(timer);
         const elapsed = Date.now() - requestStart;
         if (!outputText) {
-          throw new Error('Gemini API returned an empty response.');
+          throw new Error(`Gemini API returned an empty response for model ${currentModel}.`);
         }
 
-        console.log(`[GeminiService] [Request Success] Model: ${currentModel}, Elapsed: ${elapsed}ms, OutputChars: ${outputText.length}`);
-        return outputText;
+        console.log(`[GeminiService] [Request Success] Model Used: ${currentModel}, Elapsed: ${elapsed}ms, OutputChars: ${outputText.length}`);
+        return { text: outputText, modelUsed: currentModel };
       } catch (err: any) {
         clearTimeout(timer);
         const elapsed = Date.now() - requestStart;
+        lastError = err;
 
         const isTimeout =
           controller.signal.aborted ||
@@ -483,44 +602,86 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
           throw new Error(`Gemini API request timed out after ${attemptTimeout}ms.`);
         }
 
-        attempt++;
+        // 1. Check for 404 Model Unavailable / Deprecated / No longer available to new users
+        const is404 =
+          err?.status === 404 ||
+          err?.message?.includes('404') ||
+          err?.message?.toLowerCase().includes('no longer available') ||
+          err?.message?.toLowerCase().includes('not found') ||
+          err?.message?.toLowerCase().includes('is not supported for this api');
 
-        // Fail fast on quota exhaustion (do not retry 429)
+        if (is404) {
+          console.warn(`[GeminiService] Model '${currentModel}' is unavailable (404 / no longer available). Blacklisting and skipping immediately.`);
+          this.unavailableModels.add(currentModel);
+          candidateIndex++;
+          // Skip immediately to the next candidate model without consuming a retry!
+          continue;
+        }
+
+        // 2. Fail fast on Quota Exhaustion (429 RESOURCE_EXHAUSTED)
         if (err?.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED')) {
           console.warn(`[GeminiService] [Quota Exhausted] Model: ${currentModel}, Elapsed: ${elapsed}ms, Status: 429`);
           throw new Error(`Model quota exhausted for ${currentModel}: ${err.message}`);
         }
 
-        // Fail fast on client authentication or bad request errors (4xx, except 404 which may indicate unsupported model ID)
-        if (err?.status && err.status >= 400 && err.status < 500 && err.status !== 404) {
+        // 3. Fail fast on Invalid / Unauthorized API Key (do not retry endlessly)
+        const isAuthError =
+          err?.status === 401 ||
+          err?.status === 403 ||
+          err?.message?.includes('API_KEY_INVALID') ||
+          err?.message?.includes('API key not valid') ||
+          (err?.status === 400 && err?.message?.toLowerCase().includes('api key'));
+
+        if (isAuthError) {
+          console.warn(`[GeminiService] [Auth Error] Status: ${err?.status || 401}, Message: ${err.message}`);
+          throw new Error(`Gemini API key is invalid or unauthorized: ${err.message}`);
+        }
+
+        // 4. Fail fast on other client bad request errors (4xx)
+        if (err?.status && err.status >= 400 && err.status < 500) {
           console.warn(`[GeminiService] [Client Error] Model: ${currentModel}, Status: ${err.status}, Elapsed: ${elapsed}ms`);
           throw new Error(`Gemini API request rejected with status ${err.status}: ${err.message}`);
         }
 
+        attempt++;
+        const timeLeft = deadline - Date.now();
+
+        // 5. Check for 503 High Demand / Model Overloaded
+        const is503 =
+          err?.status === 503 ||
+          err?.message?.includes('503') ||
+          err?.message?.toLowerCase().includes('high demand') ||
+          err?.message?.toLowerCase().includes('overloaded') ||
+          err?.message?.toLowerCase().includes('service unavailable');
+
+        if (is503) {
+          console.warn(`[GeminiService] Model '${currentModel}' returned 503 (high demand / overloaded). Switching to next verified fallback in cascade.`);
+          candidateIndex++;
+          if (candidateIndex < candidateModels.length && timeLeft > 1000) {
+            await new Promise((r) => setTimeout(r, 150));
+            continue;
+          }
+        }
+
         console.warn(`[GeminiService] [Attempt Failed] Model: ${currentModel}, Attempt: ${attempt}/${maxRetries + 1}, Elapsed: ${elapsed}ms, Error: ${err?.message || err}`);
 
-        // If candidate fallback model exists, advance candidateIndex
-        if (candidateIndex + 1 < candidateModels.length) {
-          candidateIndex++;
-          console.log(`[GeminiService] [Fallback Model Cascade] Switching from ${currentModel} to fallback: ${candidateModels[candidateIndex]}`);
-        }
-
-        // Retry transient server errors only if budget allows
-        const timeLeft = deadline - Date.now();
-        if (attempt <= maxRetries && timeLeft > 1000) {
-          const delay = Math.min(attempt * 400, Math.max(0, timeLeft - 500));
+        // For other transient errors (500, 502, network glitch), try fallback model or retry
+        candidateIndex++;
+        if (candidateIndex < candidateModels.length && timeLeft > 1000) {
+          const delay = Math.min(attempt * 300, Math.max(0, timeLeft - 500));
           if (delay > 0) {
-            console.log(`[GeminiService] [Retrying] Model: ${candidateModels[candidateIndex]}, Waiting: ${delay}ms before next attempt`);
+            console.log(`[GeminiService] [Retrying] Switching to next fallback model, Waiting: ${delay}ms`);
             await new Promise((r) => setTimeout(r, delay));
           }
-        } else {
-          console.error(`[GeminiService] All narrative generation attempts failed. Total attempts: ${attempt}. Last error:`, err?.message || err);
-          throw new Error(`AI narrative service temporarily unavailable (failed after ${attempt} attempt(s): ${err.message})`);
+          continue;
         }
+
+        break;
       }
     }
 
-    throw new Error(`Gemini API request timed out after ${timeoutMs}ms.`);
+    console.error(`[GeminiService] All narrative generation attempts failed. Total attempts: ${attempt}. Last error:`, lastError?.message || lastError);
+    throw new Error(`AI narrative service temporarily unavailable (failed after ${attempt} attempt(s): ${lastError?.message || 'unknown error'})`);
   }
 
   private parseAndValidateNarrative(raw: string, _storyLanguage: SupportedLanguage): GeneratedNarrative {
