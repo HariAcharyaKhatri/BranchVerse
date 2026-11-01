@@ -239,7 +239,8 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
                   disabled={isGenerating}
                   className="w-full justify-center"
                 >
-                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Retry with Gemini 3.8 Flash
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                  {isGenerating ? 'Generating...' : 'Retry Story Generation'}
                 </Button>
               )}
               <Button
@@ -261,7 +262,7 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
               </div>
             </div>
             <p className="text-dark-muted leading-relaxed">
-              Your hero and settings are completely preserved. Please verify your network or retry calling Gemini to generate your opening scene.
+              Your hero and settings are completely preserved. Please tap Retry to continue generating your opening scene.
             </p>
           </div>
         </Modal>

@@ -124,6 +124,10 @@ export class GeminiService {
   private discoveredModelsTimestamp: number = 0;
   private readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour cache
 
+  // Cooldown tracker for models experiencing temporary 503 high-demand or slow queue
+  private modelCooldowns: Map<string, number> = new Map();
+  private readonly COOLDOWN_DURATION_MS = 2 * 60 * 1000; // 2 minutes cooldown
+
   // Models that are known to return 404, deprecated, or unavailable to new users
   private unavailableModels: Set<string> = new Set([
     'gemini-2.5-flash',     // Explicitly excluded: returns 404 (no longer available to new users)
@@ -260,7 +264,22 @@ export class GeminiService {
       candidates.push(role === 'initial' ? 'gemini-3.8-flash' : 'gemini-3.1-flash-lite');
     }
 
-    return candidates;
+    // Sort by cooldown state: healthy models are tried first;
+    // models currently experiencing high demand/cooldown are tried after healthy models.
+    const now = Date.now();
+    const healthy: string[] = [];
+    const cooling: string[] = [];
+    for (const c of candidates) {
+      const cd = this.modelCooldowns.get(c);
+      if (cd && cd > now) {
+        cooling.push(c);
+      } else {
+        healthy.push(c);
+      }
+    }
+
+    const ordered = [...healthy, ...cooling];
+    return ordered.length > 0 ? ordered : candidates;
   }
 
   private getLanguagePromptInstruction(lang: SupportedLanguage): string {
@@ -280,50 +299,44 @@ export class GeminiService {
     const langInstruction = this.getLanguagePromptInstruction(context.storyLanguage);
 
     const lengthSetting = context.narrativeLength || 'balanced';
-    let lengthRequirement = 'Write an immersive opening prologue (180 to 280 words across 2 to 3 rich paragraphs). Keep it focused and impactful.';
-    let maxTokens = 1500;
+    let lengthRequirement = 'Write an immersive opening scene (140 to 190 words across 2 engaging paragraphs).';
+    let maxTokens = 700;
     if (lengthSetting === 'concise') {
-      lengthRequirement = 'Write a concise, punchy opening scene (120 to 180 words across 2 paragraphs). Quick to read, highly engaging.';
-      maxTokens = 1200;
+      lengthRequirement = 'Write a concise, punchy opening scene (90 to 140 words across 1 to 2 paragraphs). Fast-paced and immediate.';
+      maxTokens = 500;
     } else if (lengthSetting === 'detailed') {
-      lengthRequirement = 'Write a detailed opening chapter (280 to 380 words across 3 to 4 atmospheric paragraphs).';
-      maxTokens = 2000;
+      lengthRequirement = 'Write a detailed opening scene (190 to 250 words across 2 to 3 atmospheric paragraphs).';
+      maxTokens = 900;
     }
 
-    const prompt = `You are the master AI Narrative Director for BranchVerse, an interactive visual novel and role-playing platform.
+    const prompt = `You are the master AI Narrative Director for BranchVerse.
 Establish an engaging opening scene and inciting incident for a new chronicle.
 
-HERO PROFILE:
-- Name: ${context.hero.name}
-- Origin: ${context.hero.origin}
-- Race: ${context.hero.race}
+PROTAGONIST:
+- Name: ${context.hero.name} | Race: ${context.hero.race} | Origin: ${context.hero.origin}
 - Personality: ${context.hero.personality.join(', ')}
 - Skills: ${context.hero.skills.join(', ')}
-- Backstory: ${context.hero.backstory || 'A lone wanderer seeking destiny.'}
+${context.hero.backstory ? `- Backstory: ${context.hero.backstory}` : ''}
 
-WORLD & CAMPAIGN:
-- Realm: ${context.worldName}
-- Genres: ${context.genres.join(', ')}
-- Time Period: ${context.timePeriod || 'Era of Wonders'}
-- Tone: ${context.tone}
-- Style: ${context.storyStyle || 'Heroic Narrative'}
-- Difficulty: ${context.difficulty}
-- Dynamics: Action=${context.actionLevel || 'Moderate'} | Mystery=${context.mysteryLevel || 'Moderate'} | Romance=${context.romanceLevel || 'None'}
-${context.mainObjective ? `- Main Objective: ${context.mainObjective}` : ''}
-${context.supportingCharacters && context.supportingCharacters.length > 0 ? `- Supporting Cast: ${context.supportingCharacters.join(', ')}` : ''}
-${context.userPromptDescription ? `\nCORE PREMISE / PLAYER VISION:\n"${context.userPromptDescription}"\n(Directly realize this premise in the opening scene!)` : ''}
+WORLD & SETTING:
+- Realm: ${context.worldName} (${context.genres.join(', ')})
+- Tone: ${context.tone} | Style: ${context.storyStyle || 'Heroic Narrative'} | Difficulty: ${context.difficulty}
+${context.mainObjective ? `- Objective: ${context.mainObjective}` : ''}
+${context.userPromptDescription ? `\nCORE PREMISE / VISION:\n"${context.userPromptDescription}"\n(Realize this premise in the opening scene!)` : ''}
 
 ${langInstruction}
 
-CRITICAL PACING & ROLE-PLAY RULES:
+PACING RULES:
 1. ${lengthRequirement}
-2. Ground the scene with sensory atmospheric cues (weather, lighting, local architecture) and ${context.hero.name}'s perspective.
-3. Include 1-2 authentic character spoken dialogues with emotion cues (calm, furious, mysterious, terrified, warm).
-4. Propose 3 tactical, distinct choices with risk levels (safe, moderate, perilous) and stamina costs (4 to 12).
-5. Establish 1 starting quest, 1-2 world facts, and provide initial state changes if relevant.`;
+2. Ground the scene with sensory atmospheric cues and ${context.hero.name}'s perspective.
+3. Include 1 spoken character dialogue line with emotion cue.
+4. Propose 3 distinct, tactical choices with riskLevel (safe, moderate, perilous) and stamina costs (4 to 12).
+Do NOT generate an entire long story. Generate only the immediate opening scene and choices needed to start playing.`;
 
     const result = await this.callWithRetry(modelId, prompt, maxTokens, 'initial');
+    const parseStart = Date.now();
     const narrative = this.parseAndValidateNarrative(result.text, context.storyLanguage);
+    console.log(`[GeminiService] [Stage: JSON Parse] Initial story parse completed in ${Date.now() - parseStart}ms`);
     narrative.modelUsed = result.modelUsed;
     return narrative;
   }
@@ -340,14 +353,14 @@ CRITICAL PACING & ROLE-PLAY RULES:
     const langInstruction = this.getLanguagePromptInstruction(context.storyLanguage);
 
     const lengthSetting = context.narrativeLength || 'balanced';
-    let lengthRequirement = 'Write a focused narrative continuation (120 to 200 words across 2 paragraphs). Fast, vivid, and responsive.';
-    let maxTokens = 1400;
+    let lengthRequirement = 'Write a focused narrative continuation (110 to 150 words across 1 to 2 paragraphs). Vivid, responsive, and kinetic.';
+    let maxTokens = 600;
     if (lengthSetting === 'concise') {
-      lengthRequirement = 'Write a quick, punchy continuation (80 to 140 words across 1 to 2 paragraphs). Deliver instant feedback on the action.';
-      maxTokens = 1000;
+      lengthRequirement = 'Write a quick continuation (70 to 110 words across 1 paragraph). Immediate feedback on the action.';
+      maxTokens = 450;
     } else if (lengthSetting === 'detailed') {
-      lengthRequirement = 'Write an immersive continuation (180 to 260 words across 2 to 3 descriptive paragraphs).';
-      maxTokens = 1800;
+      lengthRequirement = 'Write an immersive continuation (150 to 200 words across 2 paragraphs). Richly descriptive.';
+      maxTokens = 800;
     }
 
     // Role-play input discrimination (Action vs Dialogue vs Thought vs Choice)
@@ -358,62 +371,55 @@ CRITICAL PACING & ROLE-PLAY RULES:
       const target = context.playerAction.targetNpc ? ` to ${context.playerAction.targetNpc}` : '';
       actionInstruction = `PLAYER DIALOGUE (Spoken aloud${target}):
 "${context.playerAction.customActionText || ''}"
--> ROLE-PLAY DIRECTIVE: Treat this as spoken conversation. Nearby NPCs MUST hear, react, and reply verbally in dialogue with authentic emotion!`;
+-> ROLE-PLAY DIRECTIVE: Nearby characters hear and reply verbally with authentic emotion!`;
     } else if (actionType === 'thought') {
       actionInstruction = `PLAYER INNER THOUGHT:
 "${context.playerAction.customActionText || ''}"
--> INNER MONOLOGUE DIRECTIVE: The protagonist is contemplating or reflecting silently. Advance the scene accordingly.`;
+-> INNER MONOLOGUE DIRECTIVE: Reflect silently and advance scene.`;
     } else if (actionType === 'action') {
       actionInstruction = `PLAYER PHYSICAL ACTION:
 "${context.playerAction.customActionText || ''}"
--> KINETIC ACTION DIRECTIVE: Describe the physical outcome, kinetic impact, and how the world and enemies/allies respond.`;
+-> ACTION DIRECTIVE: Describe physical outcome, impact, and reaction.`;
     } else {
       actionInstruction = `PLAYER SELECTED CHOICE:
 "${context.playerAction.choiceText || context.playerAction.customActionText || 'Proceed'}"`;
     }
 
     const recentHistoryText = context.recentTurns
-      .slice(-3) // Limit to the 3 most recent turns to save tokens & prevent slow prompts
-      .map((t, idx) => `[Turn -${Math.min(3, context.recentTurns.length) - idx}]: ${t.sceneTitle} | Action: ${t.actionTaken} | Outcome: ${t.narrativeSummary}`)
+      .slice(-2) // Only 2 most recent turns to minimize latency & token budget
+      .map((t, idx) => `[Turn -${Math.min(2, context.recentTurns.length) - idx}]: ${t.sceneTitle} | Action: ${t.actionTaken} -> Outcome: ${t.narrativeSummary.slice(0, 120)}`)
       .join('\n');
 
     const npcContextText = context.npcRelationships && context.npcRelationships.length > 0
-      ? `\nKNOWN NPC RELATIONSHIPS:\n${context.npcRelationships.map(n => `- ${n.name} (${n.role}): Trust=${n.trust}, Friendship=${n.friendship || 0}, Fear=${n.fear || 0}, Respect=${n.respect || 0}. Memories: ${n.memories?.slice(-2).join('; ') || 'None'}`).join('\n')}`
+      ? `\nKNOWN NPCS: ${context.npcRelationships.slice(0, 3).map(n => `${n.name} (Trust:${n.trust})`).join(', ')}`
       : '';
 
-    const memoryText = context.memorySummary ? `\nPREVIOUS STORY SUMMARY:\n${context.memorySummary}` : '';
     const factsText = context.importantFacts && context.importantFacts.length > 0
-      ? `\nPERMANENT WORLD FACTS:\n${context.importantFacts.slice(-4).map(f => `- ${f}`).join('\n')}`
+      ? `\nFACTS: ${context.importantFacts.slice(-2).join('; ')}`
       : '';
 
     const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing role-playing chronicle.
 
-PROTAGONIST:
-- Name: ${context.hero.name}
-- Stamina: ${context.hero.stamina}/100 | Power: ${context.hero.powerLevel}
-- Location: ${context.currentLocation}
-- Inventory Items: ${context.hero.inventory.join(', ') || 'None'}
-${npcContextText}${factsText}${memoryText}
+PROTAGONIST: ${context.hero.name} | Stamina: ${context.hero.stamina}/100 | Power: ${context.hero.powerLevel} | Location: ${context.currentLocation} | Items: ${context.hero.inventory.slice(0, 5).join(', ') || 'None'}${npcContextText}${factsText}
 
-RECENT STORY CONTEXT:
+RECENT CONTEXT:
 ${recentHistoryText || 'Story commenced.'}
 
-ACTIVE OBJECTIVES:
-${context.activeQuests.map(q => `- ${q.title}: ${q.objective}`).join('\n') || '- Survive and discover truth.'}
-
+CURRENT ACTION:
 ${actionInstruction}
 
 ${langInstruction}
 
-CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
+ROLE-PLAY INSTRUCTIONS:
 1. ${lengthRequirement}
-2. Respond with dynamic kinetic consequences or dialogue responses reflecting the player's move.
-3. Include 1-2 authentic NPC dialogues with distinct emotional cues.
-4. Offer 3 varied, contextual next choices with riskLevel and stamina cost.
-5. In 'stateChanges', record any location shift, item acquired/spent, or NPC relationship shifts.`;
+2. Deliver kinetic consequences or dialogue responses to the player's move.
+3. Include 1 authentic character dialogue response with emotion cue.
+4. Offer 3 varied, contextual next choices with riskLevel and stamina cost.`;
 
     const result = await this.callWithRetry(modelId, prompt, maxTokens, 'turn');
+    const parseStart = Date.now();
     const narrative = this.parseAndValidateNarrative(result.text, context.storyLanguage);
+    console.log(`[GeminiService] [Stage: JSON Parse] Story turn parse completed in ${Date.now() - parseStart}ms`);
     narrative.modelUsed = result.modelUsed;
     return narrative;
   }
@@ -421,7 +427,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
   private async callWithRetry(
     model: string,
     input: string,
-    maxTokens: number = 1500,
+    maxTokens: number = 700,
     role: 'initial' | 'turn' = 'initial'
   ): Promise<{ text: string; modelUsed: string }> {
     const candidateModels = await this.buildModelCascade(model, role);
@@ -442,12 +448,12 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
 
       const remainingTime = deadline - Date.now();
       if (remainingTime <= 0) {
-        console.warn(`[GeminiService] [Timeout] Total budget exhausted (${timeoutMs}ms) before attempt for model: ${currentModel}`);
+        console.warn(`[GeminiService] [Stage: Timeout] Total budget exhausted (${timeoutMs}ms) before attempt for model: ${currentModel}`);
         throw new Error(`Gemini API request timed out after ${timeoutMs}ms.`);
       }
 
-      // Cap per-model attempt to 7500ms if there are fallback candidates, leaving ample time to try the next model
-      const maxAttemptMs = candidateIndex + 1 < candidateModels.length ? 7500 : remainingTime;
+      // Cap per-model attempt to 5500ms if there are fallback candidates, leaving ample time to try the next model
+      const maxAttemptMs = candidateIndex + 1 < candidateModels.length ? 5500 : remainingTime;
       const attemptTimeout = Math.min(maxAttemptMs, remainingTime);
       const controller = new AbortController();
       const timer = setTimeout(() => {
@@ -455,7 +461,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
       }, attemptTimeout);
 
       const requestStart = Date.now();
-      console.log(`[GeminiService] [Request Started] Model: ${currentModel}, Attempt: ${attempt + 1}, TimeoutBudget: ${attemptTimeout}ms`);
+      console.log(`[GeminiService] [Stage: Model Dispatch] Model: ${currentModel}, Attempt: ${attempt + 1}, TimeoutBudget: ${attemptTimeout}ms, TargetTokens: ${maxTokens}`);
 
       const narrativeSchema = {
         type: 'object',
@@ -489,32 +495,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
               },
               required: ['choiceId', 'text']
             }
-          },
-          stateChanges: {
-            type: 'object',
-            properties: {
-              location: { type: 'string' },
-              inventoryChanges: { type: 'array', items: { type: 'string' } },
-              relationshipChanges: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    npcName: { type: 'string' },
-                    trustChange: { type: 'number' },
-                    respectChange: { type: 'number' },
-                    fearChange: { type: 'number' },
-                    friendshipChange: { type: 'number' },
-                    memory: { type: 'string' }
-                  },
-                  required: ['npcName']
-                }
-              },
-              questUpdates: { type: 'array', items: { type: 'string' } },
-              importantFacts: { type: 'array', items: { type: 'string' } }
-            }
-          },
-          memorySummary: { type: 'string' }
+          }
         },
         required: ['sceneTitle', 'narrativeText', 'proposedChoices']
       };
@@ -592,7 +573,8 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
           throw new Error(`Gemini API returned an empty response for model ${currentModel}.`);
         }
 
-        console.log(`[GeminiService] [Request Success] Model Used: ${currentModel}, Elapsed: ${elapsed}ms, OutputChars: ${outputText.length}`);
+        this.modelCooldowns.delete(currentModel);
+        console.log(`[GeminiService] [Stage: Model Response] Model: ${currentModel}, Latency: ${elapsed}ms, OutputChars: ${outputText.length}`);
         return { text: outputText, modelUsed: currentModel };
       } catch (err: any) {
         clearTimeout(timer);
@@ -609,7 +591,8 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
           err?.message?.toLowerCase().includes('aborted');
 
         if (isTimeout) {
-          console.warn(`[GeminiService] [Request Timeout] Model: ${currentModel}, Attempt: ${attempt + 1}, Elapsed: ${elapsed}ms`);
+          console.warn(`[GeminiService] [Stage: Model Timeout] Model: ${currentModel}, Attempt: ${attempt + 1}, Elapsed: ${elapsed}ms`);
+          this.modelCooldowns.set(currentModel, Date.now() + this.COOLDOWN_DURATION_MS);
           const timeLeft = deadline - Date.now();
           if (candidateIndex + 1 < candidateModels.length && timeLeft > 2500) {
             console.warn(`[GeminiService] Model '${currentModel}' timed out after ${attemptTimeout}ms (likely high demand). Falling back to next candidate '${candidateModels[candidateIndex + 1]}'...`);
@@ -673,10 +656,11 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
           err?.message?.toLowerCase().includes('service unavailable');
 
         if (is503) {
-          console.warn(`[GeminiService] Model '${currentModel}' returned 503 (high demand / overloaded). Switching to next verified fallback in cascade.`);
+          console.warn(`[GeminiService] Model '${currentModel}' returned 503 (high demand / overloaded). Putting on 2m cooldown and switching to next verified fallback.`);
+          this.modelCooldowns.set(currentModel, Date.now() + this.COOLDOWN_DURATION_MS);
           candidateIndex++;
           if (candidateIndex < candidateModels.length && timeLeft > 1000) {
-            await new Promise((r) => setTimeout(r, 150));
+            await new Promise((r) => setTimeout(r, 100));
             continue;
           }
         }

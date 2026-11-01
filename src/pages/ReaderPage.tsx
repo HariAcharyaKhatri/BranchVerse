@@ -578,7 +578,8 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                   disabled={isProcessingTurn}
                   className="w-full justify-center"
                 >
-                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Retry Turn with Gemini
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isProcessingTurn ? 'animate-spin' : ''}`} />
+                  {isProcessingTurn ? 'Retrying...' : 'Retry Turn'}
                 </Button>
               )}
               <Button
@@ -608,7 +609,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               </div>
             </div>
             <p className="text-dark-muted leading-relaxed">
-              Your story state and last action are preserved. You can retry with Gemini or switch immediately to Offline Mode to continue your story seamlessly.
+              Your story state and last action are preserved. You can tap Retry or switch immediately to Offline Mode to continue your adventure seamlessly.
             </p>
           </div>
         </Modal>

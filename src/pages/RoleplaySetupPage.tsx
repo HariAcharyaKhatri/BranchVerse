@@ -20,7 +20,8 @@ import {
   Zap,
   Dices,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 export interface RoleplayScenario {
@@ -90,6 +91,7 @@ interface RoleplaySetupPageProps {
   }) => void;
   isGenerating?: boolean;
   launchError?: { title: string; message: string; retryable: boolean } | null;
+  onRetry?: () => void;
   onDismissError?: () => void;
 }
 
@@ -98,6 +100,7 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
   onLaunchRoleplay,
   isGenerating = false,
   launchError = null,
+  onRetry,
   onDismissError
 }) => {
   const [tab, setTab] = useState<'scenario' | 'character' | 'world' | 'settings'>('scenario');
@@ -298,22 +301,37 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
 
       {/* Error banner if previous launch failed */}
       {launchError && (
-        <div className="my-3 p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 flex items-start justify-between gap-3 text-xs text-red-200">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-white">{launchError.title}</p>
-              <p className="opacity-90">{launchError.message}</p>
+        <div className="my-3 p-4 rounded-xl bg-red-950/90 border border-red-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-red-200 shadow-xl animate-in fade-in">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-bold text-white text-sm">{launchError.title}</p>
+              <p className="text-red-200/90 leading-relaxed">{launchError.message}</p>
+              <p className="text-[11px] text-amber-300/80">Your character and scenario selections are preserved.</p>
             </div>
           </div>
-          {onDismissError && (
-            <button
-              onClick={onDismissError}
-              className="px-2 py-0.5 rounded bg-red-900/50 hover:bg-red-800 text-red-200 text-[10px]"
-            >
-              Dismiss
-            </button>
-          )}
+          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+            {launchError.retryable && onRetry && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={onRetry}
+                disabled={isGenerating}
+                className="gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                {isGenerating ? 'Summoning...' : 'Retry'}
+              </Button>
+            )}
+            {onDismissError && (
+              <button
+                onClick={onDismissError}
+                className="px-2 py-1 rounded bg-red-900/50 hover:bg-red-800 text-red-200 text-xs font-medium"
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
         </div>
       )}
 

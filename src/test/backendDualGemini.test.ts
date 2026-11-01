@@ -13,9 +13,14 @@ import { geminiService } from '../../server/geminiService.js';
 const originalFetch = global.fetch;
 
 describe('Dual Gemini Backend Architecture & Rate Limiter', () => {
+  beforeEach(() => {
+    (geminiService as any).modelCooldowns?.clear();
+  });
+
   afterEach(() => {
     global.fetch = originalFetch;
     vi.restoreAllMocks();
+    (geminiService as any).modelCooldowns?.clear();
   });
 
   describe('Rate Limiter Safeguards', () => {
@@ -910,6 +915,15 @@ describe('Dual Gemini Backend Architecture & Rate Limiter', () => {
       } finally {
         (geminiService as any).client = originalClient;
       }
+    });
+
+    it('deprioritizes models on temporary cooldown, promoting healthy models to the front', async () => {
+      (geminiService as any).modelCooldowns.set('gemini-3.8-flash', Date.now() + 60000);
+
+      const cascade = await geminiService.buildModelCascade('gemini-3.8-flash', 'initial');
+      expect(cascade[0]).not.toBe('gemini-3.8-flash');
+      expect(cascade[0]).toBe('gemini-3.6-flash');
+      expect(cascade[cascade.length - 1]).toBe('gemini-3.8-flash');
     });
   });
 });

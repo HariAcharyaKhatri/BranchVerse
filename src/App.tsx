@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HeroProfile } from './types/character';
 import { WorldDefinition } from './types/world';
 import { StorySettings } from './types/story';
@@ -51,6 +51,10 @@ const AppContent: React.FC = () => {
     message: string;
     retryable: boolean;
   } | null>(null);
+
+  // Recovery refs: preserve story creation params & abort controller to avoid duplicate/stale requests
+  const lastLaunchParamsRef = useRef<any>(null);
+  const storyAbortControllerRef = useRef<AbortController | null>(null);
 
   const navigate = (path: string) => {
     window.location.hash = path;
@@ -127,11 +131,23 @@ const AppContent: React.FC = () => {
     const targetGenres = params.overrideGenres || selectedGenres;
 
     if (!targetHero || !targetWorld) return;
+    if (isGeneratingStory) {
+      console.warn('Story generation is already running. Ignoring duplicate request.');
+      return;
+    }
+
     setLaunchError(null);
+    lastLaunchParamsRef.current = params;
+
+    if (storyAbortControllerRef.current) {
+      storyAbortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    storyAbortControllerRef.current = abortController;
 
     let initialNarrative: any = undefined;
 
-    // Model A: Initial Story Generation with gemini-3.8-flash (Live AI Chronicle)
+    // Model A: Initial Story Generation with dynamic Gemini 3 fallback cascade
     setIsGeneratingStory(true);
     try {
       let token = '';
@@ -170,7 +186,8 @@ const AppContent: React.FC = () => {
           mainObjective: params.settings.mainObjective,
           supportingCharacters: params.settings.supportingCharacters,
           userPromptDescription: params.userPromptDescription || params.settings.userPromptDescription
-        })
+        }),
+        signal: abortController.signal
       });
 
       if (!res.ok) {
@@ -194,12 +211,17 @@ const AppContent: React.FC = () => {
         return;
       }
     } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log('Story generation cancelled by user.');
+        return;
+      }
       console.warn('Initial AI generation failed:', err);
       const failure = classifyAiError(err);
       setLaunchError(failure);
       return;
     } finally {
       setIsGeneratingStory(false);
+      storyAbortControllerRef.current = null;
     }
 
     const newStory = createNewStory({
@@ -217,6 +239,12 @@ const AppContent: React.FC = () => {
 
     await storyRepository.saveStory(newStory);
     navigate(`#/reader/${newStory.id}`);
+  };
+
+  const handleRetryStoryLaunch = () => {
+    if (lastLaunchParamsRef.current && !isGeneratingStory) {
+      handleLaunchStory(lastLaunchParamsRef.current);
+    }
   };
 
   // Quick Play / 1-Tap Instant Journey with Live Gemini AI
@@ -308,6 +336,7 @@ const AppContent: React.FC = () => {
           onLaunchStory={handleLaunchStory}
           isGenerating={isGeneratingStory}
           launchError={launchError}
+          onRetry={handleRetryStoryLaunch}
           onDismissError={() => setLaunchError(null)}
         />
       );
@@ -323,6 +352,7 @@ const AppContent: React.FC = () => {
           onLaunchRoleplay={handleLaunchStory}
           isGenerating={isGeneratingStory}
           launchError={launchError}
+          onRetry={handleRetryStoryLaunch}
           onDismissError={() => setLaunchError(null)}
         />
       );
