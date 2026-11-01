@@ -40,6 +40,7 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
           pacing: 'Balanced Narrative',
           difficulty: context.difficulty,
           storyLanguage: context.storyLanguage || 'en',
+          narrativeLength: context.narrativeLength || 'balanced',
         }
       : {
           storyId: context.storyTitle,
@@ -54,16 +55,21 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
           genre: context.genre,
           tone: context.tone,
           storyLanguage: context.storyLanguage || 'en',
+          narrativeLength: context.narrativeLength || 'balanced',
           activeQuests: context.activeQuests.map((q) => ({
             title: q.title,
             objective: q.objectives[0] || 'Survive',
           })),
+          npcRelationships: context.npcRelationships,
+          memorySummary: context.memorySummary,
+          importantFacts: context.importantFacts,
           recentTurns: context.recentTurnsSummary.map((t) => ({
             sceneTitle: t.sceneTitle,
             narrativeSummary: t.actionTaken || '',
             actionTaken: t.actionTaken || 'Explored area',
           })),
-          playerAction: {
+          playerAction: context.playerAction || {
+            type: 'action',
             customActionText: context.recentTurnsSummary.slice(-1)[0]?.actionTaken,
           },
         };
@@ -76,6 +82,7 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
+        signal: context.signal,
       });
 
       if (!response.ok) {

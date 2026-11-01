@@ -69,6 +69,20 @@ export const storyRepository = {
     }
   },
 
+  async duplicateStory(id: string): Promise<StoryDocument | null> {
+    const original = await this.getStory(id);
+    if (!original) return null;
+    const duplicated: StoryDocument = {
+      ...JSON.parse(JSON.stringify(original)),
+      id: `bv_story_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      title: `${original.title} (Branch)`,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    await this.saveStory(duplicated);
+    return duplicated;
+  },
+
   async saveDraft(key: string, data: any): Promise<void> {
     try {
       const db = await getDB();

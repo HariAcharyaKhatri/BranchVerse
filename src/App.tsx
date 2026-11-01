@@ -21,6 +21,8 @@ import { LibraryPage } from './pages/LibraryPage';
 import { TranscriptPage } from './pages/TranscriptPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
+import { CreateStoryWizardPage } from './pages/CreateStoryWizardPage';
+import { RoleplaySetupPage } from './pages/RoleplaySetupPage';
 
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -118,6 +120,7 @@ const AppContent: React.FC = () => {
     overrideHero?: HeroProfile;
     overrideWorld?: WorldDefinition;
     overrideGenres?: string[];
+    userPromptDescription?: string;
   }) => {
     const targetHero = params.overrideHero || heroDraft;
     const targetWorld = params.overrideWorld || selectedWorld;
@@ -156,7 +159,17 @@ const AppContent: React.FC = () => {
           tone: params.settings.tone,
           pacing: params.settings.pacing,
           difficulty: params.settings.difficulty,
-          storyLanguage: params.settings.storyLanguage || 'en'
+          storyLanguage: params.settings.storyLanguage || 'en',
+          narrativeLength: params.settings.narrativeLength || 'balanced',
+          mode: params.settings.mode || 'story',
+          timePeriod: params.settings.timePeriod,
+          storyStyle: params.settings.storyStyle,
+          romanceLevel: params.settings.romanceLevel,
+          actionLevel: params.settings.actionLevel,
+          mysteryLevel: params.settings.mysteryLevel,
+          mainObjective: params.settings.mainObjective,
+          supportingCharacters: params.settings.supportingCharacters,
+          userPromptDescription: params.userPromptDescription || params.settings.userPromptDescription
         })
       });
 
@@ -200,6 +213,7 @@ const AppContent: React.FC = () => {
       storyLanguage: params.settings.storyLanguage || 'en',
       initialNarrative
     });
+    newStory.mode = params.settings.mode || 'story';
 
     await storyRepository.saveStory(newStory);
     navigate(`#/reader/${newStory.id}`);
@@ -283,7 +297,38 @@ const AppContent: React.FC = () => {
       );
     }
 
-    // 3. Step-by-Step Creation Wizard Routes
+    // 3. New Dedicated Creation Modes
+    if (currentRoute === '#/create-story') {
+      return (
+        <CreateStoryWizardPage
+          onBack={() => {
+            setLaunchError(null);
+            navigate('#/');
+          }}
+          onLaunchStory={handleLaunchStory}
+          isGenerating={isGeneratingStory}
+          launchError={launchError}
+          onDismissError={() => setLaunchError(null)}
+        />
+      );
+    }
+
+    if (currentRoute === '#/roleplay-setup') {
+      return (
+        <RoleplaySetupPage
+          onBack={() => {
+            setLaunchError(null);
+            navigate('#/');
+          }}
+          onLaunchRoleplay={handleLaunchStory}
+          isGenerating={isGeneratingStory}
+          launchError={launchError}
+          onDismissError={() => setLaunchError(null)}
+        />
+      );
+    }
+
+    // Legacy Step-by-Step Creation Wizard Routes
     if (currentRoute === '#/create-hero') {
       return (
         <CreateHeroPage
@@ -338,7 +383,7 @@ const AppContent: React.FC = () => {
         <LibraryPage
           onOpenStory={(id) => navigate(`#/reader/${id}`)}
           onViewTranscript={(id) => navigate(`#/transcript/${id}`)}
-          onCreateNew={() => navigate('#/create-hero')}
+          onCreateNew={() => navigate('#/create-story')}
         />
       );
     }
@@ -366,7 +411,7 @@ const AppContent: React.FC = () => {
   const isReaderActive = currentRoute.startsWith('#/reader/');
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-dark-bg text-dark-text relative shadow-2xl overflow-hidden font-sans select-none">
+    <div className="flex flex-col h-[100dvh] w-full bg-dark-bg text-dark-text relative overflow-hidden font-sans select-none">
       {/* Active Screen View */}
       <main className={`flex-1 overflow-hidden ${!isReaderActive ? 'pb-16' : ''}`}>
         {renderCurrentScreen()}

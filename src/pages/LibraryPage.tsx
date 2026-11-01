@@ -6,7 +6,7 @@ import { ExportModal } from '../components/history/ExportModal';
 import { ScreenHeader } from '../components/navigation/ScreenHeader';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
-import { Search, Download, Plus, BookOpen, Info } from 'lucide-react';
+import { Search, Download, Plus, BookOpen, Info, Sparkles, Filter } from 'lucide-react';
 
 interface LibraryPageProps {
   onOpenStory: (storyId: string) => void;
@@ -21,7 +21,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
 }) => {
   const [stories, setStories] = useState<StoryDocument[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed' | 'archived'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'completed' | 'ai' | 'offline' | 'archived'>('all');
 
   // Modals state
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -52,6 +52,17 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
     loadStories();
   };
 
+  const handleDuplicate = async (storyId: string) => {
+    try {
+      const duplicated = await storyRepository.duplicateStory(storyId);
+      if (duplicated) {
+        await loadStories();
+      }
+    } catch (err) {
+      console.error('Failed to duplicate story:', err);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTargetId) return;
     await storyRepository.deleteStory(deleteTargetId);
@@ -67,8 +78,18 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   };
 
   const filteredStories = stories.filter((story) => {
-    const matchesFilter = activeFilter === 'all' || story.status === activeFilter;
-    if (!matchesFilter) return false;
+    if (activeFilter === 'active') {
+      if (story.status !== 'active') return false;
+    } else if (activeFilter === 'completed') {
+      if (story.status !== 'completed') return false;
+    } else if (activeFilter === 'archived') {
+      if (story.status !== 'archived') return false;
+    } else if (activeFilter === 'ai') {
+      if (story.generationMode !== 'ai') return false;
+    } else if (activeFilter === 'offline') {
+      if (story.generationMode === 'ai') return false;
+    }
+
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -80,37 +101,38 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   });
 
   return (
-    <div className="flex flex-col h-full bg-dark-bg">
+    <div className="flex flex-col h-full w-full bg-dark-bg">
       <ScreenHeader
-        title="My Stories"
-        subtitle={`${stories.length} adventures recorded`}
+        title="Chronicle Archives"
+        subtitle={`${stories.length} stories recorded`}
         rightAction={
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsExportModalOpen(true)}
-              className="p-2 rounded-xl text-dark-muted hover:text-dark-text hover:bg-dark-elevated"
+              className="p-2 rounded-xl text-dark-muted hover:text-dark-text hover:bg-dark-elevated transition-colors"
               aria-label="Export or Import stories"
             >
               <Download className="w-4 h-4" />
             </button>
-            <button
+            <Button
+              size="sm"
+              variant="primary"
               onClick={onCreateNew}
-              className="p-2 rounded-xl text-brand-primary hover:bg-dark-elevated"
-              aria-label="Create new story"
+              iconLeft={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-5 h-5" />
-            </button>
+              Create
+            </Button>
           </div>
         }
       />
 
       {/* Search and Filter bar */}
-      <div className="p-4 border-b border-dark-border/60 bg-dark-surface/60 space-y-3">
+      <div className="p-4 border-b border-dark-border/60 bg-dark-surface/60 space-y-3 max-w-5xl mx-auto w-full">
         {/* Local Storage Disclaimer Note */}
         <div className="p-2.5 rounded-xl bg-indigo-950/20 border border-indigo-500/20 text-[11px] text-indigo-300 flex items-start gap-2">
           <Info className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
           <span>
-            Stories are persisted in your local browser IndexedDB. Use <strong>Export & Backup</strong> to save JSON backups.
+            Chronicles are persisted locally in IndexedDB. Use <strong>Export & Backup</strong> to save JSON / Markdown backups.
           </span>
         </div>
 
@@ -121,27 +143,29 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by title, hero, genre..."
+            placeholder="Search chronicles by title, protagonist, world, or genre..."
             style={{ fontSize: '16px' }}
             className="w-full bg-dark-elevated border border-dark-border rounded-xl pl-9 pr-3.5 py-2 text-xs text-dark-text placeholder:text-dark-muted/50 focus:outline-none focus:border-brand-primary"
           />
         </div>
 
-        {/* Status Filters */}
+        {/* Status & Mode Filters */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs">
           {[
-            { id: 'all', label: 'All' },
+            { id: 'all', label: 'All Chronicles' },
             { id: 'active', label: 'Active' },
+            { id: 'ai', label: 'AI Stories' },
+            { id: 'offline', label: 'Offline / Demo' },
             { id: 'completed', label: 'Completed' },
             { id: 'archived', label: 'Archived' }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveFilter(tab.id as any)}
-              className={`px-3 py-1 rounded-lg font-medium transition-colors shrink-0 ${
+              className={`px-3 py-1 rounded-xl font-medium transition-all shrink-0 ${
                 activeFilter === tab.id
-                  ? 'bg-brand-primary text-white'
-                  : 'bg-dark-elevated text-dark-muted hover:text-dark-text'
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : 'bg-dark-elevated text-dark-muted hover:text-dark-text border border-dark-border'
               }`}
             >
               {tab.label}
@@ -150,28 +174,34 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
         </div>
       </div>
 
-      {/* Story Cards List */}
-      <div className="flex-1 p-4 overflow-y-auto overscroll-contain max-w-md mx-auto w-full space-y-3 safe-area-bottom">
+      {/* Story Cards Responsive Grid */}
+      <div className="flex-1 p-4 overflow-y-auto overscroll-contain max-w-5xl mx-auto w-full safe-area-bottom">
         {filteredStories.length === 0 ? (
-          <div className="text-center py-16 space-y-3">
-            <BookOpen className="w-8 h-8 text-dark-muted mx-auto" />
-            <p className="text-xs text-dark-muted">No stories found matching your filter.</p>
+          <div className="text-center py-20 space-y-3">
+            <BookOpen className="w-10 h-10 text-dark-muted mx-auto" />
+            <h3 className="font-bold text-sm text-white">No Chronicles Found</h3>
+            <p className="text-xs text-dark-muted max-w-xs mx-auto">
+              No stories match your current search query or filter.
+            </p>
             <Button size="sm" variant="primary" onClick={onCreateNew}>
-              Create New Story
+              Create New Chronicle
             </Button>
           </div>
         ) : (
-          filteredStories.map((story) => (
-            <StoryCard
-              key={story.id}
-              story={story}
-              onOpen={onOpenStory}
-              onViewTranscript={onViewTranscript}
-              onRename={(id, title) => setRenameTarget({ id, title })}
-              onArchive={handleArchive}
-              onDelete={(id) => setDeleteTargetId(id)}
-            />
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredStories.map((story) => (
+              <StoryCard
+                key={story.id}
+                story={story}
+                onOpen={onOpenStory}
+                onViewTranscript={onViewTranscript}
+                onRename={(id, title) => setRenameTarget({ id, title })}
+                onArchive={handleArchive}
+                onDelete={(id) => setDeleteTargetId(id)}
+                onDuplicate={handleDuplicate}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -207,7 +237,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
       <Modal
         isOpen={!!deleteTargetId}
         onClose={() => setDeleteTargetId(null)}
-        title="Delete Story?"
+        title="Delete Chronicle?"
         footer={
           <>
             <Button size="sm" variant="ghost" onClick={() => setDeleteTargetId(null)}>

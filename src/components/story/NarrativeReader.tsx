@@ -1,16 +1,16 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { StoryDocument, LANGUAGE_LABELS } from '../../types/story';
-import { ChoiceList } from './ChoiceList';
-import { CustomActionInput } from './CustomActionInput';
+import { BottomInteractionArea } from './BottomInteractionArea';
 import { getSceneBackground, getCharacterPortrait } from '../../features/assets/assetSelector';
-import { Sparkles, Sword, Shield, Flame, Zap, Eye, Cpu, Crown, Compass, BookOpen } from 'lucide-react';
+import { Sparkles, Sword, Shield, Flame, Zap, Eye, Cpu, Crown, Compass, BookOpen, MessageSquare, Activity } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { NarratorAudio } from './NarratorAudio';
 
 interface NarrativeReaderProps {
   story: StoryDocument;
   onSelectChoice: (choiceId: string) => void;
-  onSubmitAction: (actionText: string) => void;
+  onSubmitAction: (actionText: string, actionType?: 'action' | 'dialogue' | 'thought', targetNpc?: string) => void;
+  onCancelGeneration?: () => void;
   isLoading?: boolean;
   fontSize?: number; // 14 to 20
   fontFamily?: 'serif' | 'sans';
@@ -20,6 +20,7 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
   story,
   onSelectChoice,
   onSubmitAction,
+  onCancelGeneration,
   isLoading = false,
   fontSize = 16,
   fontFamily = 'serif'
@@ -48,10 +49,30 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
   const currentTurn = story.turns[story.turns.length - 1];
   const isFontSerif = fontFamily === 'serif';
 
+  // Extract known NPCs across relationships and recent turns
+  const knownNpcs = useMemo(() => {
+    const set = new Set<string>();
+    if (story.state.npcRelationships) {
+      Object.values(story.state.npcRelationships).forEach(rel => {
+        if (rel && rel.name) set.add(rel.name);
+      });
+    }
+    story.turns.forEach(turn => {
+      if (turn.dialogues) {
+        turn.dialogues.forEach(d => {
+          if (d.speaker && d.speaker !== story.hero.name && d.speaker !== 'Narrator') {
+            set.add(d.speaker);
+          }
+        });
+      }
+    });
+    return Array.from(set);
+  }, [story]);
+
   return (
     <div className="flex flex-col min-h-full">
       {/* Scrollable Story Body */}
-      <div className="flex-1 px-4 py-4 max-w-xl mx-auto w-full space-y-6">
+      <div className="flex-1 px-4 py-4 max-w-2xl mx-auto w-full space-y-6">
         {/* Story Title & Setting Banner */}
         <div className="text-center py-3 border-b border-dark-border/40 space-y-1.5">
           <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -75,7 +96,7 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
             {story.title}
           </h2>
           <p className="text-xs text-dark-muted">
-            Hero: <strong className="text-dark-text">{story.hero.name}</strong> • Level {story.state.powerLevel}
+            Hero: <strong className="text-dark-text">{story.hero.name}</strong> • Level {story.state.powerLevel} • Stamina: <strong className="text-amber-400">{story.state.stamina}</strong>
           </p>
         </div>
 
@@ -107,11 +128,9 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
                     loading={isLatest ? 'eager' : 'lazy'}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     onError={(e) => {
-                      // Fallback to placeholder SVG if any path issue occurs
                       (e.target as HTMLImageElement).src = '/assets/placeholders/default_scene.svg';
                     }}
                   />
-                  {/* Subtle dark gradient overlay to ensure text contrast */}
                   <div className="absolute inset-0 bg-gradient-to-t from-dark-bg via-dark-bg/30 to-transparent" />
 
                   {/* Scene Title overlay on illustration */}
@@ -159,7 +178,7 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
                 {turn.narrativeText}
               </div>
 
-              {/* Visual Novel Character Dialogue Bubbles with Character Sprites */}
+              {/* Visual Novel Character Dialogue Bubbles */}
               {turn.dialogues && turn.dialogues.length > 0 && (
                 <div className="space-y-3 my-4">
                   {turn.dialogues.map((dlg, dIdx) => {
@@ -170,7 +189,6 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
                         key={dIdx}
                         className="flex items-start gap-3 p-3 rounded-2xl bg-dark-surface/90 border border-dark-border shadow-sm hover:border-brand-primary/40 transition-colors"
                       >
-                        {/* Character Avatar Portrait */}
                         {portrait && (
                           <div className="relative shrink-0 w-12 h-14 rounded-xl overflow-hidden bg-dark-elevated border-2 border-brand-primary/40 shadow-sm">
                             <img
@@ -206,10 +224,22 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
                 </div>
               )}
 
-              {/* Previous Turn's Choice or Action Taken */}
+              {/* Previous Turn's Choice or Action Taken with RPG Tag */}
               {turn.customActionText && (
                 <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-xs space-y-1">
-                  <span className="font-semibold text-indigo-400">Your Action:</span>
+                  <div className="flex items-center gap-1.5 font-semibold text-indigo-400">
+                    {turn.actionType === 'dialogue' ? (
+                      <>
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Dialogue {turn.targetNpc ? `to ${turn.targetNpc}` : ''}:</span>
+                      </>
+                    ) : (
+                      <>
+                        <Activity className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Action:</span>
+                      </>
+                    )}
+                  </div>
                   <p className="text-dark-text italic">"{turn.customActionText}"</p>
                   {turn.outcomeText && (
                     <p className="text-indigo-300/90 text-[11px] mt-1">{turn.outcomeText}</p>
@@ -238,25 +268,6 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
           );
         })}
 
-        {/* AI Generation / Processing Feedback */}
-        {isLoading && (
-          <div className="p-3.5 rounded-xl bg-brand-primary/10 border border-brand-primary/30 flex items-center justify-center gap-2.5 text-xs text-brand-glow animate-pulse">
-            <span className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
-            <span>{t.reader.aiThinking}</span>
-          </div>
-        )}
-
-        {/* Current Turn Choices (at the bottom of latest chapter) */}
-        {currentTurn && !story.state.isGameOver && (
-          <div className="pt-2 border-t border-dark-border/40">
-            <ChoiceList
-              choices={currentTurn.choices}
-              onSelectChoice={onSelectChoice}
-              isLoading={isLoading}
-            />
-          </div>
-        )}
-
         {/* Game Over Screen */}
         {story.state.isGameOver && (
           <div className="p-6 rounded-2xl bg-dark-surface border border-brand-accent/30 text-center space-y-3 glow-card-amber my-6">
@@ -273,14 +284,18 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
         <div ref={narrativeEndRef} className="h-6" />
       </div>
 
-      {/* Sticky Custom Action Input at Bottom */}
-      {!story.state.isGameOver && (
-        <div className="sticky bottom-0 left-0 right-0 z-30">
-          <CustomActionInput
-            onSubmitAction={onSubmitAction}
-            isLoading={isLoading}
-          />
-        </div>
+      {/* Modern 3-Tab Bottom Interaction Area */}
+      {currentTurn && !story.state.isGameOver && (
+        <BottomInteractionArea
+          choices={currentTurn.choices}
+          onSelectChoice={onSelectChoice}
+          onSubmitAction={(text, type, target) => onSubmitAction(text, type, target)}
+          onCancelGeneration={onCancelGeneration}
+          isLoading={isLoading}
+          knownNpcs={knownNpcs}
+          npcRelationships={story.state.npcRelationships}
+          isGameOver={story.state.isGameOver}
+        />
       )}
     </div>
   );

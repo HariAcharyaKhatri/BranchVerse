@@ -1,6 +1,7 @@
 import { HeroProfile } from './character';
 
 export type SupportedLanguage = 'en' | 'hi' | 'es' | 'fr' | 'ja' | 'ko';
+export type NarrativeLength = 'concise' | 'balanced' | 'detailed';
 
 export const LANGUAGE_LABELS: Record<SupportedLanguage, { label: string; native: string; flag: string }> = {
   en: { label: 'English', native: 'English', flag: '🇬🇧' },
@@ -29,6 +30,17 @@ export interface Quest {
   rewardDescription?: string;
 }
 
+export interface NpcRelationship {
+  name: string;
+  role: string;
+  trust: number; // -100 to +100
+  friendship: number; // 0 to 100
+  fear: number; // 0 to 100
+  respect: number; // 0 to 100
+  romance?: number; // 0 to 100
+  memories: string[];
+}
+
 export interface StoryState {
   health?: number; // Deprecated/purged: retained as optional for backward compatibility
   maxHealth?: number;
@@ -38,9 +50,12 @@ export interface StoryState {
   activeQuests: Quest[];
   worldFlags: Record<string, boolean | string | number>;
   npcTrust: Record<string, number>; // -100 to +100
+  npcRelationships?: Record<string, NpcRelationship>;
   statusEffects: string[]; // e.g. "Poisoned", "Awakened Spirit", "Wanted by Citadel Guards"
   timelineStep: number;
   currentLocation: string;
+  importantFacts?: string[];
+  memorySummary?: string;
   isGameOver: boolean;
   endingType?: 'victory' | 'tragedy' | 'open' | 'secret';
 }
@@ -72,6 +87,8 @@ export interface StoryTurn {
   choices: ChoiceOption[];
   selectedChoiceId?: string;
   customActionText?: string;
+  actionType?: 'choice' | 'action' | 'dialogue' | 'thought';
+  targetNpc?: string;
   outcomeText?: string;
   stateDelta?: {
     healthChange?: number;
@@ -85,10 +102,20 @@ export interface StoryTurn {
 }
 
 export interface StorySettings {
-  tone: 'Anime Shonen' | 'Epic Fantasy' | 'Dark & Gritty' | 'Cyberpunk Noir' | 'Lighthearted Isekai';
+  tone: 'Anime Shonen' | 'Epic Fantasy' | 'Dark & Gritty' | 'Cyberpunk Noir' | 'Lighthearted Isekai' | 'Mystery & Suspense' | 'Epic Saga';
   pacing: 'Fast-paced Action' | 'Balanced Narrative' | 'Deep Lore Exploration';
   difficulty: 'Adventurer (Standard)' | 'Heroic (Tactical)' | 'Hardcore Iron (Unforgiving)';
   storyLanguage?: SupportedLanguage;
+  narrativeLength?: 'concise' | 'balanced' | 'detailed';
+  mode?: 'story' | 'roleplay';
+  timePeriod?: string;
+  storyStyle?: string;
+  romanceLevel?: 'None' | 'Light' | 'Prominent';
+  actionLevel?: 'Low' | 'Moderate' | 'High';
+  mysteryLevel?: 'Low' | 'Moderate' | 'High';
+  mainObjective?: string;
+  supportingCharacters?: string[];
+  userPromptDescription?: string;
 }
 
 export interface StoryDocument {
@@ -106,6 +133,7 @@ export interface StoryDocument {
   status: 'active' | 'completed' | 'archived';
   version: number;
   generationMode?: 'demo' | 'ai';
+  mode?: 'story' | 'roleplay';
   storyLanguage?: SupportedLanguage;
 }
 

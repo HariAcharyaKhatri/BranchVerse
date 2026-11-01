@@ -2,6 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import { CONFIG } from './config.js';
 import { SupportedLanguage, LANGUAGE_LABELS } from './types.js';
 
+export type NarrativeLength = 'concise' | 'balanced' | 'detailed';
+
 export interface InitialStoryContext {
   hero: {
     name: string;
@@ -17,6 +19,15 @@ export interface InitialStoryContext {
   pacing: string;
   difficulty: string;
   storyLanguage: SupportedLanguage;
+  narrativeLength?: NarrativeLength;
+  timePeriod?: string;
+  storyStyle?: string;
+  romanceLevel?: string;
+  actionLevel?: string;
+  mysteryLevel?: string;
+  supportingCharacters?: string[];
+  mainObjective?: string;
+  userPromptDescription?: string;
 }
 
 export interface StoryTurnContext {
@@ -32,16 +43,30 @@ export interface StoryTurnContext {
   genre: string;
   tone: string;
   storyLanguage: SupportedLanguage;
+  narrativeLength?: NarrativeLength;
   activeQuests: Array<{ title: string; objective: string }>;
+  npcRelationships?: Array<{
+    name: string;
+    role: string;
+    trust: number;
+    friendship?: number;
+    fear?: number;
+    respect?: number;
+    memories?: string[];
+  }>;
   recentTurns: Array<{
     sceneTitle: string;
     narrativeSummary: string;
     actionTaken: string;
   }>;
+  memorySummary?: string;
+  importantFacts?: string[];
   playerAction: {
+    type?: 'choice' | 'action' | 'dialogue' | 'thought';
     choiceId?: string;
     choiceText?: string;
     customActionText?: string;
+    targetNpc?: string;
   };
 }
 
@@ -75,6 +100,21 @@ export interface GeneratedNarrative {
     object: string;
     confidence: number;
   }>;
+  stateChanges?: {
+    location?: string;
+    inventoryChanges?: string[];
+    relationshipChanges?: Array<{
+      npcName: string;
+      trustChange?: number;
+      respectChange?: number;
+      fearChange?: number;
+      friendshipChange?: number;
+      memory?: string;
+    }>;
+    questUpdates?: string[];
+    importantFacts?: string[];
+  };
+  memorySummary?: string;
 }
 
 export class GeminiService {
@@ -111,8 +151,19 @@ export class GeminiService {
     const modelId = CONFIG.GEMINI_INITIAL_MODEL;
     const langInstruction = this.getLanguagePromptInstruction(context.storyLanguage);
 
-    const prompt = `You are the master AI Narrative Director for BranchVerse, a mobile-first interactive storytelling platform.
-Establish a grand, novelistic prologue and opening chapter for a new chronicle.
+    const lengthSetting = context.narrativeLength || 'balanced';
+    let lengthRequirement = 'Write an immersive opening prologue (180 to 280 words across 2 to 3 rich paragraphs). Keep it focused and impactful.';
+    let maxTokens = 1500;
+    if (lengthSetting === 'concise') {
+      lengthRequirement = 'Write a concise, punchy opening scene (120 to 180 words across 2 paragraphs). Quick to read, highly engaging.';
+      maxTokens = 1200;
+    } else if (lengthSetting === 'detailed') {
+      lengthRequirement = 'Write a detailed opening chapter (280 to 380 words across 3 to 4 atmospheric paragraphs).';
+      maxTokens = 2000;
+    }
+
+    const prompt = `You are the master AI Narrative Director for BranchVerse, an interactive visual novel and role-playing platform.
+Establish an engaging opening scene and inciting incident for a new chronicle.
 
 HERO PROFILE:
 - Name: ${context.hero.name}
@@ -125,22 +176,25 @@ HERO PROFILE:
 WORLD & CAMPAIGN:
 - Realm: ${context.worldName}
 - Genres: ${context.genres.join(', ')}
+- Time Period: ${context.timePeriod || 'Era of Wonders'}
 - Tone: ${context.tone}
-- Pacing: ${context.pacing}
+- Style: ${context.storyStyle || 'Heroic Narrative'}
 - Difficulty: ${context.difficulty}
+- Dynamics: Action=${context.actionLevel || 'Moderate'} | Mystery=${context.mysteryLevel || 'Moderate'} | Romance=${context.romanceLevel || 'None'}
+${context.mainObjective ? `- Main Objective: ${context.mainObjective}` : ''}
+${context.supportingCharacters && context.supportingCharacters.length > 0 ? `- Supporting Cast: ${context.supportingCharacters.join(', ')}` : ''}
+${context.userPromptDescription ? `\nCORE PREMISE / PLAYER VISION:\n"${context.userPromptDescription}"\n(Directly realize this premise in the opening scene!)` : ''}
 
 ${langInstruction}
 
-CRITICAL LENGTH & NOVELISTIC REQUIREMENTS:
-1. Write a substantial, novel-length opening prologue (450 to 650 words across 4 to 6 rich, immersive paragraphs). Do NOT provide a brief synopsis or short blurb.
-2. Infuse deep sensory worldbuilding: describe environmental atmospheric details (weather, ambient scents, lighting, architectural lore, and tactile sensations).
-3. Ground the protagonist's psychology: weave ${context.hero.name}'s internal thoughts, doubts, and motivations into the narrative prose.
-4. Stage a gripping inciting incident with rising stakes that demands immediate action.
-5. Include 2-3 authentic, emotionally charged character dialogues with emotional cues (calm, furious, mysterious, terrified, warm).
-6. Propose 3 distinct, tactical first choices with varied risk levels (safe, moderate, perilous) and stamina costs (4 to 15).
-7. Establish 1 starting quest and 1-2 core world facts.`;
+CRITICAL PACING & ROLE-PLAY RULES:
+1. ${lengthRequirement}
+2. Ground the scene with sensory atmospheric cues (weather, lighting, local architecture) and ${context.hero.name}'s perspective.
+3. Include 1-2 authentic character spoken dialogues with emotion cues (calm, furious, mysterious, terrified, warm).
+4. Propose 3 tactical, distinct choices with risk levels (safe, moderate, perilous) and stamina costs (4 to 12).
+5. Establish 1 starting quest, 1-2 world facts, and provide initial state changes if relevant.`;
 
-    const rawJson = await this.callWithRetry(modelId, prompt);
+    const rawJson = await this.callWithRetry(modelId, prompt, maxTokens);
     return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
   }
 
@@ -155,21 +209,61 @@ CRITICAL LENGTH & NOVELISTIC REQUIREMENTS:
     const modelId = CONFIG.GEMINI_TURN_MODEL;
     const langInstruction = this.getLanguagePromptInstruction(context.storyLanguage);
 
-    const actionDescription = context.playerAction.choiceText
-      ? `Selected Choice: "${context.playerAction.choiceText}"`
-      : `Custom Action: "${context.playerAction.customActionText}"`;
+    const lengthSetting = context.narrativeLength || 'balanced';
+    let lengthRequirement = 'Write a focused narrative continuation (120 to 200 words across 2 paragraphs). Fast, vivid, and responsive.';
+    let maxTokens = 1400;
+    if (lengthSetting === 'concise') {
+      lengthRequirement = 'Write a quick, punchy continuation (80 to 140 words across 1 to 2 paragraphs). Deliver instant feedback on the action.';
+      maxTokens = 1000;
+    } else if (lengthSetting === 'detailed') {
+      lengthRequirement = 'Write an immersive continuation (180 to 260 words across 2 to 3 descriptive paragraphs).';
+      maxTokens = 1800;
+    }
+
+    // Role-play input discrimination (Action vs Dialogue vs Thought vs Choice)
+    const actionType = context.playerAction.type || (context.playerAction.choiceText ? 'choice' : 'action');
+    let actionInstruction = '';
+
+    if (actionType === 'dialogue') {
+      const target = context.playerAction.targetNpc ? ` to ${context.playerAction.targetNpc}` : '';
+      actionInstruction = `PLAYER DIALOGUE (Spoken aloud${target}):
+"${context.playerAction.customActionText || ''}"
+-> ROLE-PLAY DIRECTIVE: Treat this as spoken conversation. Nearby NPCs MUST hear, react, and reply verbally in dialogue with authentic emotion!`;
+    } else if (actionType === 'thought') {
+      actionInstruction = `PLAYER INNER THOUGHT:
+"${context.playerAction.customActionText || ''}"
+-> INNER MONOLOGUE DIRECTIVE: The protagonist is contemplating or reflecting silently. Advance the scene accordingly.`;
+    } else if (actionType === 'action') {
+      actionInstruction = `PLAYER PHYSICAL ACTION:
+"${context.playerAction.customActionText || ''}"
+-> KINETIC ACTION DIRECTIVE: Describe the physical outcome, kinetic impact, and how the world and enemies/allies respond.`;
+    } else {
+      actionInstruction = `PLAYER SELECTED CHOICE:
+"${context.playerAction.choiceText || context.playerAction.customActionText || 'Proceed'}"`;
+    }
 
     const recentHistoryText = context.recentTurns
-      .map((t, idx) => `[Turn -${context.recentTurns.length - idx}]: ${t.sceneTitle} | Action: ${t.actionTaken} | Outcome: ${t.narrativeSummary}`)
+      .slice(-3) // Limit to the 3 most recent turns to save tokens & prevent slow prompts
+      .map((t, idx) => `[Turn -${Math.min(3, context.recentTurns.length) - idx}]: ${t.sceneTitle} | Action: ${t.actionTaken} | Outcome: ${t.narrativeSummary}`)
       .join('\n');
 
-    const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing chronicle with novel-grade depth.
+    const npcContextText = context.npcRelationships && context.npcRelationships.length > 0
+      ? `\nKNOWN NPC RELATIONSHIPS:\n${context.npcRelationships.map(n => `- ${n.name} (${n.role}): Trust=${n.trust}, Friendship=${n.friendship || 0}, Fear=${n.fear || 0}, Respect=${n.respect || 0}. Memories: ${n.memories?.slice(-2).join('; ') || 'None'}`).join('\n')}`
+      : '';
+
+    const memoryText = context.memorySummary ? `\nPREVIOUS STORY SUMMARY:\n${context.memorySummary}` : '';
+    const factsText = context.importantFacts && context.importantFacts.length > 0
+      ? `\nPERMANENT WORLD FACTS:\n${context.importantFacts.slice(-4).map(f => `- ${f}`).join('\n')}`
+      : '';
+
+    const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing role-playing chronicle.
 
 PROTAGONIST:
 - Name: ${context.hero.name}
 - Stamina: ${context.hero.stamina}/100 | Power: ${context.hero.powerLevel}
 - Location: ${context.currentLocation}
 - Inventory Items: ${context.hero.inventory.join(', ') || 'None'}
+${npcContextText}${factsText}${memoryText}
 
 RECENT STORY CONTEXT:
 ${recentHistoryText || 'Story commenced.'}
@@ -177,23 +271,22 @@ ${recentHistoryText || 'Story commenced.'}
 ACTIVE OBJECTIVES:
 ${context.activeQuests.map(q => `- ${q.title}: ${q.objective}`).join('\n') || '- Survive and discover truth.'}
 
-PLAYER'S NEW ACTION:
-${actionDescription}
+${actionInstruction}
 
 ${langInstruction}
 
-CRITICAL LENGTH & NOVELISTIC INSTRUCTIONS:
-1. Write a detailed, long-form narrative continuation (350 to 500 words across 3 to 5 immersive paragraphs). Never summarize or provide a brief 1-paragraph reply.
-2. Viscerally describe the immediate kinetic outcome and ripple effects of the player's action.
-3. Advance the plot organically: explore environmental transformations, NPC reactions, physical strain, and rising tension.
-4. Include 2-3 authentic spoken dialogues responding directly to the player's move with distinct emotional tones.
-5. Offer 3 varied, contextual next choices reflecting the altered tactical scenario (with riskLevel and requiredStamina).`;
+CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
+1. ${lengthRequirement}
+2. Respond with dynamic kinetic consequences or dialogue responses reflecting the player's move.
+3. Include 1-2 authentic NPC dialogues with distinct emotional cues.
+4. Offer 3 varied, contextual next choices with riskLevel and stamina cost.
+5. In 'stateChanges', record any location shift, item acquired/spent, or NPC relationship shifts.`;
 
-    const rawJson = await this.callWithRetry(modelId, prompt);
+    const rawJson = await this.callWithRetry(modelId, prompt, maxTokens);
     return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
   }
 
-  private async callWithRetry(model: string, input: string): Promise<string> {
+  private async callWithRetry(model: string, input: string, maxTokens: number = 1500): Promise<string> {
     const maxRetries = CONFIG.GEMINI_MAX_RETRIES;
     const timeoutMs = CONFIG.GEMINI_TIMEOUT_MS;
     const deadline = Date.now() + timeoutMs;
@@ -247,7 +340,32 @@ CRITICAL LENGTH & NOVELISTIC INSTRUCTIONS:
               },
               required: ['choiceId', 'text']
             }
-          }
+          },
+          stateChanges: {
+            type: 'object',
+            properties: {
+              location: { type: 'string' },
+              inventoryChanges: { type: 'array', items: { type: 'string' } },
+              relationshipChanges: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    npcName: { type: 'string' },
+                    trustChange: { type: 'number' },
+                    respectChange: { type: 'number' },
+                    fearChange: { type: 'number' },
+                    friendshipChange: { type: 'number' },
+                    memory: { type: 'string' }
+                  },
+                  required: ['npcName']
+                }
+              },
+              questUpdates: { type: 'array', items: { type: 'string' } },
+              importantFacts: { type: 'array', items: { type: 'string' } }
+            }
+          },
+          memorySummary: { type: 'string' }
         },
         required: ['sceneTitle', 'narrativeText', 'proposedChoices']
       };
@@ -263,7 +381,7 @@ CRITICAL LENGTH & NOVELISTIC INSTRUCTIONS:
               config: {
                 responseMimeType: 'application/json',
                 responseSchema: narrativeSchema,
-                maxOutputTokens: 3000,
+                maxOutputTokens: maxTokens,
                 abortSignal: controller.signal,
                 httpOptions: {
                   timeout: attemptTimeout
@@ -387,21 +505,36 @@ CRITICAL LENGTH & NOVELISTIC INSTRUCTIONS:
         cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
 
-      const parsed = JSON.parse(cleaned);
+      let parsed: any;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        // Attempt lightweight repair if JSON is wrapped in extra prose or brackets
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No valid JSON structure found in Gemini output.');
+        }
+      }
+
+      const rawDialogues = parsed.dialogues || parsed.dialogue;
+      const rawChoices = parsed.proposedChoices || parsed.choices;
+      const narrativeText = String(parsed.narrativeText || parsed.narrative || '');
 
       return {
         sceneTitle: String(parsed.sceneTitle || 'Chronicle Chapter'),
-        narrativeText: String(parsed.narrativeText || ''),
-        dialogues: Array.isArray(parsed.dialogues)
-          ? parsed.dialogues.map((d: any) => ({
+        narrativeText,
+        dialogues: Array.isArray(rawDialogues)
+          ? rawDialogues.map((d: any) => ({
               speaker: String(d.speaker || 'Voice in the Mist'),
               text: String(d.text || ''),
               emotion: d.emotion || 'calm'
             }))
           : [],
         ambientVisual: parsed.ambientVisual || undefined,
-        proposedChoices: Array.isArray(parsed.proposedChoices) && parsed.proposedChoices.length > 0
-          ? parsed.proposedChoices.map((c: any, idx: number) => ({
+        proposedChoices: Array.isArray(rawChoices) && rawChoices.length > 0
+          ? rawChoices.map((c: any, idx: number) => ({
               choiceId: c.choiceId || `choice_ai_${Date.now()}_${idx}`,
               text: String(c.text || 'Advance with caution'),
               consequenceHint: c.consequenceHint || undefined,
@@ -419,6 +552,8 @@ CRITICAL LENGTH & NOVELISTIC INSTRUCTIONS:
             ],
         initialQuests: parsed.initialQuests || undefined,
         worldFacts: parsed.worldFacts || undefined,
+        stateChanges: parsed.stateChanges || undefined,
+        memorySummary: parsed.memorySummary || undefined,
       };
     } catch (parseErr: any) {
       throw new Error(`Failed to parse structured JSON from Gemini response: ${parseErr.message}`);

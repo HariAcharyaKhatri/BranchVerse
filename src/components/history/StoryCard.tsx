@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StoryDocument, LANGUAGE_LABELS } from '../../types/story';
 import { Badge } from '../ui/Badge';
 import { getSceneBackground, getCharacterPortrait } from '../../features/assets/assetSelector';
-import { Play, MoreVertical, Archive, Trash2, Edit2, FileText, Sparkles } from 'lucide-react';
+import { Play, MoreVertical, Archive, Trash2, Edit2, FileText, Sparkles, Copy } from 'lucide-react';
 
 interface StoryCardProps {
   story: StoryDocument;
@@ -11,6 +11,7 @@ interface StoryCardProps {
   onRename: (storyId: string, currentTitle: string) => void;
   onArchive: (storyId: string) => void;
   onDelete: (storyId: string) => void;
+  onDuplicate?: (storyId: string) => void;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -19,7 +20,8 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   onViewTranscript,
   onRename,
   onArchive,
-  onDelete
+  onDelete,
+  onDuplicate
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -102,6 +104,14 @@ export const StoryCard: React.FC<StoryCardProps> = ({
                   >
                     <Edit2 className="w-3.5 h-3.5 text-amber-400" /> Rename
                   </button>
+                  {onDuplicate && (
+                    <button
+                      onClick={() => { setMenuOpen(false); onDuplicate(story.id); }}
+                      className="w-full px-3 py-2 text-left text-dark-text hover:bg-dark-surface flex items-center gap-2"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-indigo-400" /> Duplicate Branch
+                    </button>
+                  )}
                   <button
                     onClick={() => { setMenuOpen(false); onArchive(story.id); }}
                     className="w-full px-3 py-2 text-left text-dark-text hover:bg-dark-surface flex items-center gap-2"

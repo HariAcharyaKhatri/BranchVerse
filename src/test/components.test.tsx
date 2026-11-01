@@ -181,9 +181,9 @@ describe('BranchVerse UI Components & Mobile Experience', () => {
       // Verify notification badge
       expect(screen.getByText('3')).toBeInTheDocument();
 
-      // Clicking Create calls onNavigate('#/create-hero')
+      // Clicking Create calls onNavigate('#/create-story')
       fireEvent.click(createButton);
-      expect(onNavigate).toHaveBeenCalledWith('#/create-hero');
+      expect(onNavigate).toHaveBeenCalledWith('#/create-story');
     });
 
     it('hides completely in reader mode', () => {

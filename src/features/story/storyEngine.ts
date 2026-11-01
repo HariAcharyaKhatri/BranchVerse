@@ -388,8 +388,11 @@ export async function executeAdvancedStoryTurn(
   action: {
     choiceId?: string;
     customActionText?: string;
+    actionType?: 'choice' | 'action' | 'dialogue' | 'thought';
+    targetNpc?: string;
     turnId?: string;
     idempotencyKey?: string;
+    signal?: AbortSignal;
   },
   provider?: NarrativeProvider
 ): Promise<ProcessTurnResult> {
@@ -420,13 +423,17 @@ export async function executeAdvancedStoryTurn(
     turnId,
     choiceId: action.choiceId,
     customActionText: action.customActionText,
+    actionType: action.actionType,
+    targetNpc: action.targetNpc,
     idempotencyKey: action.idempotencyKey,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    signal: action.signal
   });
 
   const updatedStory = session.toStoryDocument();
-  // Preserve generationMode and storyLanguage across engine state serialization
+  // Preserve generationMode, mode, and storyLanguage across engine state serialization
   updatedStory.generationMode = activeStory.generationMode || 'demo';
+  updatedStory.mode = activeStory.mode || 'story';
   updatedStory.storyLanguage = activeStory.storyLanguage || 'en';
 
   const projectedTurn: StoryTurn = {
@@ -446,6 +453,8 @@ export async function executeAdvancedStoryTurn(
     })),
     selectedChoiceId: action.choiceId,
     customActionText: action.customActionText,
+    actionType: action.actionType,
+    targetNpc: action.targetNpc,
     timestamp: newTurn.timestamp
   };
 

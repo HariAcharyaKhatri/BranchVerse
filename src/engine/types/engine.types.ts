@@ -27,8 +27,11 @@ export interface PlayerActionInput {
   turnId: string;
   choiceId?: string;
   customActionText?: string;
+  actionType?: 'choice' | 'action' | 'dialogue' | 'thought';
+  targetNpc?: string;
   idempotencyKey?: string;
   timestamp: number;
+  signal?: AbortSignal;
 }
 
 export interface ParsedAction {

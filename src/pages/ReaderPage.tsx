@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StoryDocument } from '../types/story';
+import React, { useState, useEffect, useRef } from 'react';
+import { StoryDocument, NarrativeLength } from '../types/story';
 import { SaveStatus } from '../types/storage';
 import { storyRepository } from '../lib/storage/storyRepository';
 import { executeStoryTurn, executeAdvancedStoryTurn } from '../features/story/storyEngine';
@@ -12,12 +12,25 @@ import { FateDiceRoller } from '../components/story/FateDiceRoller';
 import { AtmosphereSoundscape } from '../components/story/AtmosphereSoundscape';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
-import { ChevronLeft, Shield, FileText, Download, AlertCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import {
+  ChevronLeft,
+  Shield,
+  FileText,
+  Download,
+  AlertCircle,
+  AlertTriangle,
+  RefreshCw,
+  Settings,
+  BookOpen,
+  Sliders,
+  Type
+} from 'lucide-react';
 
 interface PendingTurnAction {
-  type: 'choice' | 'custom';
+  type: 'choice' | 'action' | 'dialogue' | 'thought';
   choiceId?: string;
   customActionText?: string;
+  targetNpc?: string;
 }
 
 interface FailureState extends AiFailureDetails {
@@ -42,12 +55,20 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   const [lastSavedAt, setLastSavedAt] = useState<number>(() => Date.now());
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [aiFailureState, setAiFailureState] = useState<FailureState | null>(null);
 
   // User reading preferences
-  const fontSize = parseInt(localStorage.getItem('bv_font_size') || '16', 10);
-  const fontFamily = (localStorage.getItem('bv_font_family') as any) || 'serif';
+  const [fontSize, setFontSize] = useState<number>(() => {
+    return parseInt(localStorage.getItem('bv_font_size') || '16', 10);
+  });
+  const [fontFamily, setFontFamily] = useState<'serif' | 'sans'>(() => {
+    return (localStorage.getItem('bv_font_family') as any) || 'serif';
+  });
+
+  // Active in-flight request cancellation ref
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load story from IndexedDB on mount
   useEffect(() => {
@@ -74,25 +95,49 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
 
     return () => {
       isMounted = false;
+      // Abort any pending generation when leaving page
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
     };
   }, [storyId]);
+
+  // Cancel generation handler
+  const handleCancelGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsProcessingTurn(false);
+    setSaveStatus('idle');
+  };
 
   const handleSelectChoice = async (choiceId: string) => {
     if (!story || isProcessingTurn) return;
 
+    handleCancelGeneration();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsProcessingTurn(true);
     setSaveStatus('saving');
+
     try {
       let updatedStory: StoryDocument;
       if (story.generationMode === 'ai') {
-        const result = await executeAdvancedStoryTurn(story, { choiceId });
+        const result = await executeAdvancedStoryTurn(story, {
+          choiceId,
+          actionType: 'choice',
+          signal: controller.signal
+        });
         updatedStory = result.updatedStory;
       } else {
         try {
           const result = executeStoryTurn(story, { choiceId });
           updatedStory = result.updatedStory;
         } catch {
-          const result = await executeAdvancedStoryTurn(story, { choiceId }, new LocalNarrativeProvider());
+          const result = await executeAdvancedStoryTurn(story, { choiceId, actionType: 'choice', signal: controller.signal }, new LocalNarrativeProvider());
           updatedStory = result.updatedStory;
         }
       }
@@ -102,6 +147,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       setSaveStatus('saved');
       setLastSavedAt(Date.now());
     } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log('Turn generation cancelled by user.');
+        return;
+      }
       console.error('Turn execution error:', err);
       setSaveStatus('error');
       const details = err instanceof AiNarrativeError ? err.details : classifyAiError(err);
@@ -111,22 +160,41 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       });
     } finally {
       setIsProcessingTurn(false);
+      abortControllerRef.current = null;
     }
   };
 
-  const handleSubmitCustomAction = async (actionText: string) => {
+  const handleSubmitAction = async (
+    actionText: string,
+    actionType: 'action' | 'dialogue' | 'thought' = 'action',
+    targetNpc?: string
+  ) => {
     if (!story || isProcessingTurn) return;
+
+    handleCancelGeneration();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     setIsProcessingTurn(true);
     setSaveStatus('saving');
+
     try {
       let updatedStory: StoryDocument;
       if (story.generationMode === 'ai') {
-        const result = await executeAdvancedStoryTurn(story, { customActionText: actionText });
+        const result = await executeAdvancedStoryTurn(story, {
+          customActionText: actionText,
+          actionType,
+          targetNpc,
+          signal: controller.signal
+        });
         updatedStory = result.updatedStory;
       } else {
         try {
-          const result = await executeAdvancedStoryTurn(story, { customActionText: actionText }, new LocalNarrativeProvider());
+          const result = await executeAdvancedStoryTurn(
+            story,
+            { customActionText: actionText, actionType, targetNpc, signal: controller.signal },
+            new LocalNarrativeProvider()
+          );
           updatedStory = result.updatedStory;
         } catch {
           const result = executeStoryTurn(story, { customActionText: actionText });
@@ -139,15 +207,20 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
       setSaveStatus('saved');
       setLastSavedAt(Date.now());
     } catch (err: any) {
-      console.error('Custom action turn execution error:', err);
+      if (err.name === 'AbortError') {
+        console.log('Turn generation cancelled by user.');
+        return;
+      }
+      console.error('Action turn execution error:', err);
       setSaveStatus('error');
       const details = err instanceof AiNarrativeError ? err.details : classifyAiError(err);
       setAiFailureState({
         ...details,
-        pendingAction: { type: 'custom', customActionText: actionText }
+        pendingAction: { type: actionType, customActionText: actionText, targetNpc }
       });
     } finally {
       setIsProcessingTurn(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -157,8 +230,49 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     setAiFailureState(null);
     if (pending.type === 'choice' && pending.choiceId) {
       handleSelectChoice(pending.choiceId);
-    } else if (pending.type === 'custom' && pending.customActionText) {
-      handleSubmitCustomAction(pending.customActionText);
+    } else if (pending.customActionText) {
+      const actType = pending.type === 'choice' ? 'action' : pending.type;
+      handleSubmitAction(pending.customActionText, actType, pending.targetNpc);
+    }
+  };
+
+  // Graceful fallback to Offline Mode if AI is slow or unreachable
+  const handleContinueInOfflineMode = async () => {
+    if (!story || !aiFailureState) return;
+    const pending = aiFailureState.pendingAction;
+    setAiFailureState(null);
+    setIsProcessingTurn(true);
+    setSaveStatus('saving');
+
+    try {
+      const offlineStory: StoryDocument = {
+        ...story,
+        generationMode: 'demo'
+      };
+
+      let result;
+      if (pending.type === 'choice' && pending.choiceId) {
+        result = await executeAdvancedStoryTurn(offlineStory, { choiceId: pending.choiceId }, new LocalNarrativeProvider());
+      } else {
+        result = await executeAdvancedStoryTurn(
+          offlineStory,
+          {
+            customActionText: pending.customActionText || 'I assess the surroundings and proceed cautiously.',
+            actionType: pending.type,
+            targetNpc: pending.targetNpc
+          },
+          new LocalNarrativeProvider()
+        );
+      }
+
+      setStory(result.updatedStory);
+      await storyRepository.saveStory(result.updatedStory);
+      setSaveStatus('saved');
+      setLastSavedAt(Date.now());
+    } catch (err) {
+      console.error('Failed to continue in offline mode:', err);
+    } finally {
+      setIsProcessingTurn(false);
     }
   };
 
@@ -167,9 +281,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     const item = story.state.inventory.find(i => i.id === itemId);
     if (!item) return;
 
-    // Use consumable to restore stamina
     const staminaGain = 35;
-
     const nextInventory = story.state.inventory
       .map(i => i.id === itemId ? { ...i, quantity: i.quantity - 1 } : i)
       .filter(i => i.quantity > 0);
@@ -190,6 +302,20 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     await storyRepository.saveStory(updatedStory);
     setSaveStatus('saved');
     setLastSavedAt(Date.now());
+  };
+
+  const handleUpdateNarrativeLength = async (length: NarrativeLength) => {
+    if (!story) return;
+    const updated: StoryDocument = {
+      ...story,
+      settings: {
+        ...story.settings,
+        narrativeLength: length
+      },
+      updatedAt: Date.now()
+    };
+    setStory(updated);
+    await storyRepository.saveStory(updated);
   };
 
   if (isLoading) {
@@ -219,10 +345,10 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
   if (!story) return null;
 
   return (
-    <div className="flex flex-col h-full bg-dark-bg">
+    <div className="flex flex-col h-full w-full bg-dark-bg">
       {/* Sticky Reader Header */}
       <header className="sticky top-0 z-30 bg-dark-surface/95 backdrop-blur-md border-b border-dark-border/80 safe-area-top">
-        <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 overflow-hidden">
             <button
               onClick={onExit}
@@ -237,12 +363,12 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               </h2>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] text-dark-muted">Ch. {story.turns.length}</span>
-                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                   story.generationMode === 'ai'
-                    ? 'bg-brand-primary/10 text-brand-glow border-brand-primary/30'
+                    ? 'bg-brand-primary/15 text-brand-glow border-brand-primary/40'
                     : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                 }`}>
-                  {story.generationMode === 'ai' ? 'Live AI' : 'Local Demo'}
+                  {story.generationMode === 'ai' ? 'AI Story Mode' : 'Offline Mode'}
                 </span>
                 <SaveIndicator status={saveStatus} lastSavedAt={lastSavedAt} />
               </div>
@@ -254,11 +380,20 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
             <FateDiceRoller
               heroName={story.hero.name}
               powerLevel={story.state.powerLevel}
-              onApplyToCustomAction={handleSubmitCustomAction}
+              onApplyToCustomAction={(act) => handleSubmitAction(act, 'action')}
             />
 
             {/* Ambient Soundscape Synthesizer */}
             <AtmosphereSoundscape />
+
+            {/* Reader Settings Modal Trigger */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 rounded-xl text-dark-muted hover:text-dark-text hover:bg-dark-elevated"
+              aria-label="Story Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
 
             {/* Character Sheet Trigger */}
             <button
@@ -300,12 +435,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </div>
       )}
 
-      {/* Main Narrative Area with Natural Scroll */}
+      {/* Main Narrative Area */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
         <NarrativeReader
           story={story}
           onSelectChoice={handleSelectChoice}
-          onSubmitAction={handleSubmitCustomAction}
+          onSubmitAction={handleSubmitAction}
+          onCancelGeneration={handleCancelGeneration}
           isLoading={isProcessingTurn}
           fontSize={fontSize}
           fontFamily={fontFamily}
@@ -328,6 +464,104 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         story={story}
       />
 
+      {/* Settings Modal (Narrative Length, Font, Layout) */}
+      <Modal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        title="Chronicle & Reading Settings"
+        maxWidth="sm"
+        footer={
+          <Button variant="primary" fullWidth size="sm" onClick={() => setIsSettingsOpen(false)}>
+            Apply & Close
+          </Button>
+        }
+      >
+        <div className="p-4 space-y-4 text-xs">
+          {/* Narrative Length */}
+          <div className="space-y-1.5">
+            <label className="font-bold text-white flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5 text-brand-primary" /> AI Narrative Length
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['concise', 'balanced', 'detailed'] as const).map(len => (
+                <button
+                  key={len}
+                  onClick={() => handleUpdateNarrativeLength(len)}
+                  className={`py-2 rounded-xl text-center capitalize font-semibold border transition-all ${
+                    (story.settings?.narrativeLength || 'balanced') === len
+                      ? 'bg-brand-primary text-white border-brand-primary'
+                      : 'bg-dark-elevated text-dark-muted border-dark-border hover:text-white'
+                  }`}
+                >
+                  {len}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-dark-muted">
+              Balanced (120-200 words) provides optimal response speed without sacrificing depth.
+            </p>
+          </div>
+
+          {/* Font Size */}
+          <div className="space-y-1.5">
+            <label className="font-bold text-white flex items-center gap-1.5">
+              <Type className="w-3.5 h-3.5 text-indigo-400" /> Reading Font Size
+            </label>
+            <div className="flex items-center gap-2">
+              {[14, 16, 18, 20].map(sz => (
+                <button
+                  key={sz}
+                  onClick={() => {
+                    setFontSize(sz);
+                    localStorage.setItem('bv_font_size', sz.toString());
+                  }}
+                  className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
+                    fontSize === sz
+                      ? 'bg-brand-primary text-white border-brand-primary'
+                      : 'bg-dark-elevated text-dark-muted border-dark-border'
+                  }`}
+                >
+                  {sz}px
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Font Family */}
+          <div className="space-y-1.5">
+            <label className="font-bold text-white">Typography</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  setFontFamily('serif');
+                  localStorage.setItem('bv_font_family', 'serif');
+                }}
+                className={`py-2 rounded-xl font-serif font-bold border transition-all ${
+                  fontFamily === 'serif'
+                    ? 'bg-brand-primary text-white border-brand-primary'
+                    : 'bg-dark-elevated text-dark-muted border-dark-border'
+                }`}
+              >
+                Novel Serif
+              </button>
+              <button
+                onClick={() => {
+                  setFontFamily('sans');
+                  localStorage.setItem('bv_font_family', 'sans');
+                }}
+                className={`py-2 rounded-xl font-sans font-bold border transition-all ${
+                  fontFamily === 'sans'
+                    ? 'bg-brand-primary text-white border-brand-primary'
+                    : 'bg-dark-elevated text-dark-muted border-dark-border'
+                }`}
+              >
+                Modern Sans
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
       {/* Live AI Failure & Recovery Modal */}
       {aiFailureState && (
         <Modal
@@ -348,9 +582,17 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
                 </Button>
               )}
               <Button
-                variant="outline"
+                variant="amber"
+                onClick={handleContinueInOfflineMode}
+                disabled={isProcessingTurn}
+                className="w-full justify-center"
+              >
+                <BookOpen className="w-3.5 h-3.5 mr-1.5" /> Continue in Offline Mode
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => setAiFailureState(null)}
-                className="w-full justify-center text-xs"
+                className="w-full justify-center text-xs text-dark-muted"
               >
                 Cancel
               </Button>
@@ -366,7 +608,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               </div>
             </div>
             <p className="text-dark-muted leading-relaxed">
-              Your story state has been preserved. Please retry to continue weaving your tale with Gemini AI.
+              Your story state and last action are preserved. You can retry with Gemini or switch immediately to Offline Mode to continue your story seamlessly.
             </p>
           </div>
         </Modal>

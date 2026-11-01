@@ -167,10 +167,153 @@ export function parseHeroPrompt(promptText: string): Partial<HeroProfile> {
   return result;
 }
 
+export interface ParsedStoryIdea {
+  title: string;
+  genre: string;
+  worldName: string;
+  timePeriod: string;
+  tone: 'Anime Shonen' | 'Epic Fantasy' | 'Dark & Gritty' | 'Cyberpunk Noir' | 'Lighthearted Isekai' | 'Mystery & Suspense' | 'Epic Saga';
+  style: string;
+  heroName: string;
+  heroRace: string;
+  heroPersonality: string[];
+  heroBackstory: string;
+  supportingCharacters: string[];
+  mainObjective: string;
+  romanceLevel: 'None' | 'Light' | 'Prominent';
+  actionLevel: 'Low' | 'Moderate' | 'High';
+  mysteryLevel: 'Low' | 'Moderate' | 'High';
+}
+
+/**
+ * Parses a natural language user story idea into a structured story configuration.
+ * Example input: "I want to become a student in a magical academy where I slowly discover that I have forbidden powers."
+ */
+export function parseStoryIdeaPrompt(description: string): ParsedStoryIdea {
+  const lower = (description || '').toLowerCase();
+
+  // 1. Detect Genre & Setting
+  let genre = 'High Fantasy';
+  let worldName = 'Aethelgard Arcane Academy';
+  let timePeriod = 'Age of High Sorcery';
+  let tone: ParsedStoryIdea['tone'] = 'Anime Shonen';
+  let style = 'Heroic Quest';
+  let title = 'The Forbidden Arcana';
+  let mainObjective = 'Master your awakening powers and uncover the truth of your sealed destiny.';
+  let supportingCharacters = ['Elena (Brilliant Classmate & Rival)', 'Arch-Mage Raymond (Mysterious Proctor)'];
+  let mysteryLevel: ParsedStoryIdea['mysteryLevel'] = 'Moderate';
+  let actionLevel: ParsedStoryIdea['actionLevel'] = 'Moderate';
+  let romanceLevel: ParsedStoryIdea['romanceLevel'] = 'Light';
+
+  if (lower.includes('cyber') || lower.includes('neon') || lower.includes('hacker') || lower.includes('corp') || lower.includes('syndicate') || lower.includes('robot')) {
+    genre = 'Cyberpunk';
+    worldName = 'Neo-Arcadia Sprawl 2184';
+    timePeriod = 'Late 22nd Century';
+    tone = 'Cyberpunk Noir';
+    style = 'High-Stakes Thriller';
+    title = 'Neon Protocol: Breach';
+    mainObjective = 'Infiltrate corporate databanks, uncover the syndicate conspiracy, and survive the city streets.';
+    supportingCharacters = ['Vex (Underground Netrunner)', 'Inspector Cross (Cyber-Crimes Enforcer)'];
+    actionLevel = 'High';
+    mysteryLevel = 'High';
+  } else if (lower.includes('horror') || lower.includes('cosmic') || lower.includes('void') || lower.includes('eldritch') || lower.includes('abyss')) {
+    genre = 'Cosmic Horror';
+    worldName = 'The Sunken Citadel of Nyx';
+    timePeriod = 'Forgotten Antiquity';
+    tone = 'Dark & Gritty';
+    style = 'Psychological Mystery';
+    title = 'Whispers of the Obsidian Void';
+    mainObjective = 'Unravel the celestial anomaly before your sanity or the realm unravels.';
+    supportingCharacters = ['Professor Alistair (Occult Historian)', 'Sister Teresa (Keeper of the Flame)'];
+    mysteryLevel = 'High';
+    actionLevel = 'Low';
+    romanceLevel = 'None';
+  } else if (lower.includes('isekai') || lower.includes('reincarnat') || lower.includes('transported') || lower.includes('game world')) {
+    genre = 'Isekai & Fantasy';
+    worldName = 'Kingdom of Lunaria';
+    timePeriod = 'High Mythic Epoch';
+    tone = 'Lighthearted Isekai';
+    style = 'Adventurous Comedy';
+    title = 'Reincarnated with Supreme Skills';
+    mainObjective = 'Explore the sprawling continent, build a legendary guild, and thrive in this new world.';
+    supportingCharacters = ['Sylvia (Cheerfully Deadly Ranger)', 'Barnaby (Talking Golem Companion)'];
+    romanceLevel = 'Light';
+    actionLevel = 'Moderate';
+  } else if (lower.includes('academy') || lower.includes('school') || lower.includes('student') || lower.includes('magic')) {
+    genre = 'High Fantasy';
+    worldName = 'Grand Academy of Arcana';
+    timePeriod = 'Era of Enchanted Towers';
+    tone = 'Anime Shonen';
+    style = 'Coming of Age Journey';
+    title = 'Chronicles of the Arcane Prodigy';
+    mainObjective = 'Unlock the hidden grimoires and survive the rigorous trials of the High Council.';
+    supportingCharacters = ['Lady Seraphina (Valedictorian Rival)', 'Master Balthazar (Alchemy Instructor)'];
+    mysteryLevel = 'High';
+    romanceLevel = 'Light';
+  } else if (lower.includes('steampunk') || lower.includes('airship') || lower.includes('clockwork') || lower.includes('victorian')) {
+    genre = 'Steampunk';
+    worldName = 'Clockwork Archipelago';
+    timePeriod = 'Victorian Steam Age';
+    tone = 'Epic Saga';
+    style = 'Airship Expedition';
+    title = 'The Iron Zephyr Chronicles';
+    mainObjective = 'Pilot the prototype airship to the legendary floating islands at the edge of the world.';
+    supportingCharacters = ['Captain Douglas (Veteran Aeronaut)', 'Fiona (Brilliant Steam Engineer)'];
+    actionLevel = 'High';
+    mysteryLevel = 'Moderate';
+  } else if (lower.includes('post-apocalyptic') || lower.includes('wasteland') || lower.includes('zombie') || lower.includes('surviv')) {
+    genre = 'Post-Apocalyptic';
+    worldName = 'The Ashfall Wastes';
+    timePeriod = 'Post-Collapse Year 42';
+    tone = 'Dark & Gritty';
+    style = 'Gritty Survival';
+    title = 'Wanderer of the Rust Plains';
+    mainObjective = 'Secure an ancient purification core to ensure the survival of your settlement.';
+    supportingCharacters = ['Jax (Scrap Scout)', 'Doc Martha (Medic & Botanist)'];
+    actionLevel = 'High';
+    romanceLevel = 'None';
+  }
+
+  // 2. Adjust dynamic tone keywords
+  if (lower.includes('dark') || lower.includes('gritty') || lower.includes('blood') || lower.includes('brutal')) {
+    tone = 'Dark & Gritty';
+  } else if (lower.includes('mystery') || lower.includes('detective') || lower.includes('investigat')) {
+    tone = 'Mystery & Suspense';
+    mysteryLevel = 'High';
+  } else if (lower.includes('epic') || lower.includes('empire') || lower.includes('war')) {
+    tone = 'Epic Saga';
+    actionLevel = 'High';
+  }
+
+  // 3. Hero personality & backstory extraction
+  const heroTraits = ['Determined', 'Observant', 'Unyielding'];
+  if (lower.includes('cautious') || lower.includes('quiet') || lower.includes('hidden')) heroTraits.push('Cautious');
+  if (lower.includes('rebel') || lower.includes('wild') || lower.includes('rogue')) heroTraits.push('Rebellious');
+  if (lower.includes('genius') || lower.includes('prodigy') || lower.includes('smart')) heroTraits.push('Brilliant');
+
+  return {
+    title,
+    genre,
+    worldName,
+    timePeriod,
+    tone,
+    style,
+    heroName: 'Hari Khatri',
+    heroRace: 'Human',
+    heroPersonality: heroTraits.slice(0, 3),
+    heroBackstory: description.trim() || 'A lone seeker bound by a dormant destiny.',
+    supportingCharacters,
+    mainObjective,
+    romanceLevel,
+    actionLevel,
+    mysteryLevel
+  };
+}
+
 /**
  * Fills in missing hero fields intelligently WITHOUT replacing explicitly provided details.
  */
-export function completeHeroProfile(existing: Partial<HeroProfile>): HeroProfile {
+export function completeHeroProfile(existing: Partial<HeroProfile> = {}): HeroProfile {
   const randomChoice = <T>(arr: readonly T[] | T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
   const randomRace = randomChoice(RACE_CATALOG);

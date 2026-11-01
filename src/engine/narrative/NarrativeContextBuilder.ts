@@ -10,6 +10,7 @@ export interface NarrativePromptContext {
   chapterNumber: number;
   currentTurnNumber: number;
   location: string;
+  narrativeLength?: 'concise' | 'balanced' | 'detailed';
   hero: {
     name: string;
     race: string;
@@ -37,12 +38,30 @@ export interface NarrativePromptContext {
     currentEmotion: string;
     trustScore: number;
   }>;
+  npcRelationships?: Array<{
+    name: string;
+    role: string;
+    trust: number;
+    friendship?: number;
+    fear?: number;
+    respect?: number;
+    memories?: string[];
+  }>;
   recentFacts: string[];
+  importantFacts?: string[];
+  memorySummary?: string;
   recentTurnsSummary: Array<{
     chapter: number;
     sceneTitle: string;
     actionTaken?: string;
   }>;
+  playerAction?: {
+    type?: 'choice' | 'action' | 'dialogue' | 'thought';
+    choiceText?: string;
+    customActionText?: string;
+    targetNpc?: string;
+  };
+  signal?: AbortSignal;
 }
 
 export class NarrativeContextBuilder {

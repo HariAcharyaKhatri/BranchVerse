@@ -32,7 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     {
       id: 'create',
       label: t.navigation.create,
-      path: '#/create-hero',
+      path: '#/create-story',
       icon: PlusCircle,
       highlight: true
     },

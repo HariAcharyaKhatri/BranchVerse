@@ -120,6 +120,13 @@ export class StorySession {
         transaction.getStagedState(),
         this.factStore
       );
+      promptContext.signal = input.signal;
+      promptContext.playerAction = {
+        type: input.actionType || (input.choiceId ? 'choice' : 'action'),
+        customActionText: input.customActionText,
+        choiceText: input.choiceId ? transaction.getStagedState().turns.slice(-1)[0]?.choices.find(c => c.choiceId === input.choiceId)?.text : undefined,
+        targetNpc: input.targetNpc
+      };
       const narrativeProposal = await this.narrativeProvider.generateNarrative(promptContext);
 
       transaction.stageNarrative(narrativeProposal, input);
