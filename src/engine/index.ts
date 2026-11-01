@@ -31,6 +31,7 @@ export * from './errors/AiNarrativeError';
 
 // Narrative & Providers
 export * from './narrative/NarrativeSchema';
+export * from './narrative/NarrativeRepair';
 export * from './narrative/NarrativeContextBuilder';
 export * from './narrative/ChoiceGenerator';
 export * from './providers/NarrativeProvider';

@@ -1,6 +1,7 @@
 import { NarrativeProvider } from './NarrativeProvider';
 import { NarrativePromptContext } from '../narrative/NarrativeContextBuilder';
-import { NarrativeProposal, NarrativeProposalSchema } from '../narrative/NarrativeSchema';
+import { NarrativeProposal } from '../narrative/NarrativeSchema';
+import { repairNarrativeProposal } from '../narrative/NarrativeRepair';
 import { auth } from '../../lib/firebase/firebase';
 import { SupportedLanguage } from '../../types/story';
 import { AiNarrativeError, classifyAiError } from '../errors/AiNarrativeError';
@@ -96,7 +97,13 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
       }
 
       const data = await response.json();
-      if (!data.narrative) {
+      const rawPayload = data.narrative || data;
+      if (!rawPayload || typeof rawPayload !== 'object') {
+        console.error('[GeminiNarrativeProvider] [Critical Failure] Empty narrative returned from API:', {
+          status: response.status,
+          hasData: Boolean(data),
+          modelUsed: data?.modelUsed,
+        });
         throw new AiNarrativeError({
           failureType: 'server',
           title: 'Invalid AI Response',
@@ -105,30 +112,44 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
         });
       }
 
-      const proposal = {
-        sceneTitle: data.narrative.sceneTitle,
-        narrativeText: data.narrative.narrativeText,
-        dialogues: data.narrative.dialogues || [],
-        ambientVisual: data.narrative.ambientVisual,
-        proposedChoices: (data.narrative.proposedChoices || []).map((c: any, idx: number) => ({
-          choiceId: c.choiceId || `choice_ai_${Date.now()}_${idx}`,
-          text: c.text,
-          consequenceHint: c.consequenceHint,
-          riskLevel: c.riskLevel || 'moderate',
-          requiredStamina: c.requiredStamina || 8,
-          actionIntent: c.actionIntent || 'investigate',
-        })),
-      };
+      // Pass through repair and normalization layer (separates narrative from state delta)
+      const { proposal, diagnostics } = repairNarrativeProposal(rawPayload, {
+        heroName: context.hero.name,
+        worldName: context.worldName,
+        turnNumber: context.currentTurnNumber,
+      });
 
-      const parsed = NarrativeProposalSchema.safeParse(proposal);
-      if (parsed.success) {
-        return parsed.data;
+      if (diagnostics.repaired) {
+        console.warn('[GeminiNarrativeProvider] [Narrative Repaired & Sanitized]', {
+          modelUsed: data.modelUsed,
+          repairedFields: diagnostics.repairedFields,
+          rejectedStateFields: diagnostics.rejectedStateFields,
+          summary: diagnostics.summary,
+        });
       }
+
+      if (proposal && diagnostics.hasUsableNarrative) {
+        console.log('[GeminiNarrativeProvider] [Narrative Validated]', {
+          modelUsed: data.modelUsed,
+          sceneTitle: proposal.sceneTitle,
+          narrativeLength: proposal.narrativeText.length,
+          choicesCount: proposal.proposedChoices.length,
+          hasStateDelta: Boolean(proposal.proposedStateDelta),
+        });
+        return proposal;
+      }
+
+      // Genuinely unusable response (e.g. 0 narrative text generated)
+      console.error('[GeminiNarrativeProvider] [Critical Validation Failure] Proposal has no usable narrative:', {
+        modelUsed: data.modelUsed,
+        errors: diagnostics.errors,
+        summary: diagnostics.summary,
+      });
 
       throw new AiNarrativeError({
         failureType: 'server',
         title: 'Malformed AI Proposal',
-        message: 'The generated AI narrative proposal did not meet validation rules. Please retry.',
+        message: 'The AI model response contained no usable narrative continuation. Please tap Retry.',
         retryable: true,
       });
     } catch (err: any) {

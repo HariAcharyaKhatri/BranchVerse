@@ -129,6 +129,18 @@ export class StoryTransaction {
           region: delta.region.trim()
         };
       }
+      if (typeof delta.kingdom === 'string' && delta.kingdom.trim()) {
+        this.stagedState.worldFlags = {
+          ...this.stagedState.worldFlags,
+          kingdom: delta.kingdom.trim()
+        };
+      }
+      if (typeof delta.stamina === 'number' && !isNaN(delta.stamina)) {
+        this.stagedState.stamina = Math.max(0, Math.min(100, Math.round(delta.stamina)));
+      }
+      if (typeof delta.powerLevel === 'number' && !isNaN(delta.powerLevel)) {
+        this.stagedState.powerLevel = Math.max(1, Math.min(100, Math.round(delta.powerLevel)));
+      }
       if (Array.isArray(delta.statusEffectsAdded)) {
         for (const eff of delta.statusEffectsAdded) {
           if (typeof eff === 'string' && !this.stagedState.statusEffects.includes(eff)) {
@@ -183,6 +195,27 @@ export class StoryTransaction {
 
     const transitionCheck = StoryValidator.validateTransition(this.originalState, candidateState);
     if (!transitionCheck.isValid) {
+      console.warn(
+        `[StoryTransaction] State transition invariant check failed (${transitionCheck.errors.join('; ')}). Discarding invalid state delta and preserving narrative turn.`
+      );
+
+      // Graceful degradation: Preserve the valid narrative turn, but revert state changes back to original authoritative state
+      const safeCandidateState: EngineAuthoritativeState = {
+        ...this.originalState,
+        version: this.originalState.version + 1,
+        currentTurnNumber: this.originalState.currentTurnNumber + 1,
+        currentChapter: this.newTurnRecord.chapterNumber,
+        turns: [...this.originalState.turns, this.newTurnRecord],
+        updatedAt: Date.now()
+      };
+
+      const safeCheck = StoryValidator.validateTransition(this.originalState, safeCandidateState);
+      if (safeCheck.isValid) {
+        this.stagedState = safeCandidateState;
+        this.status = 'VERIFIED';
+        return;
+      }
+
       this.status = 'FAILED';
       this.failureReason = `State transition invariant violation: ${transitionCheck.errors.join('; ')}`;
       throw new Error(this.failureReason);

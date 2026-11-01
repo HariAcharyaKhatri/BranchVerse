@@ -127,6 +127,7 @@ export interface GeneratedNarrative {
     questUpdates?: string[];
     importantFacts?: string[];
   };
+  proposedStateDelta?: Record<string, any>;
   memorySummary?: string;
   modelUsed?: string;
 }
@@ -528,6 +529,16 @@ ROLE-PLAY INSTRUCTIONS:
               },
               required: ['choiceId', 'text']
             }
+          },
+          proposedStateDelta: {
+            type: 'object',
+            properties: {
+              currentLocation: { type: 'string' },
+              region: { type: 'string' },
+              kingdom: { type: 'string' },
+              wealth: { type: 'string' },
+              rank: { type: 'string' }
+            }
           }
         },
         required: ['sceneTitle', 'narrativeText', 'proposedChoices']
@@ -741,9 +752,30 @@ ROLE-PLAY INSTRUCTIONS:
         }
       }
 
-      const rawDialogues = parsed.dialogues || parsed.dialogue;
-      const rawChoices = parsed.proposedChoices || parsed.choices;
-      const narrativeText = String(parsed.narrativeText || parsed.narrative || '');
+      const rawDialogues = parsed.dialogues || parsed.dialogue || parsed.conversation;
+      const rawChoices = parsed.proposedChoices || parsed.choices || parsed.options || parsed.nextChoices;
+      const narrativeText = String(
+        parsed.narrativeText ??
+        parsed.narrative ??
+        parsed.story ??
+        parsed.text ??
+        parsed.content ??
+        parsed.narration ??
+        ''
+      );
+      const sceneTitle = String(
+        parsed.sceneTitle ??
+        parsed.title ??
+        parsed.chapterTitle ??
+        parsed.scene ??
+        'Chronicle Chapter'
+      );
+      const proposedStateDelta =
+        (parsed.proposedStateDelta && typeof parsed.proposedStateDelta === 'object' && !Array.isArray(parsed.proposedStateDelta))
+          ? parsed.proposedStateDelta
+          : (parsed.stateChanges && typeof parsed.stateChanges === 'object' && !Array.isArray(parsed.stateChanges))
+          ? parsed.stateChanges
+          : undefined;
 
       const normalizedChoices: Array<{
         choiceId: string;
@@ -757,7 +789,7 @@ ROLE-PLAY INSTRUCTIONS:
             choiceId: c.choiceId || `choice_ai_${Date.now()}_${idx}`,
             text: String(c.text || 'Advance with caution'),
             consequenceHint: c.consequenceHint || undefined,
-            riskLevel: (['safe', 'moderate', 'perilous'].includes(c.riskLevel) ? c.riskLevel : 'moderate') as 'safe' | 'moderate' | 'perilous',
+            riskLevel: (['safe', 'moderate', 'perilous'].includes(c.riskLevel?.toLowerCase()) ? c.riskLevel.toLowerCase() : 'moderate') as 'safe' | 'moderate' | 'perilous',
             requiredStamina: typeof c.requiredStamina === 'number' ? c.requiredStamina : 8,
             actionIntent: c.actionIntent || 'explore'
           }))
@@ -770,8 +802,10 @@ ROLE-PLAY INSTRUCTIONS:
             }
           ];
 
+      console.log(`[GeminiService] [Stage: JSON Parse] Success: ${Boolean(narrativeText && narrativeText.length >= 10)}, Title: "${sceneTitle}", Chars: ${narrativeText.length}, Choices: ${normalizedChoices.length}, StateDelta: ${Boolean(proposedStateDelta)}`);
+
       return {
-        sceneTitle: String(parsed.sceneTitle || 'Chronicle Chapter'),
+        sceneTitle,
         narrativeText,
         dialogues: Array.isArray(rawDialogues)
           ? rawDialogues.map((d: any) => ({
@@ -786,6 +820,7 @@ ROLE-PLAY INSTRUCTIONS:
         initialQuests: parsed.initialQuests || undefined,
         worldFacts: parsed.worldFacts || undefined,
         stateChanges: parsed.stateChanges || undefined,
+        proposedStateDelta,
         memorySummary: parsed.memorySummary || undefined,
       };
     } catch (parseErr: any) {

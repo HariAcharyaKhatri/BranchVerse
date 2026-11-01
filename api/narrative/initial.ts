@@ -96,7 +96,7 @@ export default async function handler(req: Request, res: Response) {
       return;
     }
 
-    console.error(`[Narrative API] [Initial Story Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
+    console.error(`[Narrative API] [Initial Story Error] User: ${userId}, Model: ${modelId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate initial story scene.',
       message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.'
