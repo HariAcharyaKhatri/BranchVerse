@@ -169,19 +169,28 @@ export class GeminiService {
     try {
       if (this.client.models && typeof this.client.models.list === 'function') {
         console.log('[GeminiService] Discovering available Gemini models via official SDK API...');
-        const discovered: string[] = [];
-        const pager = await this.client.models.list();
+        const listPromise = (async () => {
+          const discovered: string[] = [];
+          const pager = await this.client!.models.list();
 
-        for await (const model of pager) {
-          const rawName = (model as any)?.name;
-          if (!rawName) continue;
-          const normalized = rawName.replace(/^models\//, '');
+          for await (const model of pager) {
+            const rawName = (model as any)?.name;
+            if (!rawName) continue;
+            const normalized = rawName.replace(/^models\//, '');
 
-          // Verify it's an active Gemini model and not in our blacklist
-          if (normalized.startsWith('gemini-') && !this.unavailableModels.has(normalized)) {
-            discovered.push(normalized);
+            // Verify it's an active Gemini model and not in our blacklist
+            if (normalized.startsWith('gemini-') && !this.unavailableModels.has(normalized)) {
+              discovered.push(normalized);
+            }
           }
-        }
+          return discovered;
+        })();
+
+        const timeoutPromise = new Promise<string[]>((_, reject) =>
+          setTimeout(() => reject(new Error('Model discovery list() timed out')), 2000)
+        );
+
+        const discovered = await Promise.race([listPromise, timeoutPromise]);
 
         if (discovered.length > 0) {
           console.log(`[GeminiService] Discovered ${discovered.length} available models:`, discovered.join(', '));
@@ -191,7 +200,7 @@ export class GeminiService {
         }
       }
     } catch (listErr: any) {
-      console.warn('[GeminiService] Model discovery API call failed (using verified fallback list):', listErr?.message || listErr);
+      console.warn('[GeminiService] Model discovery API call failed or timed out (using verified fallback list):', listErr?.message || listErr);
     }
 
     const staticList = this.getStaticVerifiedModels();
@@ -437,7 +446,9 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
         throw new Error(`Gemini API request timed out after ${timeoutMs}ms.`);
       }
 
-      const attemptTimeout = Math.min(remainingTime, timeoutMs);
+      // Cap per-model attempt to 7500ms if there are fallback candidates, leaving ample time to try the next model
+      const maxAttemptMs = candidateIndex + 1 < candidateModels.length ? 7500 : remainingTime;
+      const attemptTimeout = Math.min(maxAttemptMs, remainingTime);
       const controller = new AbortController();
       const timer = setTimeout(() => {
         controller.abort(new Error(`Gemini request timed out after ${attemptTimeout}ms`));
@@ -599,6 +610,13 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
 
         if (isTimeout) {
           console.warn(`[GeminiService] [Request Timeout] Model: ${currentModel}, Attempt: ${attempt + 1}, Elapsed: ${elapsed}ms`);
+          const timeLeft = deadline - Date.now();
+          if (candidateIndex + 1 < candidateModels.length && timeLeft > 2500) {
+            console.warn(`[GeminiService] Model '${currentModel}' timed out after ${attemptTimeout}ms (likely high demand). Falling back to next candidate '${candidateModels[candidateIndex + 1]}'...`);
+            candidateIndex++;
+            attempt++;
+            continue;
+          }
           throw new Error(`Gemini API request timed out after ${attemptTimeout}ms.`);
         }
 

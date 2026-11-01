@@ -857,5 +857,59 @@ describe('Dual Gemini Backend Architecture & Rate Limiter', () => {
         (geminiService as any).discoveredModelsTimestamp = 0;
       }
     });
+
+    it('falls back to next verified model if primary model times out due to high demand', async () => {
+      const originalClient = (geminiService as any).client;
+      vi.spyOn(geminiService, 'isConfigured').mockReturnValue(true);
+
+      const modelsCalled: string[] = [];
+      const mockGenerateContent = vi.fn().mockImplementation(async (params: any) => {
+        modelsCalled.push(params.model);
+        if (params.model === 'gemini-3.8-flash') {
+          // Simulate timeout (AbortError) on primary model
+          const err: any = new Error('The operation was aborted');
+          err.name = 'AbortError';
+          throw err;
+        }
+        return {
+          text: JSON.stringify({
+            sceneTitle: 'Fallback Sanctuary',
+            narrativeText: 'The fallback model delivered the scene after timeout.',
+            dialogues: [{ speaker: 'Sage', text: 'You arrived despite the storm.', emotion: 'calm' }],
+            proposedChoices: [{ choiceId: 'c1', text: 'Step forward', riskLevel: 'safe', requiredStamina: 5 }]
+          })
+        };
+      });
+
+      try {
+        (geminiService as any).client = {
+          models: { generateContent: mockGenerateContent, list: vi.fn().mockResolvedValue([]) }
+        };
+
+        const result = await geminiService.generateInitialStory({
+          hero: {
+            name: 'Valen',
+            race: 'Human',
+            origin: 'Borderlands',
+            backstory: 'A sentinel.',
+            personality: ['Watchful'],
+            skills: ['Archery']
+          },
+          genres: ['High Fantasy'],
+          worldName: 'Aethelgard',
+          tone: 'Heroic',
+          pacing: 'Standard',
+          difficulty: 'Adventurer',
+          storyLanguage: 'en'
+        });
+
+        expect(modelsCalled[0]).toBe('gemini-3.8-flash');
+        expect(modelsCalled[1]).toBe('gemini-3.6-flash');
+        expect(result.modelUsed).toBe('gemini-3.6-flash');
+        expect(result.sceneTitle).toBe('Fallback Sanctuary');
+      } finally {
+        (geminiService as any).client = originalClient;
+      }
+    });
   });
 });
