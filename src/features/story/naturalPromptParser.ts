@@ -189,7 +189,7 @@ export interface ParsedStoryIdea {
  * Parses a natural language user story idea into a structured story configuration.
  * Example input: "I want to become a student in a magical academy where I slowly discover that I have forbidden powers."
  */
-export function parseStoryIdeaPrompt(description: string): ParsedStoryIdea {
+export function parseStoryIdeaPrompt(description: string, defaultHeroName?: string): ParsedStoryIdea {
   const lower = (description || '').toLowerCase();
 
   // 1. Detect Genre & Setting
@@ -298,7 +298,7 @@ export function parseStoryIdeaPrompt(description: string): ParsedStoryIdea {
     timePeriod,
     tone,
     style,
-    heroName: 'Hari Khatri',
+    heroName: defaultHeroName?.trim() || 'Hari Khatri',
     heroRace: 'Human',
     heroPersonality: heroTraits.slice(0, 3),
     heroBackstory: description.trim() || 'A lone seeker bound by a dormant destiny.',
@@ -313,7 +313,7 @@ export function parseStoryIdeaPrompt(description: string): ParsedStoryIdea {
 /**
  * Fills in missing hero fields intelligently WITHOUT replacing explicitly provided details.
  */
-export function completeHeroProfile(existing: Partial<HeroProfile> = {}): HeroProfile {
+export function completeHeroProfile(existing: Partial<HeroProfile> = {}, defaultName?: string): HeroProfile {
   const randomChoice = <T>(arr: readonly T[] | T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
   const randomRace = randomChoice(RACE_CATALOG);
@@ -324,7 +324,7 @@ export function completeHeroProfile(existing: Partial<HeroProfile> = {}): HeroPr
 
   return {
     id: existing.id || `hero_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    name: existing.name?.trim() ? existing.name.trim() : 'Hari Khatri',
+    name: existing.name?.trim() ? existing.name.trim() : (defaultName?.trim() || 'Hari Khatri'),
     age: existing.age || '20',
     gender: existing.gender || 'Male',
     appearance: {

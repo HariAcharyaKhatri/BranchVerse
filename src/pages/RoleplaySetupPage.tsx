@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOptionalAuth } from '../contexts/AuthContext';
 import { HeroProfile } from '../types/character';
 import { WorldDefinition } from '../types/world';
 import { StorySettings, SupportedLanguage, LANGUAGE_LABELS } from '../types/story';
@@ -103,6 +104,10 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
   onRetry,
   onDismissError
 }) => {
+  const auth = useOptionalAuth();
+  const user = auth?.user;
+  const defaultDisplayName = user?.displayName?.trim() || 'Hari Khatri';
+
   const [tab, setTab] = useState<'scenario' | 'character' | 'world' | 'settings'>('scenario');
 
   // Scenario Selection
@@ -116,7 +121,8 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
   const [selectedSavedHeroIndex, setSelectedSavedHeroIndex] = useState<number>(0);
 
   // New Character fields
-  const [heroName, setHeroName] = useState<string>('Hari Khatri');
+  const [heroName, setHeroName] = useState<string>(defaultDisplayName);
+  const [hasManuallyEditedName, setHasManuallyEditedName] = useState<boolean>(false);
   const [heroAge, setHeroAge] = useState<string>('23');
   const [heroRace, setHeroRace] = useState<string>('Human');
   const [heroArchetype, setHeroArchetype] = useState<string>('Spellblade & Investigator');
@@ -124,6 +130,13 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
   const [heroPowers, setHeroPowers] = useState<string>('Starlight Blink, Runic Shielding, Spell Disruption');
   const [heroBackstory, setHeroBackstory] = useState<string>('Ex-investigator from the borderlands who witnessed a secret the Council wanted buried.');
   const [startingGear, setStartingGear] = useState<string>('Silver-etched shortblade, encrypted pocket journal, mana restorative vial');
+
+  // Automatically update hero name when user profile loads, unless the user has manually edited it
+  useEffect(() => {
+    if (user?.displayName?.trim() && !hasManuallyEditedName) {
+      setHeroName(user.displayName.trim());
+    }
+  }, [user?.displayName, hasManuallyEditedName]);
 
   // World selection
   const [selectedWorldId, setSelectedWorldId] = useState<string>('aethelgard');
@@ -168,13 +181,18 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
     setIsCustomScenario(false);
     setSelectedWorldId(sc.worldId);
     setHeroArchetype(sc.suggestedArchetype);
-    if (sc.suggestedHeroName) {
+    if (!hasManuallyEditedName && user?.displayName?.trim()) {
+      setHeroName(user.displayName.trim());
+    } else if (!hasManuallyEditedName && sc.suggestedHeroName) {
       setHeroName(sc.suggestedHeroName);
     }
   };
 
   const handleRandomizeHero = () => {
-    const randomized = completeHeroProfile({ name: 'Hari Khatri' });
+    const preferredName = (!hasManuallyEditedName && user?.displayName?.trim())
+      ? user.displayName.trim()
+      : (heroName.trim() || 'Hari Khatri');
+    const randomized = completeHeroProfile({ name: preferredName }, preferredName);
     setHeroName(randomized.name);
     setHeroRace(randomized.race);
     setHeroPersonality(randomized.personality.join(', '));
@@ -192,14 +210,14 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
     } else {
       const skillsArray = heroPowers.split(',').map(s => s.trim()).filter(Boolean);
       finalHero = completeHeroProfile({
-        name: heroName.trim() || 'Hari Khatri',
+        name: heroName.trim() || defaultDisplayName,
         age: heroAge.trim() || '20',
         race: heroRace.trim() || 'Human',
         origin: heroArchetype.trim() || 'Adventurer',
         backstory: `[Age: ${heroAge}] ${heroBackstory.trim()} Starting gear: ${startingGear}.`,
         personality: heroPersonality.split(',').map(s => s.trim()).filter(Boolean),
         skills: skillsArray.length > 0 ? skillsArray : ['Blade Mastery', 'Aura Sense']
-      });
+      }, defaultDisplayName);
     }
 
     // 2. Resolve world
@@ -515,7 +533,11 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
                   <input
                     type="text"
                     value={heroName}
-                    onChange={e => setHeroName(e.target.value)}
+                    onChange={e => {
+                      setHeroName(e.target.value);
+                      setHasManuallyEditedName(true);
+                    }}
+                    placeholder={defaultDisplayName}
                     className="w-full bg-dark-surface border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-primary"
                   />
                 </div>

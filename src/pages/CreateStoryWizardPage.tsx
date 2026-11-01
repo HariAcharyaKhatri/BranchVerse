@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useOptionalAuth } from '../contexts/AuthContext';
 import { HeroProfile } from '../types/character';
 import { WorldDefinition } from '../types/world';
 import { StorySettings, SupportedLanguage, LANGUAGE_LABELS } from '../types/story';
@@ -47,6 +48,10 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
   onRetry,
   onDismissError
 }) => {
+  const auth = useOptionalAuth();
+  const user = auth?.user;
+  const defaultDisplayName = user?.displayName?.trim() || 'Hari Khatri';
+
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Form State
@@ -59,7 +64,8 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
   const [storyStyle, setStoryStyle] = useState<string>('Coming of Age Journey');
 
   // Protagonist State
-  const [heroName, setHeroName] = useState<string>('Hari Khatri');
+  const [heroName, setHeroName] = useState<string>(defaultDisplayName);
+  const [hasManuallyEditedName, setHasManuallyEditedName] = useState<boolean>(false);
   const [heroRace, setHeroRace] = useState<string>('Human');
   const [heroPersonality, setHeroPersonality] = useState<string>('Determined, Observant, Curious');
   const [heroAppearance, _setHeroAppearance] = useState<string>('Navy blue tunic with silver sigils, unruly dark hair');
@@ -73,6 +79,13 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
     'Unlock the ancient grimoires and survive the trials of the High Council.'
   );
 
+  // Automatically update hero name when user profile loads, unless the user has manually edited it
+  useEffect(() => {
+    if (user?.displayName?.trim() && !hasManuallyEditedName) {
+      setHeroName(user.displayName.trim());
+    }
+  }, [user?.displayName, hasManuallyEditedName]);
+
   // Sliders & Game Settings
   const [romanceLevel, setRomanceLevel] = useState<'None' | 'Light' | 'Prominent'>('Light');
   const [actionLevel, setActionLevel] = useState<'Low' | 'Moderate' | 'High'>('Moderate');
@@ -84,7 +97,8 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
   // Step 1 AI Prompt Converter
   const handleApplyAiSuggestion = (input?: string) => {
     const raw = input || promptDescription || 'I want to become a student in a magical academy where I slowly discover that I have forbidden powers.';
-    const parsed = parseStoryIdeaPrompt(raw);
+    const preferredName = hasManuallyEditedName ? heroName : (user?.displayName?.trim() || 'Hari Khatri');
+    const parsed = parseStoryIdeaPrompt(raw, preferredName);
 
     setTitle(parsed.title);
     setSelectedGenre(parsed.genre);
@@ -92,7 +106,11 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
     setTimePeriod(parsed.timePeriod);
     setTone(parsed.tone);
     setStoryStyle(parsed.style);
-    setHeroName(parsed.heroName);
+    if (!hasManuallyEditedName && user?.displayName?.trim()) {
+      setHeroName(user.displayName.trim());
+    } else if (parsed.heroName) {
+      setHeroName(parsed.heroName);
+    }
     setHeroRace(parsed.heroRace);
     setHeroPersonality(parsed.heroPersonality.join(', '));
     setHeroBackstory(parsed.heroBackstory);
@@ -134,7 +152,7 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
     };
 
     const baseHero = completeHeroProfile({
-      name: heroName.trim() || 'Hari Khatri',
+      name: heroName.trim() || defaultDisplayName,
       race: heroRace,
       personality: heroPersonality.split(',').map(s => s.trim()).filter(Boolean),
       backstory: heroBackstory,
@@ -410,8 +428,11 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
               <input
                 type="text"
                 value={heroName}
-                onChange={(e) => setHeroName(e.target.value)}
-                placeholder="Hari Khatri"
+                onChange={(e) => {
+                  setHeroName(e.target.value);
+                  setHasManuallyEditedName(true);
+                }}
+                placeholder={defaultDisplayName}
                 className="w-full p-2.5 rounded-xl bg-dark-surface border border-dark-border text-dark-text text-sm focus:border-brand-primary focus:outline-none"
               />
             </div>

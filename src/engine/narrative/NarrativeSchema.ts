@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const NarrativeDialogueSchema = z.object({
   speaker: z.string().min(1),
   text: z.string().min(1),
-  emotion: z.enum(['calm', 'furious', 'mysterious', 'terrified', 'warm']).optional(),
+  emotion: z.string().optional(),
 });
 
 export const NarrativeChoiceProposalSchema = z.object({

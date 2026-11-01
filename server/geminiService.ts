@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { CONFIG } from './config.js';
 import { SupportedLanguage, LANGUAGE_LABELS } from './types.js';
+import { getHariKhatriNarrativeDirective } from './narrativeGuidelines.js';
 
 export type NarrativeLength = 'concise' | 'balanced' | 'detailed';
 
@@ -317,6 +318,8 @@ export class GeminiService {
       maxTokens = 900;
     }
 
+    const hariDirective = getHariKhatriNarrativeDirective(context.hero.name);
+
     const prompt = `You are the master AI Narrative Director for BranchVerse.
 Establish an engaging opening scene and inciting incident for a new chronicle.
 
@@ -333,6 +336,8 @@ ${context.mainObjective ? `- Objective: ${context.mainObjective}` : ''}
 ${context.userPromptDescription ? `\nCORE PREMISE / VISION:\n"${context.userPromptDescription}"\n(Realize this premise in the opening scene!)` : ''}
 
 ${langInstruction}
+
+${hariDirective}
 
 PACING RULES:
 1. ${lengthRequirement}
@@ -420,6 +425,8 @@ Do NOT generate an entire long story. Generate only the immediate opening scene 
       ? context.hero.inventory.slice(0, 5).join(', ')
       : 'None';
 
+    const hariDirective = getHariKhatriNarrativeDirective(heroName);
+
     const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing role-playing chronicle.
 
 PROTAGONIST: ${heroName} | Stamina: ${heroStamina}/100 | Power: ${heroPower} | Location: ${location} | Items: ${inventoryText}${npcContextText}${factsText}
@@ -431,6 +438,8 @@ CURRENT ACTION:
 ${actionInstruction}
 
 ${langInstruction}
+
+${hariDirective}
 
 ROLE-PLAY INSTRUCTIONS:
 1. ${lengthRequirement}

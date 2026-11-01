@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOptionalAuth } from '../../contexts/AuthContext';
 import { HeroProfile } from '../../types/character';
 import { IdentityStep } from './IdentityStep';
 import { PowersStep } from './PowersStep';
@@ -21,15 +22,30 @@ export const HeroWizard: React.FC<HeroWizardProps> = ({
   onComplete,
   onCancel
 }) => {
+  const auth = useOptionalAuth();
+  const user = auth?.user;
+  const defaultDisplayName = user?.displayName?.trim() || 'Hari Khatri';
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [heroDraft, setHeroDraft] = useState<Partial<HeroProfile>>(() => ({
-    name: 'Hari Khatri',
+    name: defaultDisplayName,
     gender: 'Male',
     age: '20',
     origin: 'Borderland Outpost',
     race: 'Human',
     ...(initialHero || {})
   }));
+
+  // Update default name when user profile loads if draft is using generic fallback
+  useEffect(() => {
+    if (user?.displayName?.trim() && (!initialHero || !initialHero.name)) {
+      setHeroDraft(prev => {
+        if (!prev.name || prev.name === 'Hari Khatri') {
+          return { ...prev, name: user.displayName!.trim() };
+        }
+        return prev;
+      });
+    }
+  }, [user?.displayName, initialHero]);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
   const [promptText, setPromptText] = useState('');
   const [notification, setNotification] = useState<string | null>(null);

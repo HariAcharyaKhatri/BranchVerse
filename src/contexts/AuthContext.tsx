@@ -30,7 +30,7 @@ export interface AuthContextType {
   clearError: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const status = getFirebaseStatus();
@@ -230,6 +230,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useOptionalAuth = (): AuthContextType | null => {
+  return useContext(AuthContext) || null;
 };
 
 export const useAuth = (): AuthContextType => {

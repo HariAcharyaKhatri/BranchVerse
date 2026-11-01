@@ -126,7 +126,8 @@ const AppContent: React.FC = () => {
     overrideGenres?: string[];
     userPromptDescription?: string;
   }) => {
-    const targetHero = params.overrideHero || heroDraft || completeHeroProfile({ name: 'Hari Khatri' });
+    const defaultHeroName = user?.displayName?.trim() || 'Hari Khatri';
+    const targetHero = params.overrideHero || heroDraft || completeHeroProfile({ name: defaultHeroName }, defaultHeroName);
     const targetWorld = params.overrideWorld || selectedWorld || WORLD_CATALOG[0];
     const targetGenres = params.overrideGenres || (selectedGenres && selectedGenres.length > 0 ? selectedGenres : ['High Fantasy']);
     if (isGeneratingStory) {
@@ -254,7 +255,8 @@ const AppContent: React.FC = () => {
 
   // Quick Play / 1-Tap Instant Journey with Live Gemini AI
   const handleQuickPlay = async () => {
-    const randomHero = completeHeroProfile({ name: 'Hari Khatri' });
+    const defaultHeroName = user?.displayName?.trim() || 'Hari Khatri';
+    const randomHero = completeHeroProfile({ name: defaultHeroName }, defaultHeroName);
     const randomWorld = WORLD_CATALOG[Math.floor(Math.random() * WORLD_CATALOG.length)];
     const randomGenre = GENRE_CATALOG.find(g => g.id === randomWorld.primaryGenreId) || GENRE_CATALOG[0];
 
