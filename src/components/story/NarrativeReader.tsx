@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { StoryDocument, LANGUAGE_LABELS } from '../../types/story';
 import { BottomInteractionArea } from './BottomInteractionArea';
+import { CharacterIntroductionCard } from './CharacterIntroductionCard';
 import { getSceneBackground, getCharacterPortrait } from '../../features/assets/assetSelector';
 import { Sparkles, Sword, Shield, Flame, Zap, Eye, Cpu, Crown, Compass, BookOpen, MessageSquare, Activity } from 'lucide-react';
 import { useI18n } from '../../i18n';
@@ -29,7 +30,9 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
   const narrativeEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    narrativeEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (typeof narrativeEndRef.current?.scrollIntoView === 'function') {
+      narrativeEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [story.turns.length]);
 
   const getVisualIcon = (iconName?: string) => {
@@ -99,6 +102,15 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
             Hero: <strong className="text-dark-text">{story.hero.name}</strong> • Level {story.state.powerLevel} • Stamina: <strong className="text-amber-400">{story.state.stamina}</strong>
           </p>
         </div>
+
+        {/* Character Introduction at the Start of the Chronicle */}
+        <CharacterIntroductionCard
+          hero={story.hero}
+          state={story.state}
+          worldName={story.worldName}
+          genres={story.genres}
+          mainObjective={story.settings.mainObjective}
+        />
 
         {/* Narrative Turns Chronology */}
         {story.turns.map((turn, index) => {
@@ -281,22 +293,24 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
           </div>
         )}
 
-        <div ref={narrativeEndRef} className="h-6" />
-      </div>
+        {/* Story Choices & RPG Actions Area: Natural continuation after current story content */}
+        {currentTurn && !story.state.isGameOver && (
+          <div className="pt-2">
+            <BottomInteractionArea
+              choices={currentTurn.choices}
+              onSelectChoice={onSelectChoice}
+              onSubmitAction={(text, type, target) => onSubmitAction(text, type, target)}
+              onCancelGeneration={onCancelGeneration}
+              isLoading={isLoading}
+              knownNpcs={knownNpcs}
+              npcRelationships={story.state.npcRelationships}
+              isGameOver={story.state.isGameOver}
+            />
+          </div>
+        )}
 
-      {/* Modern 3-Tab Bottom Interaction Area */}
-      {currentTurn && !story.state.isGameOver && (
-        <BottomInteractionArea
-          choices={currentTurn.choices}
-          onSelectChoice={onSelectChoice}
-          onSubmitAction={(text, type, target) => onSubmitAction(text, type, target)}
-          onCancelGeneration={onCancelGeneration}
-          isLoading={isLoading}
-          knownNpcs={knownNpcs}
-          npcRelationships={story.state.npcRelationships}
-          isGameOver={story.state.isGameOver}
-        />
-      )}
+        <div ref={narrativeEndRef} className="h-8" />
+      </div>
     </div>
   );
 };

@@ -99,8 +99,11 @@ export const BottomInteractionArea: React.FC<BottomInteractionAreaProps> = ({
   };
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-30 bg-dark-surface/95 backdrop-blur-md border-t border-dark-border/80 safe-area-bottom shadow-2xl">
-      <div className="max-w-2xl mx-auto p-3 space-y-2.5">
+    <div
+      className="relative w-full max-w-2xl mx-auto mt-6 pt-5 pb-8 border-t border-dark-border/70 safe-area-bottom animate-in fade-in"
+      data-testid="story-choices-area"
+    >
+      <div className="space-y-3">
         {/* Loading Overlay / Progress Status */}
         {isLoading ? (
           <div className="p-3.5 rounded-2xl bg-brand-primary/10 border border-brand-primary/40 flex items-center justify-between gap-3 animate-in fade-in">

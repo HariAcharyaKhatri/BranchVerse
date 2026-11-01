@@ -4,13 +4,28 @@ import { StoryState } from '../../types/story';
 import { BottomSheet } from '../ui/BottomSheet';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Badge } from '../ui/Badge';
-import { Shield, Package, Scroll, Users } from 'lucide-react';
+import {
+  Shield,
+  Package,
+  Scroll,
+  Users,
+  MapPin,
+  Coins,
+  Award,
+  Zap,
+  Briefcase,
+  Sparkles,
+  Compass,
+  CheckCircle2
+} from 'lucide-react';
 
 interface CharacterSheetDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   hero: HeroProfile;
   state: StoryState;
+  genres?: string[];
+  worldName?: string;
   onUseItem?: (itemId: string) => void;
 }
 
@@ -19,25 +34,59 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
   onClose,
   hero,
   state,
+  genres = [],
+  worldName = 'Current Realm',
   onUseItem
 }) => {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory' | 'quests' | 'lore'>('stats');
+
+  const genreStr = (genres.length > 0 ? genres.join(' ') : 'Fantasy').toLowerCase();
+  const isFantasy = /fantasy|magic|supernatural|myth|cultivation|wuxia/i.test(genreStr);
+  const isBusiness = /business|commerce|trade|merchant|corporate/i.test(genreStr);
+  const isSciFi = /sci-fi|cyberpunk|space|future/i.test(genreStr);
+
+  // Authoritative dynamic fields
+  const currentLocation = state.currentLocation || hero.origin || 'Unknown Realm';
+  const rawRegion = state.worldFlags?.region as string;
+  const rawKingdom = state.worldFlags?.kingdom as string;
+  const regionOrKingdom = rawRegion && rawKingdom
+    ? `${rawRegion}, ${rawKingdom}`
+    : rawRegion || rawKingdom || worldName;
+
+  const currentRank =
+    (state.worldFlags?.rank as string) ||
+    (state.worldFlags?.title as string) ||
+    hero.origin ||
+    'Adventurer';
+
+  const rawWealth =
+    state.worldFlags?.wealth ||
+    state.worldFlags?.gold ||
+    state.worldFlags?.credits;
+
+  const displayWealth = rawWealth
+    ? String(rawWealth)
+    : isBusiness
+    ? 'Working Capital: Modest'
+    : isFantasy
+    ? '50 Silver Coins'
+    : undefined;
 
   return (
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
       title={hero.name}
-      subtitle={`${hero.race} • ${hero.skills[0] || 'Warrior'} • Level ${state.powerLevel}`}
+      subtitle={`${hero.race} • ${currentRank} • Lvl ${state.powerLevel}`}
     >
-      <div className="space-y-4">
+      <div className="space-y-4" data-testid="live-character-status-panel">
         {/* Compact Navigation Tabs */}
         <div className="grid grid-cols-4 gap-1 p-1 bg-dark-elevated rounded-xl border border-dark-border text-xs">
           {[
-            { id: 'stats', label: 'Stats', icon: Shield },
+            { id: 'stats', label: isBusiness ? 'Status' : 'Vitals', icon: Shield },
             { id: 'inventory', label: 'Items', icon: Package, count: state.inventory.length },
             { id: 'quests', label: 'Quests', icon: Scroll, count: state.activeQuests.length },
-            { id: 'lore', label: 'Bonds', icon: Users }
+            { id: 'lore', label: 'Bonds', icon: Users, count: Object.keys(state.npcTrust || {}).length }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -63,9 +112,59 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
           })}
         </div>
 
-        {/* Tab 1: Stats & Vitals */}
+        {/* Tab 1: Live Status, Location, Wealth & Vitals */}
         {activeTab === 'stats' && (
           <div className="space-y-3.5">
+            {/* Live Geographical & Economic Status Cards */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {/* Location */}
+              <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-red-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-dark-muted font-medium block">Current Location</span>
+                  <p className="font-semibold text-white truncate">{currentLocation}</p>
+                  <p className="text-[10px] text-dark-muted truncate">{regionOrKingdom}</p>
+                </div>
+              </div>
+
+              {/* Wealth / Economic Standing */}
+              <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border flex items-center gap-2">
+                <Coins className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-dark-muted font-medium block">
+                    {isBusiness ? 'Liquid Capital' : 'Wealth & Coinage'}
+                  </span>
+                  <p className="font-semibold text-emerald-300 truncate">
+                    {displayWealth || 'Provisioned'}
+                  </p>
+                  <p className="text-[10px] text-dark-muted truncate">Authoritative</p>
+                </div>
+              </div>
+
+              {/* Title / Social Rank */}
+              <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-dark-muted font-medium block">Position / Rank</span>
+                  <p className="font-semibold text-amber-300 truncate">{currentRank}</p>
+                  <p className="text-[10px] text-dark-muted truncate">{hero.race}</p>
+                </div>
+              </div>
+
+              {/* Power / Mastery */}
+              <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border flex items-center gap-2">
+                <Zap className="w-4 h-4 text-indigo-400 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-dark-muted font-medium block">
+                    {isBusiness ? 'Influence Level' : 'Mastery Level'}
+                  </span>
+                  <p className="font-semibold text-indigo-300 truncate">Level {state.powerLevel}</p>
+                  <p className="text-[10px] text-dark-muted truncate">{state.stamina} / 100 Stamina</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Vitals Progress Bars */}
             <div className="space-y-2 bg-dark-elevated/40 p-3 rounded-2xl border border-dark-border">
               <ProgressBar
                 label="Stamina & Narrative Focus"
@@ -75,7 +174,7 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
                 variant="amber"
               />
               <ProgressBar
-                label="Power Level & Mastery"
+                label={isBusiness ? 'Business Acumen & Market Reach' : 'Power Level & Mastery'}
                 sublabel={`Level ${state.powerLevel}`}
                 value={Math.min(100, state.powerLevel * 2)}
                 max={100}
@@ -83,31 +182,38 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
               />
             </div>
 
-            {/* Powers & Weapons */}
+            {/* Powers, Skills, and Gear (Genre-Adaptive) */}
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-dark-muted">Equipped Weapons & Abilities</div>
+              <div className="text-xs font-semibold text-dark-muted">
+                {isFantasy ? 'Equipped Weapons & Arcane Abilities' : isBusiness ? 'Business Competencies & Tools' : 'Key Skills & Equipment'}
+              </div>
               <div className="flex flex-wrap gap-1.5">
-                {hero.weapons.map((w, idx) => (
-                  <Badge key={idx} variant="primary" size="sm">
+                {hero.weapons && hero.weapons.map((w, idx) => (
+                  <Badge key={`w-${idx}`} variant="primary" size="sm">
                     ⚔️ {w}
                   </Badge>
                 ))}
-                {hero.powers.map((p, idx) => (
-                  <Badge key={idx} variant="amber" size="sm">
+                {hero.powers && hero.powers.map((p, idx) => (
+                  <Badge key={`p-${idx}`} variant="amber" size="sm">
                     ✨ {p}
+                  </Badge>
+                ))}
+                {hero.skills && hero.skills.map((s, idx) => (
+                  <Badge key={`s-${idx}`} variant="emerald" size="sm">
+                    🎯 {s}
                   </Badge>
                 ))}
               </div>
             </div>
 
-            {/* Status Effects */}
+            {/* Active Status Effects / Conditions */}
             {state.statusEffects && state.statusEffects.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-xs font-semibold text-dark-muted">Active Status Effects</div>
+                <div className="text-xs font-semibold text-dark-muted">Active World Status Effects</div>
                 <div className="flex flex-wrap gap-1.5">
                   {state.statusEffects.map((eff, idx) => (
                     <Badge key={idx} variant="purple" size="sm">
-                      {eff}
+                      🌟 {eff}
                     </Badge>
                   ))}
                 </div>
@@ -116,12 +222,12 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
           </div>
         )}
 
-        {/* Tab 2: Inventory */}
+        {/* Tab 2: Live Inventory */}
         {activeTab === 'inventory' && (
           <div className="space-y-2">
             {state.inventory.length === 0 ? (
               <div className="text-center py-8 text-dark-muted text-xs">
-                Your satchel is empty. Explore and make choices to gather items!
+                Your inventory is empty. Discover items through exploration and dialogue!
               </div>
             ) : (
               state.inventory.map((item) => (
@@ -155,12 +261,12 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
           </div>
         )}
 
-        {/* Tab 3: Quests */}
+        {/* Tab 3: Active Quests */}
         {activeTab === 'quests' && (
           <div className="space-y-2">
             {state.activeQuests.length === 0 ? (
               <div className="text-center py-8 text-dark-muted text-xs">
-                No active quests. Continue reading to accept new missions!
+                No active quests. Continue reading and taking action to accept new missions!
               </div>
             ) : (
               state.activeQuests.map((quest) => (
@@ -179,7 +285,7 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
                   </div>
                   <p className="text-xs text-dark-muted leading-tight">{quest.objective}</p>
                   {quest.giver && (
-                    <p className="text-[10px] text-dark-muted/80">Quest Giver: {quest.giver}</p>
+                    <p className="text-[10px] text-dark-muted/80">Given by: {quest.giver}</p>
                   )}
                 </div>
               ))
@@ -187,13 +293,15 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
           </div>
         )}
 
-        {/* Tab 4: Lore & NPC Trust */}
+        {/* Tab 4: Lore & Social Bonds / Reputation */}
         {activeTab === 'lore' && (
           <div className="space-y-3">
-            <div className="text-xs font-semibold text-dark-muted">Factions & NPC Trust</div>
-            {Object.keys(state.npcTrust).length === 0 ? (
+            <div className="text-xs font-semibold text-dark-muted">
+              {isBusiness ? 'Commercial Partners & Reputation' : 'Companions, Contacts & NPC Trust'}
+            </div>
+            {Object.keys(state.npcTrust || {}).length === 0 ? (
               <div className="text-center py-6 text-dark-muted text-xs">
-                No NPC bonds established yet.
+                No significant relationships recorded yet. Interact with nearby characters to form bonds.
               </div>
             ) : (
               <div className="space-y-2">

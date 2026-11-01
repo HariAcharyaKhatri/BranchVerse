@@ -105,6 +105,64 @@ export class StoryTransaction {
       this.stagedState.unlockedEndingId = parsedProposal.unlockedEndingId;
     }
 
+    // Apply authoritative narrative state deltas (e.g. location, wealth, rank, status effects)
+    if (parsedProposal.proposedStateDelta) {
+      const delta = parsedProposal.proposedStateDelta;
+      if (typeof delta.currentLocation === 'string' && delta.currentLocation.trim()) {
+        this.stagedState.currentLocation = delta.currentLocation.trim();
+      }
+      if (typeof delta.wealth === 'string' || typeof delta.wealth === 'number') {
+        this.stagedState.worldFlags = {
+          ...this.stagedState.worldFlags,
+          wealth: delta.wealth
+        };
+      }
+      if (typeof delta.rank === 'string' && delta.rank.trim()) {
+        this.stagedState.worldFlags = {
+          ...this.stagedState.worldFlags,
+          rank: delta.rank.trim()
+        };
+      }
+      if (typeof delta.region === 'string' && delta.region.trim()) {
+        this.stagedState.worldFlags = {
+          ...this.stagedState.worldFlags,
+          region: delta.region.trim()
+        };
+      }
+      if (Array.isArray(delta.statusEffectsAdded)) {
+        for (const eff of delta.statusEffectsAdded) {
+          if (typeof eff === 'string' && !this.stagedState.statusEffects.includes(eff)) {
+            this.stagedState.statusEffects.push(eff);
+          }
+        }
+      }
+      if (Array.isArray(delta.statusEffectsRemoved)) {
+        this.stagedState.statusEffects = this.stagedState.statusEffects.filter(
+          eff => !delta.statusEffectsRemoved.includes(eff)
+        );
+      }
+      if (Array.isArray(delta.itemsAdded)) {
+        for (const item of delta.itemsAdded) {
+          if (item && item.id && item.name) {
+            const existing = this.stagedState.inventory.find(i => i.id === item.id);
+            if (existing) {
+              existing.quantity += (item.quantity || 1);
+            } else {
+              this.stagedState.inventory.push({
+                id: item.id,
+                name: item.name,
+                quantity: item.quantity || 1,
+                category: item.category || 'material',
+                description: item.description || '',
+                isUnique: Boolean(item.isUnique),
+                isEquipped: false
+              });
+            }
+          }
+        }
+      }
+    }
+
     this.status = 'GENERATED';
   }
 

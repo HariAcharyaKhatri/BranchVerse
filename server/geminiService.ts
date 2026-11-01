@@ -351,8 +351,9 @@ ${storyFirstDirective}
 PACING RULES:
 1. ${lengthRequirement}
 2. Ground the scene with sensory atmospheric cues and ${context.hero.name}'s perspective.
-3. Include 1 spoken character dialogue line with emotion cue.
-4. Propose 3 distinct, tactical choices with riskLevel (safe, moderate, perilous) and stamina costs (4 to 12).
+3. STORY CONTEXT & SETTING RULE: Explicitly establish WHERE ${context.hero.name} is located (city, settlement, landmark, or realm), WHAT immediate crisis or situation is occurring, and WHY this moment matters to their goals. The reader must never feel dropped into an unknown situation without context.
+4. Include 1 spoken character dialogue line with emotion cue.
+5. Propose 3 distinct, tactical choices with riskLevel (safe, moderate, perilous) and stamina costs (4 to 12).
 Do NOT generate an entire long story. Generate only the immediate opening scene and choices needed to start playing.`;
 
     const result = await this.callWithRetry(modelId, prompt, maxTokens, 'initial');
