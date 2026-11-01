@@ -62,7 +62,10 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
           })),
           npcRelationships: context.npcRelationships,
           memorySummary: context.memorySummary,
-          importantFacts: context.importantFacts,
+          importantFacts: [
+            ...(context.importantFacts || []),
+            ...(context.authoritativeConstraints || [])
+          ],
           recentTurns: context.recentTurnsSummary.map((t) => ({
             sceneTitle: t.sceneTitle,
             narrativeSummary: t.actionTaken || '',

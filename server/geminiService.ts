@@ -1,7 +1,11 @@
 import { GoogleGenAI } from '@google/genai';
 import { CONFIG } from './config.js';
 import { SupportedLanguage, LANGUAGE_LABELS } from './types.js';
-import { getHariKhatriNarrativeDirective } from './narrativeGuidelines.js';
+import {
+  getHariKhatriNarrativeDirective,
+  getStoryFirstSystemDirective,
+  formatPlayerActionWithStoryFirstDirectives
+} from './narrativeGuidelines.js';
 
 export type NarrativeLength = 'concise' | 'balanced' | 'detailed';
 
@@ -318,7 +322,12 @@ export class GeminiService {
       maxTokens = 900;
     }
 
-    const hariDirective = getHariKhatriNarrativeDirective(context.hero.name);
+    const storyFirstDirective = getStoryFirstSystemDirective({
+      protagonistName: context.hero.name,
+      worldName: context.worldName,
+      genres: context.genres,
+      tone: context.tone
+    });
 
     const prompt = `You are the master AI Narrative Director for BranchVerse.
 Establish an engaging opening scene and inciting incident for a new chronicle.
@@ -337,7 +346,7 @@ ${context.userPromptDescription ? `\nCORE PREMISE / VISION:\n"${context.userProm
 
 ${langInstruction}
 
-${hariDirective}
+${storyFirstDirective}
 
 PACING RULES:
 1. ${lengthRequirement}
@@ -376,28 +385,23 @@ Do NOT generate an entire long story. Generate only the immediate opening scene 
       maxTokens = 800;
     }
 
-    // Role-play input discrimination (Action vs Dialogue vs Thought vs Choice)
-    const playerAction = context.playerAction || {};
-    const actionType = playerAction.type || (playerAction.choiceText ? 'choice' : 'action');
-    let actionInstruction = '';
+    const heroName = context.hero?.name || 'Protagonist';
+    const heroStamina = typeof context.hero?.stamina === 'number' ? context.hero.stamina : 100;
+    const heroPower = typeof context.hero?.powerLevel === 'number' ? context.hero.powerLevel : 30;
+    const location = context.currentLocation || 'Unknown Realm';
+    const inventoryText = Array.isArray(context.hero?.inventory) && context.hero.inventory.length > 0
+      ? context.hero.inventory.slice(0, 5).join(', ')
+      : 'None';
 
-    if (actionType === 'dialogue') {
-      const target = playerAction.targetNpc ? ` to ${playerAction.targetNpc}` : '';
-      actionInstruction = `PLAYER DIALOGUE (Spoken aloud${target}):
-"${playerAction.customActionText || ''}"
--> ROLE-PLAY DIRECTIVE: Nearby characters hear and reply verbally with authentic emotion!`;
-    } else if (actionType === 'thought') {
-      actionInstruction = `PLAYER INNER THOUGHT:
-"${playerAction.customActionText || ''}"
--> INNER MONOLOGUE DIRECTIVE: Reflect silently and advance scene.`;
-    } else if (actionType === 'action') {
-      actionInstruction = `PLAYER PHYSICAL ACTION:
-"${playerAction.customActionText || ''}"
--> ACTION DIRECTIVE: Describe physical outcome, impact, and reaction.`;
-    } else {
-      actionInstruction = `PLAYER SELECTED CHOICE:
-"${playerAction.choiceText || playerAction.customActionText || 'Proceed'}"`;
-    }
+    const playerAction = context.playerAction || {};
+    const actionInstruction = formatPlayerActionWithStoryFirstDirectives(
+      playerAction,
+      {
+        protagonistName: heroName,
+        genre: context.genre,
+        worldName: location
+      }
+    );
 
     const recentTurns = Array.isArray(context.recentTurns) ? context.recentTurns : [];
     const recentHistoryText = recentTurns
@@ -417,15 +421,12 @@ Do NOT generate an entire long story. Generate only the immediate opening scene 
       ? `\nFACTS: ${context.importantFacts.slice(-2).join('; ')}`
       : '';
 
-    const heroName = context.hero?.name || 'Protagonist';
-    const heroStamina = typeof context.hero?.stamina === 'number' ? context.hero.stamina : 100;
-    const heroPower = typeof context.hero?.powerLevel === 'number' ? context.hero.powerLevel : 30;
-    const location = context.currentLocation || 'Unknown Realm';
-    const inventoryText = Array.isArray(context.hero?.inventory) && context.hero.inventory.length > 0
-      ? context.hero.inventory.slice(0, 5).join(', ')
-      : 'None';
-
-    const hariDirective = getHariKhatriNarrativeDirective(heroName);
+    const storyFirstDirective = getStoryFirstSystemDirective({
+      protagonistName: heroName,
+      worldName: location,
+      genres: context.genre ? [context.genre] : ['Adventure'],
+      tone: context.tone
+    });
 
     const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing role-playing chronicle.
 
@@ -439,7 +440,7 @@ ${actionInstruction}
 
 ${langInstruction}
 
-${hariDirective}
+${storyFirstDirective}
 
 ROLE-PLAY INSTRUCTIONS:
 1. ${lengthRequirement}

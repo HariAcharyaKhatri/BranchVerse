@@ -49,6 +49,7 @@ export interface NarrativePromptContext {
   }>;
   recentFacts: string[];
   importantFacts?: string[];
+  authoritativeConstraints?: string[];
   memorySummary?: string;
   recentTurnsSummary: Array<{
     chapter: number;

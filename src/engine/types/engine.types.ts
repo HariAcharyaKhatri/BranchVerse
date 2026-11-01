@@ -43,6 +43,13 @@ export interface ParsedAction {
   desiredOutcome?: string;
   isCustomAction: boolean;
   confidence: number;
+  isOutOfStory?: boolean;
+  outOfStoryTopic?: string;
+  isGrandClaim?: boolean;
+  isInstantVictoryOrGodMode?: boolean;
+  isTimeJumpAttempt?: boolean;
+  isResurrectionAttempt?: boolean;
+  isMultiAction?: boolean;
 }
 
 export interface ActionPreconditionCheck {

@@ -99,10 +99,31 @@ export class StorySession {
         parsedAction,
         this.factStore
       );
-      transaction.stageValidation(validation);
+
+      const stagedHealth = transaction.getStagedState().health;
+      const isTerminalFailure =
+        Boolean(transaction.getStagedState().isStoryComplete) ||
+        (typeof stagedHealth === 'number' && stagedHealth <= 0);
+
+      let customActionConstraint: string | undefined;
+
+      if (parsedAction.isCustomAction && !validation.isValid && !isTerminalFailure) {
+        // STORY-FIRST SYSTEM: The story must never stop.
+        // User input expresses intent/attempt, but does not control reality.
+        // A player can attempt almost anything (e.g. using a missing item, acting while fatigued,
+        // or speaking to a dead NPC), but cannot declare reality into existence.
+        // The authoritative constraint is preserved and passed to the Narrative Director.
+        customActionConstraint = validation.reason;
+        transaction.stageValidation({ isValid: true });
+      } else {
+        transaction.stageValidation(validation);
+      }
 
       // 3. Plan mechanical rules & consequences
       const resolution = ActionResolver.resolve(transaction.getStagedState(), parsedAction);
+      if (customActionConstraint) {
+        resolution.consequenceSummaries.push(`[Authoritative Constraint]: ${customActionConstraint}`);
+      }
 
       // Evaluate delayed events
       const triggeredEvents = this.consequenceManager.evaluateDelayedEvents(
@@ -121,6 +142,9 @@ export class StorySession {
         this.factStore
       );
       promptContext.signal = input.signal;
+      if (customActionConstraint) {
+        promptContext.authoritativeConstraints = [customActionConstraint];
+      }
       promptContext.playerAction = {
         type: input.actionType || (input.choiceId ? 'choice' : 'action'),
         customActionText: input.customActionText,

@@ -86,6 +86,20 @@ export class ActionResolver {
       }
     }
 
+    // Story-First Invariant Guards on State Alteration
+    if (action.isGrandClaim) {
+      consequences.push('Expressed grand claim: established resources and numbers remain unchanged.');
+    }
+    if (action.isInstantVictoryOrGodMode) {
+      consequences.push('Attempted instant god-mode: progression must be earned through story trials.');
+    }
+    if (action.isTimeJumpAttempt) {
+      consequences.push('Attempted time jump: immediate unresolved stakes must first be addressed.');
+    }
+    if (action.isOutOfStory) {
+      consequences.push('Expressed out-of-story intent: filtered in-universe without altering world facts.');
+    }
+
     const causalLog: CausalLogEntry = {
       id: `cause_${state.currentTurnNumber}_${Date.now()}`,
       turnNumber: state.currentTurnNumber,

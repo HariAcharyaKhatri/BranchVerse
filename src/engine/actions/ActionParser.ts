@@ -8,13 +8,16 @@ export class ActionParser {
     const rawText = input.trim();
     const lower = rawText.toLowerCase();
 
+    const flags = this.detectStoryFirstFlags(lower, rawText);
+
     // Intent detectors in priority order
     if (this.matchesAny(lower, ['rest', 'sleep', 'camp', 'meditate', 'wait patiently', 'take a breather'])) {
       return {
         rawText,
         intent: 'rest',
         isCustomAction,
-        confidence: 0.95
+        confidence: 0.95,
+        ...flags
       };
     }
 
@@ -25,7 +28,8 @@ export class ActionParser {
         intent: 'use_item',
         relevantItemName: itemMatch,
         isCustomAction,
-        confidence: 0.9
+        confidence: 0.9,
+        ...flags
       };
     }
 
@@ -36,7 +40,8 @@ export class ActionParser {
         intent: 'talk',
         target,
         isCustomAction,
-        confidence: 0.88
+        confidence: 0.88,
+        ...flags
       };
     }
 
@@ -47,7 +52,8 @@ export class ActionParser {
         intent: 'persuade',
         target,
         isCustomAction,
-        confidence: 0.85
+        confidence: 0.85,
+        ...flags
       };
     }
 
@@ -56,7 +62,8 @@ export class ActionParser {
         rawText,
         intent: 'stealth',
         isCustomAction,
-        confidence: 0.88
+        confidence: 0.88,
+        ...flags
       };
     }
 
@@ -67,7 +74,8 @@ export class ActionParser {
         intent: 'combat',
         target,
         isCustomAction,
-        confidence: 0.92
+        confidence: 0.92,
+        ...flags
       };
     }
 
@@ -78,7 +86,8 @@ export class ActionParser {
         intent: 'investigate',
         target,
         isCustomAction,
-        confidence: 0.88
+        confidence: 0.88,
+        ...flags
       };
     }
 
@@ -89,7 +98,8 @@ export class ActionParser {
         intent: 'travel',
         target,
         isCustomAction,
-        confidence: 0.86
+        confidence: 0.86,
+        ...flags
       };
     }
 
@@ -98,7 +108,8 @@ export class ActionParser {
         rawText,
         intent: 'trade',
         isCustomAction,
-        confidence: 0.85
+        confidence: 0.85,
+        ...flags
       };
     }
 
@@ -108,7 +119,49 @@ export class ActionParser {
       intent: 'creative',
       desiredOutcome: rawText,
       isCustomAction,
-      confidence: 0.7
+      confidence: 0.7,
+      ...flags
+    };
+  }
+
+  private static detectStoryFirstFlags(lower: string, rawText: string) {
+    const isCode = /\b(python|javascript|typescript|c\+\+|html|css|sql)\b/i.test(lower) &&
+                   /\b(write|code|script|function|def\s+|class\s+|program)\b/i.test(lower);
+    const isRealWorld = /\b(elon musk|net worth|president|super bowl|stock price|real world|wikipedia|what time is it|capital of France|in real life)\b/i.test(lower);
+    const isAiQuery = /\b(what model|are you gemini|are you chatgpt|what ai|system prompt|language model)\b/i.test(lower);
+    const isOutOfStory = isCode || isRealWorld || isAiQuery;
+    const outOfStoryTopic = isCode
+      ? 'programming/code request'
+      : isRealWorld
+      ? 'real-world query'
+      : isAiQuery
+      ? 'AI model question'
+      : undefined;
+
+    const isGrandClaim =
+      /\b(actually\s+i\s+have|secret\s+army|100[,.]?000\s+(soldiers|men|troops)|unlimited\s+(gold|money|resources)|i\s+am\s+secretly\s+the\s+(emperor|king|god))\b/i.test(lower);
+
+    const isInstantVictoryOrGodMode =
+      /\b(level\s+100|god\s+mode|instantly\s+win|instant\s+victory|instant\s+success|instantly\s+(convince|persuade|defeat|kill|destroy|conquer|surrender)|all\s+enemies\s+die|kill\s+everyone\s+in\s+one\s+hit|become\s+all-powerful|unlimited\s+power)\b/i.test(lower);
+
+    const isTimeJumpAttempt =
+      /\b(jump\s+(ten|10|\d+)\s+years|skip\s+(ten|10|\d+)\s+years|(ten|10|\d+)\s+years\s+pass|fast[- ]forward\s+(ten|10|\d+)\s+years)\b/i.test(lower);
+
+    const isResurrectionAttempt =
+      /\b(resurrect|bring\s+(?:[a-zA-Z'\s]+?\s+)?back\s+to\s+life|bring\s+(?:them|him|her)\s+back|revive\s+(?:the\s+)?dead|raise\s+(?:the\s+dead|from\s+the\s+dead))\b/i.test(lower);
+
+    const isMultiAction =
+      rawText.length > 200 ||
+      /\b(first\s+.*then\s+.*|after\s+that\s+.*finally)\b/i.test(lower);
+
+    return {
+      isOutOfStory,
+      outOfStoryTopic,
+      isGrandClaim,
+      isInstantVictoryOrGodMode,
+      isTimeJumpAttempt,
+      isResurrectionAttempt,
+      isMultiAction
     };
   }
 
