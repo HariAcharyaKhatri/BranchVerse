@@ -14,29 +14,13 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
-// Health & Diagnostic Endpoint
-app.get('/api/health', (_req, res) => {
-  const stats = rateLimiter.getStats();
-  res.json({
-    status: 'ok',
-    aiEnabled: CONFIG.AI_ENABLED,
-    geminiConfigured: geminiService.isConfigured(),
-    models: {
-      initialModel: CONFIG.GEMINI_INITIAL_MODEL,
-      turnModel: CONFIG.GEMINI_TURN_MODEL
-    },
-    quotas: CONFIG.MODEL_QUOTAS,
-    rateLimitStats: stats,
-    timestamp: Date.now()
-  });
-});
-
 // Model A: Initial Story Generation (gemini-3.8-flash)
 app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequest, res) => {
   if (!geminiService.isConfigured()) {
+    console.warn('[Narrative API] Initial generation requested but GEMINI_API_KEY is not configured.');
     res.status(503).json({
-      error: 'Gemini API key is not configured on the backend server.',
-      message: 'GEMINI_API_KEY is not configured on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local for local testing).'
+      error: 'Story generation service temporarily unavailable.',
+      message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.'
     });
     return;
   }
@@ -104,7 +88,7 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
     console.error(`[Narrative API] [Initial Story Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate initial story scene.',
-      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.'
+      message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.'
     });
   } finally {
     slot.release?.();
@@ -114,9 +98,10 @@ app.post('/api/narrative/initial', authMiddleware, async (req: AuthenticatedRequ
 // Model B: Subsequent Story Turns (gemini-3.1-flash-lite)
 app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest, res) => {
   if (!geminiService.isConfigured()) {
+    console.warn('[Narrative API] Turn generation requested but GEMINI_API_KEY is not configured.');
     res.status(503).json({
-      error: 'Gemini API key is not configured on the backend server.',
-      message: 'GEMINI_API_KEY is not configured on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local for local testing).'
+      error: 'Story generation service temporarily unavailable.',
+      message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.'
     });
     return;
   }
@@ -184,7 +169,7 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
     console.error(`[Narrative API] [Story Turn Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate turn narrative.',
-      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.'
+      message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.'
     });
   } finally {
     slot.release?.();

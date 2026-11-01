@@ -229,7 +229,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess }) => {
                 <AlertCircle className="w-4 h-4" /> Firebase Initialization Error
               </div>
               <p className="text-[11px] leading-relaxed text-red-200/90">
-                {initializationError || 'Firebase Web SDK failed to initialize with the configured credentials. Please check console diagnostics.'}
+                {initializationError || 'Authentication service is temporarily unavailable. Please check your connection and try again.'}
               </p>
             </div>
           )}

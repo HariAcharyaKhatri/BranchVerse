@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth) {
       setError(
         status.initializationError ||
-        'Firebase Authentication failed to initialize. Please check console diagnostics.'
+        'Authentication service is temporarily unavailable. Please check your connection and try again.'
       );
       return null;
     }

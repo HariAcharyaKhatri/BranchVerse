@@ -2,11 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { execSync } from 'child_process';
-import healthHandler from '../../api/health.js';
 import initialNarrativeHandler from '../../api/narrative/initial.js';
 import turnNarrativeHandler from '../../api/narrative/turn.js';
 import { geminiService } from '../../server/geminiService.js';
-import { CONFIG } from '../../server/config.js';
 
 function createMockResponse() {
   const res: any = {
@@ -45,23 +43,6 @@ describe('Vercel Serverless API Routes (/api)', () => {
     vi.restoreAllMocks();
   });
 
-  describe('/api/health Serverless Endpoint', () => {
-    it('returns 200 OK with model configurations and health metadata', () => {
-      const req: any = { method: 'GET', headers: {} };
-      const res = createMockResponse();
-
-      healthHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.body).toBeDefined();
-      expect(res.body.status).toBe('ok');
-      expect(res.body.models.initialModel).toBe(CONFIG.GEMINI_INITIAL_MODEL);
-      expect(res.body.models.turnModel).toBe(CONFIG.GEMINI_TURN_MODEL);
-      expect(res.body.quotas).toBeDefined();
-      expect(res.body.rateLimitStats).toBeDefined();
-    });
-  });
-
   describe('/api/narrative/initial Serverless Endpoint', () => {
     it('rejects non-POST HTTP methods with 405 Method Not Allowed', async () => {
       const req: any = { method: 'GET', headers: {} };
@@ -96,7 +77,7 @@ describe('Vercel Serverless API Routes (/api)', () => {
       expect(res.body.error).toMatch(/Malformed JWT token/i);
     });
 
-    it('returns 503 when GEMINI_API_KEY is not configured on the backend', async () => {
+    it('returns 503 when story generation service is not configured on the backend', async () => {
       vi.spyOn(geminiService, 'isConfigured').mockReturnValue(false);
       const token = createMockToken('user_unconfigured');
       const req: any = {
@@ -109,8 +90,8 @@ describe('Vercel Serverless API Routes (/api)', () => {
       await initialNarrativeHandler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(503);
-      expect(res.body.error).toMatch(/Gemini API key is not configured/i);
-      expect(res.body.message).toMatch(/GEMINI_API_KEY/i);
+      expect(res.body.error).toMatch(/Story generation service temporarily unavailable/i);
+      expect(res.body.message).toMatch(/Unable to continue the story right now/i);
     });
 
     it('processes initial story generation successfully with Model A (gemini-3.8-flash)', async () => {
@@ -245,7 +226,7 @@ describe('Vercel Serverless API Routes (/api)', () => {
       expect(res.body.error).toMatch(/Missing Authorization Bearer token/i);
     });
 
-    it('returns 503 when GEMINI_API_KEY is not configured on the backend', async () => {
+    it('returns 503 when story generation service is not configured on the backend', async () => {
       vi.spyOn(geminiService, 'isConfigured').mockReturnValue(false);
       const token = createMockToken('user_unconfigured_turn');
       const req: any = {
@@ -258,8 +239,8 @@ describe('Vercel Serverless API Routes (/api)', () => {
       await turnNarrativeHandler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(503);
-      expect(res.body.error).toMatch(/Gemini API key is not configured/i);
-      expect(res.body.message).toMatch(/GEMINI_API_KEY/i);
+      expect(res.body.error).toMatch(/Story generation service temporarily unavailable/i);
+      expect(res.body.message).toMatch(/Unable to continue the story right now/i);
     });
 
     it('processes story turn successfully with Model B (gemini-3.1-flash-lite)', async () => {
@@ -377,8 +358,7 @@ describe('Vercel Serverless API Routes (/api)', () => {
 
   describe('Node.js ESM Module Resolution Integrity', () => {
     it('dynamically loads all serverless API endpoints and server modules via explicit .js extensions', async () => {
-      const [healthMod, initialMod, turnMod, configMod, rateLimiterMod, geminiMod] = await Promise.all([
-        import('../../api/health.js'),
+      const [initialMod, turnMod, configMod, rateLimiterMod, geminiMod] = await Promise.all([
         import('../../api/narrative/initial.js'),
         import('../../api/narrative/turn.js'),
         import('../../server/config.js'),
@@ -386,7 +366,6 @@ describe('Vercel Serverless API Routes (/api)', () => {
         import('../../server/geminiService.js')
       ]);
 
-      expect(typeof healthMod.default).toBe('function');
       expect(typeof initialMod.default).toBe('function');
       expect(typeof turnMod.default).toBe('function');
       expect(configMod.CONFIG).toBeDefined();
@@ -403,17 +382,14 @@ describe('Vercel Serverless API Routes (/api)', () => {
 
       const initialUrl = pathToFileURL(path.join(outDir, 'api/narrative/initial.js')).href;
       const turnUrl = pathToFileURL(path.join(outDir, 'api/narrative/turn.js')).href;
-      const healthUrl = pathToFileURL(path.join(outDir, 'api/health.js')).href;
 
-      const [emittedInitial, emittedTurn, emittedHealth] = await Promise.all([
+      const [emittedInitial, emittedTurn] = await Promise.all([
         import(initialUrl),
-        import(turnUrl),
-        import(healthUrl)
+        import(turnUrl)
       ]);
 
       expect(typeof emittedInitial.default).toBe('function');
       expect(typeof emittedTurn.default).toBe('function');
-      expect(typeof emittedHealth.default).toBe('function');
     });
   });
 });

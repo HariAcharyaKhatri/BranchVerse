@@ -4,10 +4,6 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/health",
-      "destination": "/api/health"
-    },
-    {
       "source": "/api/narrative/initial",
       "destination": "/api/narrative/initial"
     },

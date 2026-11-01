@@ -21,34 +21,17 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
   const msg = err?.message || (typeof err === 'string' ? err : 'Unknown error');
   const lower = msg.toLowerCase();
 
+  // 1. Authentication & Token Expiry
   if (status === 401 || lower.includes('unauthorized') || lower.includes('token') || lower.includes('bearer')) {
     return {
       failureType: 'auth',
       title: 'Authentication Required',
-      message: 'Your Google sign-in session expired or is invalid. Please sign in again to continue with Live AI stories.',
+      message: 'Your session has expired. Please sign in again to continue.',
       retryable: false,
     };
   }
 
-  if (
-    status === 503 ||
-    lower.includes('gemini_api_key') ||
-    lower.includes('api key') ||
-    lower.includes('not configured') ||
-    lower.includes('api_key_invalid') ||
-    lower.includes('invalid api key')
-  ) {
-    return {
-      failureType: 'server',
-      title: 'Gemini API Key Required',
-      message:
-        msg.length > 10 && (lower.includes('api key') || lower.includes('gemini') || lower.includes('configured'))
-          ? msg
-          : 'GEMINI_API_KEY is not configured or is invalid on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local).',
-      retryable: true,
-    };
-  }
-
+  // 2. Timeout & Abort
   if (
     status === 504 ||
     lower.includes('timed out') ||
@@ -59,29 +42,32 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
     return {
       failureType: 'network',
       title: 'AI Generation Timed Out',
-      message: 'The Gemini AI model took longer than expected to respond. Please check your connection and tap Retry.',
+      message: 'The AI model took longer than expected to respond. Please check your connection and tap Retry.',
       retryable: true,
     };
   }
 
+  // 3. Rate Limit (Per-Minute Throttle)
   if (status === 429 && (lower.includes('rate limit') || lower.includes('requests per minute') || lower.includes('too quickly'))) {
     return {
       failureType: 'rate_limit',
       title: 'Rate Limit Reached',
-      message: 'You have submitted actions too quickly. Please wait a few seconds and tap Retry.',
+      message: 'Actions were submitted too quickly. Please wait a few seconds and tap Retry.',
       retryable: true,
     };
   }
 
+  // 4. Daily Model Quota Exhaustion
   if (status === 429 || lower.includes('quota') || lower.includes('resource_exhausted')) {
     return {
       failureType: 'quota',
-      title: 'AI Daily Quota Reached',
-      message: 'The daily free-tier quota for this Gemini model has been exhausted. Please retry later.',
+      title: 'Daily Limit Reached',
+      message: 'The daily AI storytelling quota has been reached for now. Please retry later or continue in Offline Mode.',
       retryable: false,
     };
   }
 
+  // 5. Network / Offline Connection Failures
   if (
     lower.includes('network') ||
     lower.includes('fetch') ||
@@ -92,15 +78,16 @@ export function classifyAiError(err: any, status?: number): AiFailureDetails {
     return {
       failureType: 'network',
       title: 'Network Connection Issue',
-      message: 'Unable to reach the AI storytelling backend. Please check your internet connection and tap Retry.',
+      message: 'Unable to reach the storytelling service right now. Please check your internet connection and tap Retry.',
       retryable: true,
     };
   }
 
+  // 6. Server, Configuration, or 503 / 500 Failures (No technical jargon leaked to user)
   return {
     failureType: 'server',
-    title: 'AI Service Temporarily Unavailable',
-    message: msg.length > 10 ? msg : 'The AI Narrative Director encountered an unexpected issue. Please tap Retry.',
+    title: 'Story Generation Paused',
+    message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.',
     retryable: true,
   };
 }

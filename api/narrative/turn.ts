@@ -30,9 +30,10 @@ export default async function handler(req: Request, res: Response) {
   }
 
   if (!geminiService.isConfigured()) {
+    console.warn('[Narrative API] Turn generation requested but GEMINI_API_KEY is not configured on backend.');
     res.status(503).json({
-      error: 'Gemini API key is not configured on the backend server.',
-      message: 'GEMINI_API_KEY is not configured on the backend server. Please add your GEMINI_API_KEY in Vercel Project Settings > Environment Variables (or .env.local for local testing).'
+      error: 'Story generation service temporarily unavailable.',
+      message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.'
     });
     return;
   }
@@ -97,7 +98,7 @@ export default async function handler(req: Request, res: Response) {
     console.error(`[Narrative API] [Story Turn Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
     res.status(500).json({
       error: 'Failed to generate turn narrative.',
-      message: msg.length > 5 ? msg : 'AI service temporarily unavailable.'
+      message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.'
     });
   } finally {
     slot.release?.();

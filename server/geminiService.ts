@@ -194,7 +194,12 @@ CRITICAL PACING & ROLE-PLAY RULES:
 4. Propose 3 tactical, distinct choices with risk levels (safe, moderate, perilous) and stamina costs (4 to 12).
 5. Establish 1 starting quest, 1-2 world facts, and provide initial state changes if relevant.`;
 
-    const rawJson = await this.callWithRetry(modelId, prompt, maxTokens);
+    const rawJson = await this.callWithRetry(
+      modelId,
+      prompt,
+      maxTokens,
+      ['gemini-2.5-flash', 'gemini-2.0-flash']
+    );
     return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
   }
 
@@ -282,20 +287,33 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
 4. Offer 3 varied, contextual next choices with riskLevel and stamina cost.
 5. In 'stateChanges', record any location shift, item acquired/spent, or NPC relationship shifts.`;
 
-    const rawJson = await this.callWithRetry(modelId, prompt, maxTokens);
+    const rawJson = await this.callWithRetry(
+      modelId,
+      prompt,
+      maxTokens,
+      ['gemini-2.5-flash', 'gemini-2.0-flash']
+    );
     return this.parseAndValidateNarrative(rawJson, context.storyLanguage);
   }
 
-  private async callWithRetry(model: string, input: string, maxTokens: number = 1500): Promise<string> {
-    const maxRetries = CONFIG.GEMINI_MAX_RETRIES;
+  private async callWithRetry(
+    model: string,
+    input: string,
+    maxTokens: number = 1500,
+    fallbackModels: string[] = []
+  ): Promise<string> {
+    const candidateModels = [model, ...fallbackModels.filter(m => m !== model)];
+    let candidateIndex = 0;
+    const maxRetries = Math.max(CONFIG.GEMINI_MAX_RETRIES, candidateModels.length > 1 ? 1 : 0);
     const timeoutMs = CONFIG.GEMINI_TIMEOUT_MS;
     const deadline = Date.now() + timeoutMs;
     let attempt = 0;
 
     while (attempt <= maxRetries) {
+      const currentModel = candidateModels[candidateIndex] || candidateModels[0];
       const remainingTime = deadline - Date.now();
       if (remainingTime <= 0) {
-        console.warn(`[GeminiService] [Timeout] Budget exhausted (${timeoutMs}ms) before attempt ${attempt + 1} for model: ${model}`);
+        console.warn(`[GeminiService] [Timeout] Budget exhausted (${timeoutMs}ms) before attempt ${attempt + 1} for model: ${currentModel}`);
         throw new Error(`Gemini API request timed out after ${timeoutMs}ms.`);
       }
 
@@ -306,7 +324,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
       }, attemptTimeout);
 
       const requestStart = Date.now();
-      console.log(`[GeminiService] [Request Started] Model: ${model}, Attempt: ${attempt + 1}/${maxRetries + 1}, TimeoutBudget: ${attemptTimeout}ms`);
+      console.log(`[GeminiService] [Request Started] Model: ${currentModel}, Attempt: ${attempt + 1}/${maxRetries + 1}, TimeoutBudget: ${attemptTimeout}ms`);
 
       const narrativeSchema = {
         type: 'object',
@@ -376,7 +394,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
         if (this.client!.models && typeof this.client!.models.generateContent === 'function') {
           try {
             const response = await this.client!.models.generateContent({
-              model,
+              model: currentModel,
               contents: input,
               config: {
                 responseMimeType: 'application/json',
@@ -398,7 +416,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
             if (this.client!.interactions && typeof this.client!.interactions.create === 'function') {
               const interaction = await this.client!.interactions.create(
                 {
-                  model,
+                  model: currentModel,
                   input,
                   response_format: {
                     type: 'text',
@@ -420,7 +438,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
         } else if (this.client!.interactions && typeof this.client!.interactions.create === 'function') {
           const interaction = await this.client!.interactions.create(
             {
-              model,
+              model: currentModel,
               input,
               response_format: {
                 type: 'text',
@@ -445,7 +463,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
           throw new Error('Gemini API returned an empty response.');
         }
 
-        console.log(`[GeminiService] [Request Success] Model: ${model}, Elapsed: ${elapsed}ms, OutputChars: ${outputText.length}`);
+        console.log(`[GeminiService] [Request Success] Model: ${currentModel}, Elapsed: ${elapsed}ms, OutputChars: ${outputText.length}`);
         return outputText;
       } catch (err: any) {
         clearTimeout(timer);
@@ -461,7 +479,7 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
           err?.message?.toLowerCase().includes('aborted');
 
         if (isTimeout) {
-          console.warn(`[GeminiService] [Request Timeout] Model: ${model}, Attempt: ${attempt + 1}, Elapsed: ${elapsed}ms`);
+          console.warn(`[GeminiService] [Request Timeout] Model: ${currentModel}, Attempt: ${attempt + 1}, Elapsed: ${elapsed}ms`);
           throw new Error(`Gemini API request timed out after ${attemptTimeout}ms.`);
         }
 
@@ -469,26 +487,35 @@ CRITICAL LENGTH & ROLE-PLAY INSTRUCTIONS:
 
         // Fail fast on quota exhaustion (do not retry 429)
         if (err?.status === 429 || err?.message?.includes('RESOURCE_EXHAUSTED')) {
-          console.warn(`[GeminiService] [Quota Exhausted] Model: ${model}, Elapsed: ${elapsed}ms, Status: 429`);
-          throw new Error(`Model quota exhausted for ${model}: ${err.message}`);
+          console.warn(`[GeminiService] [Quota Exhausted] Model: ${currentModel}, Elapsed: ${elapsed}ms, Status: 429`);
+          throw new Error(`Model quota exhausted for ${currentModel}: ${err.message}`);
         }
 
-        // Fail fast on client authentication or bad request errors (4xx)
-        if (err?.status && err.status >= 400 && err.status < 500) {
-          console.warn(`[GeminiService] [Client Error] Model: ${model}, Status: ${err.status}, Elapsed: ${elapsed}ms`);
+        // Fail fast on client authentication or bad request errors (4xx, except 404 which may indicate unsupported model ID)
+        if (err?.status && err.status >= 400 && err.status < 500 && err.status !== 404) {
+          console.warn(`[GeminiService] [Client Error] Model: ${currentModel}, Status: ${err.status}, Elapsed: ${elapsed}ms`);
           throw new Error(`Gemini API request rejected with status ${err.status}: ${err.message}`);
         }
 
-        console.warn(`[GeminiService] [Attempt Failed] Model: ${model}, Attempt: ${attempt}/${maxRetries + 1}, Elapsed: ${elapsed}ms, Error: ${err?.message || err}`);
+        console.warn(`[GeminiService] [Attempt Failed] Model: ${currentModel}, Attempt: ${attempt}/${maxRetries + 1}, Elapsed: ${elapsed}ms, Error: ${err?.message || err}`);
+
+        // If candidate fallback model exists, advance candidateIndex
+        if (candidateIndex + 1 < candidateModels.length) {
+          candidateIndex++;
+          console.log(`[GeminiService] [Fallback Model Cascade] Switching from ${currentModel} to fallback: ${candidateModels[candidateIndex]}`);
+        }
 
         // Retry transient server errors only if budget allows
         const timeLeft = deadline - Date.now();
-        if (attempt <= maxRetries && timeLeft > 2500) {
-          const delay = Math.min(attempt * 1000, timeLeft - 1500);
-          console.log(`[GeminiService] [Retrying] Model: ${model}, Waiting: ${delay}ms before next attempt`);
-          await new Promise((r) => setTimeout(r, delay));
+        if (attempt <= maxRetries && timeLeft > 1000) {
+          const delay = Math.min(attempt * 400, Math.max(0, timeLeft - 500));
+          if (delay > 0) {
+            console.log(`[GeminiService] [Retrying] Model: ${candidateModels[candidateIndex]}, Waiting: ${delay}ms before next attempt`);
+            await new Promise((r) => setTimeout(r, delay));
+          }
         } else {
-          throw new Error(`Gemini API call failed after ${attempt} attempt(s): ${err.message}`);
+          console.error(`[GeminiService] All narrative generation attempts failed. Total attempts: ${attempt}. Last error:`, err?.message || err);
+          throw new Error(`AI narrative service temporarily unavailable (failed after ${attempt} attempt(s): ${err.message})`);
         }
       }
     }

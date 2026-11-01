@@ -113,10 +113,6 @@ export interface TranslationDictionary {
     darkMode: string;
     appLanguage: string;
     appLanguageDesc: string;
-    aiBackendStatus: string;
-    modelA: string;
-    modelB: string;
-    quotaStatus: string;
     dataManagement: string;
     exportBackup: string;
     importBackup: string;

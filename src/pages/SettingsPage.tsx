@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ScreenHeader } from '../components/navigation/ScreenHeader';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { Moon, Sun, Type, Trash2, Sparkles, HardDrive, Image as ImageIcon, ShieldCheck, User, LogIn, LogOut, CheckCircle2, Globe, Cpu } from 'lucide-react';
+import { Moon, Sun, Type, Trash2, Sparkles, HardDrive, Image as ImageIcon, ShieldCheck, User, LogIn, LogOut, CheckCircle2, Globe } from 'lucide-react';
 import { LOCAL_ASSET_MANIFEST } from '../features/assets/assetManifest';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../i18n';
@@ -96,7 +96,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }
             "{t.common.tagline}"
           </p>
           <div className="text-[10px] text-dark-muted/70 pt-1">
-            Mobile-First Interactive Storytelling Platform • Dual Gemini AI Engine
+            Interactive Story Creation & Living World Role-Playing Platform
           </div>
         </div>
 
@@ -128,38 +128,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, onNavigate }
                 <span className="truncate">{LANGUAGE_LABELS[langKey].native}</span>
               </button>
             ))}
-          </div>
-        </div>
-
-        {/* AI Narrative Engine Status */}
-        <div className="p-4 rounded-2xl bg-dark-surface border border-dark-border space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-dark-muted uppercase tracking-wider flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-brand-glow" /> {t.settings.aiBackendStatus}
-            </span>
-            <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              Dual Model Active
-            </span>
-          </div>
-          <div className="space-y-2 text-xs">
-            <div className="p-2.5 rounded-xl bg-dark-elevated border border-dark-border/80 flex items-center justify-between">
-              <div>
-                <div className="font-semibold text-white">{t.settings.modelA}</div>
-                <div className="text-[10px] text-dark-muted font-mono">ID: gemini-3.8-flash (World Premise & Opening)</div>
-              </div>
-              <span className="text-[10px] px-2 py-0.5 bg-brand-primary/20 text-brand-primary font-mono rounded">
-                5 RPM / 20 RPD
-              </span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-dark-elevated border border-dark-border/80 flex items-center justify-between">
-              <div>
-                <div className="font-semibold text-white">{t.settings.modelB}</div>
-                <div className="text-[10px] text-dark-muted font-mono">ID: gemini-3.1-flash-lite (Turns & Action Consequences)</div>
-              </div>
-              <span className="text-[10px] px-2 py-0.5 bg-amber-500/20 text-amber-300 font-mono rounded">
-                15 RPM / 500 RPD
-              </span>
-            </div>
           </div>
         </div>
 
