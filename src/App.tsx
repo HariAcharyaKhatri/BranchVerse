@@ -175,7 +175,7 @@ const AppContent: React.FC = () => {
           tone: params.settings.tone,
           pacing: params.settings.pacing,
           difficulty: params.settings.difficulty,
-          storyLanguage: params.settings.storyLanguage || 'en',
+          storyLanguage: params.settings.storyLanguage || 'hi',
           narrativeLength: params.settings.narrativeLength || 'balanced',
           mode: params.settings.mode || 'story',
           timePeriod: params.settings.timePeriod,
@@ -222,7 +222,7 @@ const AppContent: React.FC = () => {
         settings: params.settings,
         generationMode: 'ai',
         mode: params.settings.mode || 'story',
-        storyLanguage: params.settings.storyLanguage || 'en',
+        storyLanguage: params.settings.storyLanguage || 'hi',
         initialNarrative
       });
       newStory.mode = params.settings.mode || 'story';
@@ -270,7 +270,7 @@ const AppContent: React.FC = () => {
         tone: 'Epic Fantasy',
         pacing: 'Balanced Narrative',
         difficulty: 'Adventurer (Standard)',
-        storyLanguage: 'en'
+        storyLanguage: 'hi'
       },
       generationMode: 'ai',
       overrideHero: randomHero,

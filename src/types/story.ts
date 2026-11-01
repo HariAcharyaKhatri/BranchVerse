@@ -3,6 +3,9 @@ import { HeroProfile } from './character';
 export type SupportedLanguage = 'en' | 'hi' | 'es' | 'fr' | 'ja' | 'ko';
 export type NarrativeLength = 'concise' | 'balanced' | 'detailed';
 
+export const DEFAULT_STORY_LANGUAGE: SupportedLanguage = 'hi';
+export const DEFAULT_APP_LANGUAGE: SupportedLanguage = 'en';
+
 export const LANGUAGE_LABELS: Record<SupportedLanguage, { label: string; native: string; flag: string }> = {
   en: { label: 'English', native: 'English', flag: '🇬🇧' },
   hi: { label: 'Hindi', native: 'हिन्दी', flag: '🇮🇳' },

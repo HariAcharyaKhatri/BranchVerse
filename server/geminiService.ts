@@ -746,9 +746,32 @@ ROLE-PLAY INSTRUCTIONS:
         // Attempt lightweight repair if JSON is wrapped in extra prose or brackets
         const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No valid JSON structure found in Gemini output.');
+          try {
+            parsed = JSON.parse(jsonMatch[0]);
+          } catch {
+            // Incomplete or truncated JSON inside match
+          }
+        }
+
+        if (!parsed) {
+          // Check if narrativeText can be extracted from truncated JSON
+          const narrativeMatch = cleaned.match(/"(?:narrativeText|narrative|story|text)"\s*:\s*"((?:[^"\\]|\\.)*)"?/);
+          if (narrativeMatch && narrativeMatch[1] && narrativeMatch[1].trim().length >= 10) {
+            parsed = {
+              narrativeText: narrativeMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').trim(),
+              sceneTitle: 'Chronicle Chapter',
+              proposedChoices: []
+            };
+          } else if (cleaned.length >= 10) {
+            // Gemini returned raw storytelling prose without JSON structure
+            parsed = {
+              narrativeText: cleaned,
+              sceneTitle: 'Chronicle Chapter',
+              proposedChoices: []
+            };
+          } else {
+            throw new Error('No valid narrative or JSON structure found in Gemini output.');
+          }
         }
       }
 

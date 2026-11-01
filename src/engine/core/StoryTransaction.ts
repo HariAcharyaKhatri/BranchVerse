@@ -6,6 +6,7 @@ import {
 } from '../types/engine.types';
 import { StoryValidator } from './StoryValidator';
 import { NarrativeProposalSchema, NarrativeProposal } from '../narrative/NarrativeSchema';
+import { repairNarrativeProposal } from '../narrative/NarrativeRepair';
 
 export class StoryTransaction {
   public status: TurnLifecycleStatus = 'RECEIVED';
@@ -73,8 +74,23 @@ export class StoryTransaction {
       throw new Error(`Cannot stage narrative in status "${this.status}".`);
     }
 
-    // Validate narrative proposal with Zod schema
-    const parsedProposal: NarrativeProposal = NarrativeProposalSchema.parse(proposal);
+    // Safely parse or repair narrative proposal with resilient normalization
+    let parsedProposal: NarrativeProposal;
+    const safeCheck = NarrativeProposalSchema.safeParse(proposal);
+    if (safeCheck.success) {
+      parsedProposal = safeCheck.data;
+    } else {
+      const { proposal: repairedProposal } = repairNarrativeProposal(proposal, {
+        heroName: this.stagedState.hero.name,
+        worldName: this.stagedState.worldName,
+        turnNumber: this.stagedState.currentTurnNumber
+      });
+      if (repairedProposal) {
+        parsedProposal = repairedProposal;
+      } else {
+        parsedProposal = NarrativeProposalSchema.parse(proposal);
+      }
+    }
 
     const nextTurnNumber = this.stagedState.currentTurnNumber + 1;
     const nextChapter = Math.floor(nextTurnNumber / 5) + 1;

@@ -99,6 +99,27 @@ export function repairNarrativeProposal(
       } else {
         raw = null;
       }
+
+      // If JSON parsing failed, check if raw string contains narrativeText in truncated JSON or is raw prose
+      if (!raw && typeof rawInput === 'string') {
+        const isHtmlOrHttpError =
+          rawInput.trim().startsWith('<') ||
+          /\b(bad gateway|internal server error|service unavailable|gateway timeout|not found)\b/i.test(rawInput);
+
+        const narrativeMatch = rawInput.match(/"(?:narrativeText|narrative|story|text)"\s*:\s*"((?:[^"\\]|\\.)*)"?/);
+        if (narrativeMatch && narrativeMatch[1] && narrativeMatch[1].trim().length >= 10) {
+          raw = {
+            narrativeText: narrativeMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').trim(),
+          };
+          repairedFields.push('extracted_narrative_from_truncated_json');
+        } else if (!isHtmlOrHttpError && rawInput.trim().length >= 25) {
+          // The AI returned raw storytelling prose without JSON structure
+          raw = {
+            narrativeText: rawInput.trim(),
+          };
+          repairedFields.push('converted_prose_string_to_narrative');
+        }
+      }
     }
   }
 

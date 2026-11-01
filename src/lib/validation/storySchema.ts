@@ -129,7 +129,7 @@ export const StorySettingsSchema = z.object({
   tone: z.string(),
   pacing: z.string().default('Balanced Narrative'),
   difficulty: z.string().default('Adventurer (Standard)'),
-  storyLanguage: SupportedLanguageSchema.default('en').optional(),
+  storyLanguage: SupportedLanguageSchema.default('hi').optional(),
   narrativeLength: z.enum(['concise', 'balanced', 'detailed']).default('balanced').optional(),
   mode: z.enum(['story', 'roleplay']).default('story').optional(),
   timePeriod: z.string().optional(),
@@ -157,7 +157,7 @@ export const StoryDocumentSchema = z.object({
   status: z.enum(['active', 'completed', 'archived']).default('active'),
   version: z.number().default(1),
   generationMode: z.enum(['demo', 'ai']).default('demo'),
-  storyLanguage: SupportedLanguageSchema.default('en'),
+  storyLanguage: SupportedLanguageSchema.default('hi'),
   mode: z.enum(['story', 'roleplay']).default('story').optional(),
 }).passthrough();
 

@@ -66,11 +66,13 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
 
   const displayWealth = rawWealth
     ? String(rawWealth)
-    : isBusiness
-    ? 'Working Capital: Modest'
-    : isFantasy
-    ? '50 Silver Coins'
     : undefined;
+
+  // Extract contextual custom flags (flexible status system)
+  const standardKeys = new Set(['region', 'kingdom', 'wealth', 'gold', 'credits', 'rank', 'title']);
+  const customFlags = Object.entries(state.worldFlags || {}).filter(
+    ([k, v]) => !standardKeys.has(k) && v !== undefined && v !== null && typeof v !== 'function'
+  );
 
   return (
     <BottomSheet
@@ -215,6 +217,27 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
                     <Badge key={idx} variant="purple" size="sm">
                       🌟 {eff}
                     </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Flexible Story Indicators: Context-dependent flags for any world or genre */}
+            {customFlags.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold text-dark-muted flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-brand-primary" /> Story & World Indicators
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {customFlags.map(([key, val]) => (
+                    <div key={key} className="p-2.5 rounded-xl bg-dark-elevated/60 border border-dark-border/80">
+                      <span className="text-[10px] text-dark-muted font-medium block capitalize">
+                        {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+                      </span>
+                      <p className="font-semibold text-dark-text truncate mt-0.5">
+                        {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                      </p>
+                    </div>
                   ))}
                 </div>
               </div>

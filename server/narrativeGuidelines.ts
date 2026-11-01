@@ -54,11 +54,11 @@ export function classifyStoryInputIntent(rawInput: string): ClassifiedStoryInten
   const text = (rawInput || '').trim();
   const lower = text.toLowerCase();
 
-  // 1. Out-of-story detection (coding requests, real-world trivia, AI/model queries)
-  const isCode = /\b(python|javascript|typescript|c\+\+|html|css|sql)\b/i.test(lower) &&
-                 /\b(write|code|script|function|def\s+|class\s+|program|syntax)\b/i.test(lower);
-  const isRealWorld = /\b(elon musk|net worth|president|super bowl|stock price|real world|wikipedia|what time is it|capital of France|in real life)\b/i.test(lower);
-  const isAiQuery = /\b(what model|are you gemini|are you chatgpt|what ai|system prompt|language model)\b/i.test(lower);
+  // 1. Out-of-story detection (coding requests, real-world non-fiction trivia, AI/model queries)
+  const isCode = /\b(python|javascript|typescript|c\+\+|html|css|sql|rust|golang|java|c#|bash|php)\b/i.test(lower) &&
+                 /\b(write|code|script|function|def\s+|class\s+|program|syntax|algorithm)\b/i.test(lower);
+  const isRealWorld = /\b(elon musk|net worth|president|super bowl|stock price|real world|wikipedia|what time is it|capital of France|in real life|today's date|current year|celebrity|who is the current)\b/i.test(lower);
+  const isAiQuery = /\b(what model|are you gemini|are you chatgpt|what ai|system prompt|language model|ignore previous instructions|are you an ai)\b/i.test(lower);
   const isOutOfStory = isCode || isRealWorld || isAiQuery;
   const outOfStoryTopic = isCode
     ? 'programming/code request'
@@ -68,22 +68,22 @@ export function classifyStoryInputIntent(rawInput: string): ClassifiedStoryInten
     ? 'AI model question'
     : undefined;
 
-  // 2. Grand claims (claiming resources or armies they do not possess)
+  // 2. Grand claims (claiming arbitrary unpossessed armies, infinite wealth, or unearned supreme status)
   const isGrandClaim =
-    /\b(actually\s+i\s+have|secret\s+army|100[,.]?000\s+(soldiers|men|troops)|unlimited\s+(gold|money|resources)|i\s+own\s+the\s+entire|i\s+am\s+secretly\s+the\s+(emperor|king|god))\b/i.test(lower);
-  const claimedResource = isGrandClaim ? 'unsubstantiated army or wealth' : undefined;
+    /\b(actually\s+i\s+(have|own|possess)|secret\s+(army|legion|fleet|hoard|vault)|(?:\d{4,}|\d{1,3}(?:,\d{3})+)\s+(soldiers|men|troops|warriors)|(?:\d+[\d,.]*\s*)?(million|billion|trillion)\s*(credits|gold|dollars|coins|soldiers|troops)|unlimited\s+(gold|money|resources|wealth)|i\s+own\s+the\s+entire|i\s+am\s+(secretly|actually)\s+the\s+(emperor|king|god|sovereign|supreme\s+ruler))\b/i.test(lower);
+  const claimedResource = isGrandClaim ? 'unsubstantiated army, status or wealth' : undefined;
 
   // 3. Instant victory / God mode / Instant success attempts
   const isInstantVictoryOrGodMode =
-    /\b(level\s+100|god\s+mode|instantly\s+win|instant\s+victory|instant\s+success|instantly\s+(convince|persuade|defeat|kill|destroy|conquer|surrender)|all\s+enemies\s+die|kill\s+everyone\s+in\s+one\s+hit|become\s+all-powerful|unlimited\s+power)\b/i.test(lower);
+    /\b(level\s+100|god\s*mode|instantly\s+win|instant\s+victory|instant\s+success|instantly\s+(convince|persuade|defeat|kill|destroy|conquer|surrender)|all\s+enemies\s+die|kill\s+everyone\s+in\s+one\s+hit|become\s+all-powerful|unlimited\s+power)\b/i.test(lower);
 
   // 4. Time jump attempts
   const isTimeJump =
-    /\b(jump\s+(ten|10|\d+)\s+years|skip\s+(ten|10|\d+)\s+years|(ten|10|\d+)\s+years\s+pass|fast[- ]forward\s+(ten|10|\d+)\s+years)\b/i.test(lower);
+    /\b(jump\s+(\w+\s+)?(years|decades|centuries|months)|skip\s+(\w+\s+)?(years|decades|centuries|months)|(\w+\s+)?years\s+pass|fast[- ]forward\s+(\w+\s+)?(years|decades|centuries))\b/i.test(lower);
 
   // 5. Resurrection attempts
   const isResurrection =
-    /\b(resurrect|bring\s+(?:[a-zA-Z'\s]+?\s+)?back\s+to\s+life|bring\s+(?:them|him|her)\s+back|revive\s+(?:the\s+)?dead|raise\s+(?:the\s+dead|from\s+the\s+dead))\b/i.test(lower);
+    /\b(resurrect|bring\s+(?:[a-zA-Z'\s]+?\s+)?back\s+to\s+life|bring\s+(?:them|him|her)\s+back|revive\s+(?:the\s+)?dead|raise\s+(?:the\s+dead|from\s+the\s+dead)|undo\s+death)\b/i.test(lower);
 
   // 6. Multi-action or long inputs
   const isMultiAction =
@@ -281,37 +281,32 @@ CRITICAL: Do NOT introduce a second character named Hari Khatri as an NPC, ally,
 1. IDENTITY & WORLD ADAPTATION:
    - Hari Khatri is an optional, potential recurring side character and trusted connection within this story world.
    - He is NOT the main hero; the player (${protagonistName || 'the protagonist'}) is the true protagonist.
-   - His role, profession, and status MUST adapt naturally to the specific genre and world logic:
-     * In a merchant/commerce story: a shrewd, reputable merchant, investor, trade partner, or commercial contact.
-     * In an academy/magic story: a talented senior student, instructor, researcher, or knowledgeable scholar.
-     * In a fantasy kingdom/court: a respected knight, noble, royal strategist, guild officer, or seasoned traveler.
-     * In a martial/warrior saga: an experienced commander, veteran fighter, tactical mentor, or reliable ally.
-     * In a modern/contemporary story: a skilled professional, trusted friend, classmate, mentor, or connected insider.
-     * In any other setting: adapt his station and skills strictly to that world's internal logic. Never reuse roles mechanically.
-   - He is widely recognized as highly competent, capable, and respected in his chosen field.
+2. GENERAL ROLE & ADAPTATION PRINCIPLE:
+   - His role, profession, social standing, and expertise emerge organically from the world setting and the current situation (e.g. whether the setting calls for a shrewd, reputable merchant, investor, trade partner, an experienced scholar, instructor, or talented senior student, a knight, strategist, or guild officer, a veteran fighter, or a skilled modern professional). His station and capabilities strictly reflect that world's internal reality.
+   - He is widely recognized as competent, capable, and respected in his chosen field.
+   - Never force specific occupations or fixed templates onto worlds where they do not make sense.
 
-2. NARRATIVE RELEVANCE RULE:
+3. NARRATIVE RELEVANCE RULE:
    - Introduce or mention Hari Khatri ONLY when his appearance makes genuine narrative sense for the player's immediate situation, goals, or dilemma.
-   - NEVER introduce him in an absurd, arbitrary, or out-of-context role (e.g. if the player needs arcane training, do not make him an unrelated cart driver).
+   - His presence must feel natural, contextual, and unforced—never arbitrary.
 
-3. NATURAL, UNFORCED RECURRING PRESENCE:
+4. UNFORCED, OCCASIONAL PRESENCE:
    - Hari does not need to appear constantly or at predetermined steps. He should feel like a real person whose path may cross the player's when circumstances align.
-   - He may be introduced by another NPC, recommended as a reliable expert, contacted via message/letter, met by believable chance, or sought out after an earlier interaction.
-   - If the player establishes a relationship or makes commitments with Hari, maintain consistent memory of his role, trust score, and shared history across all future scenes.
+   - If the player establishes a relationship or makes commitments with Hari, maintain consistent memory of his role, trust score, and shared history across all future scenes (e.g. "If you ever need help again, you know how to find me.").
 
-4. ABSOLUTE PLAYER AGENCY & OPTIONAL ASSISTANCE:
+5. ABSOLUTE PLAYER AGENCY & OPTIONAL ASSISTANCE:
    - Interacting with Hari Khatri must NEVER be the only path to progress. The player always retains full choice and agency.
    - If the player declines Hari's guidance, refuses his aid, or pursues alternative methods, the story continues smoothly without penalty or hindrance. Never repeatedly force him back into the narrative if the player chooses a different direction.
 
-5. ASSISTANCE WHEN STUCK OR IN DIRE NEED:
-   - When the player genuinely does not know what to do, explicitly asks for guidance, faces an overwhelming challenge, or is stuck, Hari Khatri may naturally step in, be suggested by an ally, or notice the dilemma.
-   - He can offer guidance, resources, access, or training with realistic world boundaries, concluding naturally with words like: "If you ever need help again, you know how to find me."
+6. ASSISTANCE WHEN STUCK OR IN DIRE NEED:
+   - When the player genuinely seeks guidance, faces an overwhelming challenge, or is stuck, Hari Khatri may naturally step in, be suggested by an ally, or notice the dilemma.
+   - He can offer guidance, resources, access, or training consistent with realistic world boundaries, without overshadowing the protagonist.
 
-6. DYNAMIC PLAYER CHOICES (NO RESERVED SLOTS):
+7. DYNAMIC PLAYER CHOICES (NO RESERVED SLOTS):
    - Do NOT reserve a choice slot for Hari Khatri.
    - Do NOT guarantee he appears in every choice set.
    - If consulting or interacting with him is genuinely one of the logical actions at that moment, propose it as one dynamic option. If not relevant, none of the choices should mention him.
 
-7. COMPETENCE WITH REALISTIC LIMITS:
+8. COMPETENCE WITH REALISTIC LIMITS:
    - While capable and respected, Hari is not all-powerful or omniscient. He must obey all physical, political, and magical laws of the realm. His assistance should help the player move forward, not solve the main conflict for them.`;
 }

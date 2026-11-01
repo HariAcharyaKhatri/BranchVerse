@@ -406,7 +406,7 @@ export function createNewStory(params: {
     version: 1,
     generationMode: params.generationMode || 'demo',
     mode: params.mode || (params.settings as any)?.mode || 'story',
-    storyLanguage: params.storyLanguage || params.settings.storyLanguage || 'en'
+    storyLanguage: params.storyLanguage || params.settings.storyLanguage || 'hi'
   };
 }
 
@@ -464,7 +464,7 @@ export async function executeAdvancedStoryTurn(
   // Preserve generationMode, mode, and storyLanguage across engine state serialization
   updatedStory.generationMode = activeStory.generationMode || 'demo';
   updatedStory.mode = activeStory.mode || 'story';
-  updatedStory.storyLanguage = activeStory.storyLanguage || 'en';
+  updatedStory.storyLanguage = activeStory.storyLanguage || 'hi';
 
   const projectedTurn: StoryTurn = {
     turnId: newTurn.turnId,

@@ -6,6 +6,9 @@ import { StorySettings, SupportedLanguage, LANGUAGE_LABELS } from '../types/stor
 import { GENRE_CATALOG } from '../catalogs/genres';
 import { WORLD_CATALOG } from '../catalogs/worlds';
 import { parseStoryIdeaPrompt, completeHeroProfile } from '../features/story/naturalPromptParser';
+import { preferencesService } from '../features/preferences/preferencesService';
+import { presetService } from '../features/presets/presetService';
+import { StoryPreset } from '../types/preset';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import {
@@ -20,7 +23,9 @@ import {
   Sliders,
   CheckCircle2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Bookmark,
+  Save
 } from 'lucide-react';
 
 interface CreateStoryWizardPageProps {
@@ -61,6 +66,7 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
   const [worldName, setWorldName] = useState<string>('Grand Academy of Arcana');
   const [timePeriod, setTimePeriod] = useState<string>('Era of Enchanted Towers');
   const [tone, setTone] = useState<StorySettings['tone']>('Anime Shonen');
+  const [pacing, setPacing] = useState<StorySettings['pacing']>('Balanced Narrative');
   const [storyStyle, setStoryStyle] = useState<string>('Coming of Age Journey');
 
   // Protagonist State
@@ -92,7 +98,85 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
   const [mysteryLevel, setMysteryLevel] = useState<'Low' | 'Moderate' | 'High'>('High');
   const [difficulty, setDifficulty] = useState<StorySettings['difficulty']>('Adventurer (Standard)');
   const [narrativeLength, setNarrativeLength] = useState<'concise' | 'balanced' | 'detailed'>('balanced');
-  const [storyLanguage, setStoryLanguage] = useState<SupportedLanguage>('en');
+  const [storyLanguage, setStoryLanguage] = useState<SupportedLanguage>(() => {
+    return preferencesService.getStoryLanguage(user?.uid);
+  });
+
+  // Story Presets State
+  const [presets, setPresets] = useState<StoryPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
+  const [isSavingPreset, setIsSavingPreset] = useState<boolean>(false);
+  const [newPresetName, setNewPresetName] = useState<string>('');
+  const [presetSaveMessage, setPresetSaveMessage] = useState<string>('');
+
+  useEffect(() => {
+    presetService.listPresets(user?.uid).then(setPresets);
+  }, [user?.uid]);
+
+  const handleApplyPreset = (presetId: string) => {
+    setSelectedPresetId(presetId);
+    const preset = presets.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    if (preset.selectedGenre) setSelectedGenre(preset.selectedGenre);
+    if (preset.tone) setTone(preset.tone);
+    if (preset.pacing) setPacing(preset.pacing);
+    if (preset.difficulty) setDifficulty(preset.difficulty as any);
+    if (preset.narrativeLength) setNarrativeLength(preset.narrativeLength);
+    if (preset.storyLanguage) {
+      setStoryLanguage(preset.storyLanguage);
+      preferencesService.setStoryLanguage(preset.storyLanguage, user?.uid);
+    }
+    if (preset.timePeriod) setTimePeriod(preset.timePeriod);
+    if (preset.storyStyle) setStoryStyle(preset.storyStyle);
+    if (preset.heroArchetype?.race) setHeroRace(preset.heroArchetype.race);
+    if (preset.heroArchetype?.personality) setHeroPersonality(preset.heroArchetype.personality);
+  };
+
+  const handleSaveCurrentAsPreset = async () => {
+    const nameToSave = newPresetName.trim() || `${selectedGenre} Custom Preset`;
+    const saved = await presetService.savePreset(
+      {
+        name: nameToSave,
+        selectedGenre,
+        genres: [selectedGenre],
+        tone,
+        pacing: 'Balanced Narrative',
+        difficulty,
+        narrativeLength,
+        storyLanguage,
+        timePeriod,
+        storyStyle,
+        heroArchetype: {
+          race: heroRace,
+          personality: heroPersonality,
+        },
+      },
+      undefined,
+      user?.uid
+    );
+    const updated = await presetService.listPresets(user?.uid);
+    setPresets(updated);
+    setSelectedPresetId(saved.id);
+    setPresetSaveMessage(`Saved as preset "${saved.name}"!`);
+    setIsSavingPreset(false);
+    setNewPresetName('');
+    setTimeout(() => setPresetSaveMessage(''), 4000);
+  };
+
+  const handleSuggestTitle = () => {
+    const hero = heroName.trim() || 'The Traveler';
+    const world = worldName.trim() || 'The Realm';
+    const suggestions = [
+      `The Chronicles of ${hero}: Rise of ${world}`,
+      `Echoes of ${world}: ${hero}'s Journey`,
+      `${hero} and the Secret of ${world}`,
+      `The ${selectedGenre} Saga: ${hero} in ${world}`,
+      `Shadows over ${world}: A ${selectedGenre} Tale`,
+    ];
+    const picked = suggestions[Math.floor(Math.random() * suggestions.length)];
+    setTitle(picked);
+  };
 
   // Step 1 AI Prompt Converter
   const handleApplyAiSuggestion = (input?: string) => {
@@ -166,7 +250,7 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
 
     const settings: StorySettings = {
       tone,
-      pacing: 'Balanced Narrative',
+      pacing: pacing || 'Balanced Narrative',
       difficulty,
       storyLanguage,
       narrativeLength,
@@ -181,8 +265,10 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
       userPromptDescription: promptDescription
     };
 
+    const finalTitle = title.trim() || `${heroName.trim() || defaultDisplayName}'s Chronicle in ${worldName}`;
+
     onLaunchStory({
-      title,
+      title: finalTitle,
       settings,
       generationMode: 'ai',
       overrideHero: baseHero,
@@ -317,13 +403,19 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-dark-muted uppercase tracking-wider">Story Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+              <label className="text-xs font-bold text-dark-muted uppercase tracking-wider">Story Preset (Quick Setup)</label>
+              <select
+                value={selectedPresetId}
+                onChange={(e) => handleApplyPreset(e.target.value)}
                 className="w-full p-2.5 rounded-xl bg-dark-surface border border-dark-border text-dark-text text-sm focus:border-brand-primary focus:outline-none"
-              />
+              >
+                <option value="">Custom Configuration (No Preset)</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.selectedGenre})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-1.5">
@@ -601,7 +693,11 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
               <label className="text-xs font-bold text-dark-muted uppercase tracking-wider">Story Language</label>
               <select
                 value={storyLanguage}
-                onChange={(e) => setStoryLanguage(e.target.value as SupportedLanguage)}
+                onChange={(e) => {
+                  const val = e.target.value as SupportedLanguage;
+                  setStoryLanguage(val);
+                  preferencesService.setStoryLanguage(val, user?.uid);
+                }}
                 className="w-full p-2.5 rounded-xl bg-dark-surface border border-dark-border text-dark-text text-sm focus:border-brand-primary focus:outline-none"
               >
                 {Object.entries(LANGUAGE_LABELS).map(([code, info]) => (
@@ -623,17 +719,43 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
               <CheckCircle2 className="w-5 h-5 text-brand-primary" /> Story Preview & Confirmation
             </h2>
             <p className="text-xs text-dark-muted">
-              Review your customized chronicle settings before starting your journey with Gemini AI.
+              Choose your chronicle title, review settings, or save this configuration as a reusable preset.
             </p>
           </div>
 
+          {/* Chronicle Title Input (Final Stage) */}
           <div className="p-4 rounded-2xl bg-dark-surface border border-brand-primary/40 shadow-xl space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dark-border/60 pb-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Chronicle Title (Final Step)
+                </label>
+                <button
+                  type="button"
+                  onClick={handleSuggestTitle}
+                  className="px-2.5 py-1 rounded-lg bg-dark-elevated border border-dark-border text-xs text-amber-300 hover:text-white flex items-center gap-1 transition-all"
+                >
+                  <Sparkles className="w-3 h-3" /> Suggest Title
+                </button>
+              </div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={`e.g., ${heroName}'s Adventure in ${worldName}`}
+                className="w-full p-2.5 rounded-xl bg-dark-elevated border border-dark-border text-dark-text text-sm font-semibold focus:border-brand-primary focus:outline-none"
+              />
+              <p className="text-[11px] text-dark-muted">
+                Finalize your chronicle title or tap "Suggest Title" to generate one matching your hero and genre.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dark-border/60 pt-3">
               <div>
                 <span className="text-[10px] uppercase font-bold text-brand-accent tracking-widest">
                   {selectedGenre} • {timePeriod}
                 </span>
-                <h3 className="text-lg font-bold text-white">{title}</h3>
+                <h3 className="text-sm font-bold text-white">{title || 'Untitled Chronicle'}</h3>
               </div>
               <Badge variant="primary" size="md">
                 {LANGUAGE_LABELS[storyLanguage].flag} {LANGUAGE_LABELS[storyLanguage].label}
@@ -663,6 +785,34 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
                 <p className="text-dark-muted text-[11px]">
                   <strong>Supporting Cast:</strong> {supportingCharacters}
                 </p>
+              )}
+            </div>
+
+            {/* Save as Reusable Preset */}
+            <div className="pt-3 border-t border-dark-border/60">
+              <label className="text-[11px] font-bold text-dark-muted uppercase tracking-wider block mb-1.5">
+                Save Setup as Reusable Preset
+              </label>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder={`Preset name (e.g., My ${selectedGenre} Setup)`}
+                  className="flex-1 p-2 rounded-xl bg-dark-elevated border border-dark-border text-dark-text text-xs focus:border-brand-primary focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveCurrentAsPreset}
+                  disabled={isSavingPreset}
+                  className="px-3 py-2 rounded-xl bg-brand-primary/20 border border-brand-primary/40 text-brand-glow text-xs font-semibold hover:bg-brand-primary/30 flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <Bookmark className="w-3.5 h-3.5" />
+                  {isSavingPreset ? 'Saving...' : 'Save as Preset'}
+                </button>
+              </div>
+              {presetSaveMessage && (
+                <p className="text-[11px] text-emerald-400 mt-1.5 font-medium">{presetSaveMessage}</p>
               )}
             </div>
           </div>

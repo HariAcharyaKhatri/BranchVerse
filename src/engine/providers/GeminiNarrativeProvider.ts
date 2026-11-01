@@ -148,8 +148,8 @@ export class GeminiNarrativeProvider implements NarrativeProvider {
 
       throw new AiNarrativeError({
         failureType: 'server',
-        title: 'Malformed AI Proposal',
-        message: 'The AI model response contained no usable narrative continuation. Please tap Retry.',
+        title: 'Story Generation Paused',
+        message: 'Unable to continue the story right now. Please tap Retry or continue in Offline Mode.',
         retryable: true,
       });
     } catch (err: any) {

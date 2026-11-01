@@ -7,6 +7,7 @@ import { WORLD_CATALOG } from '../catalogs/worlds';
 import { GENRE_CATALOG } from '../catalogs/genres';
 import { storyRepository } from '../lib/storage/storyRepository';
 import { completeHeroProfile } from '../features/story/naturalPromptParser';
+import { preferencesService } from '../features/preferences/preferencesService';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import {
@@ -150,7 +151,9 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
   const [narrativeLength, setNarrativeLength] = useState<'concise' | 'balanced' | 'detailed'>('balanced');
   const [tone, setTone] = useState<StorySettings['tone']>('Dark & Gritty');
   const [difficulty, setDifficulty] = useState<StorySettings['difficulty']>('Adventurer (Standard)');
-  const [storyLanguage, setStoryLanguage] = useState<SupportedLanguage>('en');
+  const [storyLanguage, setStoryLanguage] = useState<SupportedLanguage>(() => {
+    return preferencesService.getStoryLanguage(user?.uid);
+  });
 
   // Load existing characters from saved stories
   useEffect(() => {
@@ -801,7 +804,11 @@ export const RoleplaySetupPage: React.FC<RoleplaySetupPageProps> = ({
               <label className="text-xs font-bold text-white">Role-Play Language</label>
               <select
                 value={storyLanguage}
-                onChange={e => setStoryLanguage(e.target.value as SupportedLanguage)}
+                onChange={e => {
+                  const val = e.target.value as SupportedLanguage;
+                  setStoryLanguage(val);
+                  preferencesService.setStoryLanguage(val, user?.uid);
+                }}
                 className="w-full bg-dark-elevated border border-dark-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-primary"
               >
                 {(Object.keys(LANGUAGE_LABELS) as SupportedLanguage[]).map(langKey => (

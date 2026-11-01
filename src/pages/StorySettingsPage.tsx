@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StorySettings, SupportedLanguage, LANGUAGE_LABELS } from '../types/story';
+import { preferencesService } from '../features/preferences/preferencesService';
 import { ScreenHeader } from '../components/navigation/ScreenHeader';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -52,7 +53,7 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
   const [tone, setTone] = useState<StorySettings['tone']>('Epic Fantasy');
   const [pacing, setPacing] = useState<StorySettings['pacing']>('Balanced Narrative');
   const [difficulty, setDifficulty] = useState<StorySettings['difficulty']>('Adventurer (Standard)');
-  const [storyLanguage, setStoryLanguage] = useState<SupportedLanguage>(appLang || 'en');
+  const [storyLanguage, setStoryLanguage] = useState<SupportedLanguage>(() => preferencesService.getStoryLanguage());
 
   const handleLaunch = () => {
     onLaunchStory({
@@ -102,7 +103,10 @@ export const StorySettingsPage: React.FC<StorySettingsPageProps> = ({
               <button
                 key={langKey}
                 type="button"
-                onClick={() => setStoryLanguage(langKey)}
+                onClick={() => {
+                  setStoryLanguage(langKey);
+                  preferencesService.setStoryLanguage(langKey);
+                }}
                 className={`p-2 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
                   storyLanguage === langKey
                     ? 'bg-brand-primary/20 border-brand-primary text-white font-semibold'
