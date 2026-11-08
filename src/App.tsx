@@ -32,8 +32,25 @@ import { I18nProvider } from './i18n';
 import { BottomNav } from './components/navigation/BottomNav';
 import { Sparkles } from 'lucide-react';
 
+// Branding & Cinematic Experiences
+import { SplashScreen, LoadingScreen } from './components/branding';
+
+const isTestEnv =
+  Boolean(import.meta.env?.VITEST) ||
+  import.meta.env?.MODE === 'test' ||
+  (typeof (globalThis as any).process !== 'undefined' && (globalThis as any).process?.env?.NODE_ENV === 'test');
+
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
+
+  const [showSplash, setShowSplash] = useState<boolean>(() => {
+    if (isTestEnv) return false;
+    try {
+      return !sessionStorage.getItem('bv_splash_seen');
+    } catch (_) {
+      return false;
+    }
+  });
 
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     return window.location.hash || '#/';
@@ -279,22 +296,28 @@ const AppContent: React.FC = () => {
     });
   };
 
-  // 1. Loading Splash Screen
+  // 1. First-time Cinematic Splash Screen
+  if (showSplash) {
+    return (
+      <SplashScreen
+        minDurationMs={2200}
+        onComplete={() => {
+          try {
+            sessionStorage.setItem('bv_splash_seen', 'true');
+          } catch (_) {}
+          setShowSplash(false);
+        }}
+      />
+    );
+  }
+
+  // 2. Cinematic Authentication & Multiverse Session Loading Screen
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[100dvh] w-full max-w-md mx-auto bg-dark-bg text-dark-text p-6 space-y-4 select-none">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-primary via-indigo-500 to-brand-accent p-0.5 shadow-xl shadow-brand-primary/25 animate-pulse">
-          <div className="w-full h-full bg-dark-surface rounded-[14px] flex items-center justify-center">
-            <span className="text-2xl font-black bg-gradient-to-r from-brand-glow via-indigo-300 to-amber-300 bg-clip-text text-transparent">
-              BV
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-dark-muted font-medium">
-          <span className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
-          <span>Verifying Hero Session...</span>
-        </div>
-      </div>
+      <LoadingScreen
+        context="auth"
+        submessage="Verifying your chronicles and dimensional clearance..."
+      />
     );
   }
 
@@ -454,25 +477,29 @@ const AppContent: React.FC = () => {
         {renderCurrentScreen()}
       </main>
 
-      {/* Full-Screen Immersive Gemini AI Generation Modal */}
+      {/* Full-Screen Immersive Gemini AI Generation Experience */}
       {isGeneratingStory && (
-        <div className="absolute inset-0 z-50 bg-dark-bg/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-brand-primary via-indigo-500 to-amber-400 p-0.5 shadow-2xl shadow-brand-primary/40 animate-pulse">
-              <div className="w-full h-full bg-dark-surface rounded-[22px] flex items-center justify-center">
-                <Sparkles className="w-9 h-9 text-brand-glow animate-bounce" />
-              </div>
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center">
-              <span className="w-3.5 h-3.5 border-2 border-dark-bg border-t-transparent rounded-full animate-spin" />
-            </div>
-          </div>
-          <div className="space-y-1.5 max-w-xs">
-            <h3 className="font-extrabold text-base text-white">Weaving Your Grand Chronicle</h3>
-            <p className="text-xs text-indigo-300 font-medium">Gemini AI is crafting your novelistic opening chapter...</p>
-            <p className="text-[11px] text-dark-muted pt-1">Sensory worldbuilding • Hero psyche • Tactical choices</p>
-          </div>
-        </div>
+        <LoadingScreen
+          context="storyGenerate"
+          submessage="Gemini AI is crafting your novelistic opening chapter: sensory worldbuilding, hero psyche & tactical choices..."
+          error={
+            launchError
+              ? {
+                  title: launchError.title,
+                  message: launchError.message,
+                  retryable: launchError.retryable,
+                  onRetry: launchError.retryable ? handleRetryStoryLaunch : undefined,
+                  onCancel: () => {
+                    if (storyAbortControllerRef.current) {
+                      storyAbortControllerRef.current.abort();
+                    }
+                    setIsGeneratingStory(false);
+                    setLaunchError(null);
+                  },
+                }
+              : null
+          }
+        />
       )}
 
       {/* Persistent Bottom Navigation Bar (rendered only for authenticated users) */}

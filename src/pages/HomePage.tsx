@@ -19,6 +19,7 @@ import {
   Layers
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { BrandEmblem } from '../components/branding/BrandEmblem';
 
 interface HomePageProps {
   onNavigate: (path: string) => void;
@@ -67,9 +68,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenStory, onQ
       {/* Top User Status Bar */}
       <div className="flex items-center justify-between pb-2 border-b border-dark-border/40">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-primary via-indigo-500 to-amber-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-brand-primary/20">
-            BV
-          </div>
+          <BrandEmblem size="sm" variant="icon" />
           <div>
             <span className="font-extrabold text-base text-white tracking-tight">BranchVerse</span>
             <span className="text-[10px] text-brand-glow ml-2 font-mono uppercase bg-brand-primary/10 px-1.5 py-0.5 rounded border border-brand-primary/20">AI RPG</span>

@@ -2,8 +2,8 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../i18n';
 import { Button } from '../components/ui/Button';
+import { BrandEmblem } from '../components/branding/BrandEmblem';
 import {
-  Sparkles,
   ChevronLeft,
   AlertCircle,
   ShieldCheck,
@@ -76,13 +76,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess }) => {
   if (user) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 space-y-4 bg-dark-bg text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-primary via-indigo-500 to-brand-accent p-0.5 shadow-xl shadow-brand-primary/25 animate-pulse">
-          <div className="w-full h-full bg-dark-surface rounded-[14px] flex items-center justify-center">
-            <span className="text-xl font-black bg-gradient-to-r from-brand-glow via-indigo-300 to-amber-300 bg-clip-text text-transparent">
-              BV
-            </span>
-          </div>
-        </div>
+        <BrandEmblem size="md" variant="icon" className="animate-pulse" />
         <div className="space-y-1">
           <p className="text-base font-bold text-white">Welcome, {user.displayName || 'Hero'}!</p>
           <p className="text-xs text-dark-muted">Entering the chronicles...</p>
@@ -131,21 +125,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess }) => {
       <main className="relative z-10 flex-1 flex flex-col justify-center max-w-md mx-auto w-full px-5 py-6 space-y-6">
         {/* Brand Emblem & Tagline */}
         <div className="text-center space-y-3">
-          <div className="inline-flex relative">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-primary via-indigo-500 to-brand-accent p-0.5 shadow-xl shadow-brand-primary/25">
-              <div className="w-full h-full bg-dark-surface rounded-[14px] flex items-center justify-center">
-                <span className="text-2xl font-black bg-gradient-to-r from-brand-glow via-indigo-300 to-amber-300 bg-clip-text text-transparent">
-                  BV
-                </span>
-              </div>
-            </div>
-            <div className="absolute -bottom-1 -right-1 p-1 bg-brand-accent rounded-full text-dark-bg">
-              <Sparkles className="w-3 h-3" />
-            </div>
+          <div className="inline-flex relative justify-center">
+            <BrandEmblem size="lg" variant="logo" showGlow priority />
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-serif">
               {t.common.appName}
             </h1>
             <p className="text-sm font-medium text-indigo-300/90 tracking-wide">
