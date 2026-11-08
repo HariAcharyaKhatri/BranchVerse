@@ -256,7 +256,7 @@ describe('BranchVerse — AI Proposal Validation & Recovery Resilience', () => {
     transaction.stageValidation({ isValid: true });
     transaction.stagePlan({});
 
-    // Staged narrative proposes an illegal invariant mutation (e.g. invalid stamina: -999)
+    // Staged narrative proposes an out-of-bounds mutation (e.g. powerLevel: 9999)
     const proposalWithIllegalStateDelta = {
       sceneTitle: 'Cursed Altar',
       narrativeText: 'A dreadful chill seeps from the corrupted obsidian altar as dark vapors swirl around your boots.',
@@ -267,13 +267,13 @@ describe('BranchVerse — AI Proposal Validation & Recovery Resilience', () => {
       ],
       proposedStateDelta: {
         currentLocation: 'The Obsidian Crypt',
-        stamina: 9999 // Illegal stamina!
+        powerLevel: 9999 // Out-of-bounds power
       }
     };
 
     transaction.stageNarrative(proposalWithIllegalStateDelta, { actionType: 'action', customActionText: 'Approached the altar' });
-    // In StoryTransaction.ts, stamina is clamped to 100 max, preserving state validity
-    expect(transaction.getStagedState().stamina).toBeLessThanOrEqual(100);
+    // In StoryTransaction.ts, powerLevel is clamped to 100 max, preserving state validity
+    expect(transaction.getStagedState().powerLevel).toBeLessThanOrEqual(100);
 
     // Transaction verification succeeds safely
     expect(() => transaction.verifyTransition()).not.toThrow();
@@ -388,7 +388,7 @@ describe('BranchVerse — AI Proposal Validation & Recovery Resilience', () => {
   // TEST 11: Story state remains completely unchanged when an invalid state update is rejected
   it('CASE 11: Authoritative story state remains unchanged when an invalid state delta is rejected', () => {
     const originalState = createMockAuthoritativeState({
-      stamina: 75,
+      powerLevel: 35,
       worldFlags: {
         region: 'Silverwood',
         kingdom: 'Aethelgard Realm',
@@ -425,7 +425,7 @@ describe('BranchVerse — AI Proposal Validation & Recovery Resilience', () => {
     // Wealth and region remain the original authoritative values
     expect(committedState.worldFlags.wealth).toBe('100 Gold Coins');
     expect(committedState.worldFlags.region).toBe('Silverwood');
-    expect(committedState.stamina).toBe(75);
+    expect(committedState.powerLevel).toBe(35);
   });
 
   // TEST 12: Valid narrative continues smoothly even when optional stats are rejected

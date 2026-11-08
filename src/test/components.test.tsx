@@ -113,7 +113,7 @@ describe('BranchVerse UI Components & Mobile Experience', () => {
       );
 
       expect(screen.getByText('Hari')).toBeInTheDocument();
-      expect(screen.getByText('70 / 100')).toBeInTheDocument();
+      expect(screen.getAllByText('Level 40').length).toBeGreaterThanOrEqual(1);
 
       // Switch to Inventory tab
       const itemsTab = screen.getByText('Items');

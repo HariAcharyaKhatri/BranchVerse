@@ -17,9 +17,8 @@ export class ChoiceGenerator {
       text: hasWeapon
         ? `Draw your ${state.inventory.find(i => i.category === 'weapon')?.name} and stand your ground.`
         : 'Take an aggressive defensive stance and confront the threat directly.',
-      consequenceHint: 'Tests your battle prowess and expends combat stamina.',
+      consequenceHint: 'Tests your battle prowess and tactical resolve.',
       riskLevel: 'moderate',
-      requiredStamina: 15,
       actionIntent: 'combat'
     });
 
@@ -29,7 +28,6 @@ export class ChoiceGenerator {
       text: `Analyze the surrounding architecture and scan for tactical vantage points in ${ambientLocation}.`,
       consequenceHint: 'Uncovers hidden clues, traps, or alternative routes.',
       riskLevel: 'safe',
-      requiredStamina: 5,
       actionIntent: 'investigate'
     });
 
@@ -40,10 +38,9 @@ export class ChoiceGenerator {
       choices.push({
         choiceId: `choice_use_item_${Date.now()}_3`,
         text: `Consume ${consumable.name} to stabilize your reserves before advancing.`,
-        consequenceHint: consumable.effectDescription || 'Recovers stamina and clears fatigue.',
+        consequenceHint: consumable.effectDescription || 'Restores vitality and steadies your nerves.',
         riskLevel: 'safe',
         requiredItem: consumable.name,
-        requiredStamina: 0,
         actionIntent: 'use_item'
       });
     } else {
@@ -53,20 +50,7 @@ export class ChoiceGenerator {
         text: 'Slip into the shadows and observe without alerting anyone.',
         consequenceHint: 'Avoids confrontation and tests your discretion.',
         riskLevel: 'moderate',
-        requiredStamina: 10,
         actionIntent: 'stealth'
-      });
-    }
-
-    // 4. Strategic Retreat / Rest Option if stamina is low
-    if (state.stamina < 30) {
-      choices.push({
-        choiceId: `choice_rest_${Date.now()}_4`,
-        text: 'Pull back to a fortified redoubt to catch your breath and refocus.',
-        consequenceHint: 'Restores stamina and mental clarity, but time marches forward.',
-        riskLevel: 'safe',
-        requiredStamina: 0,
-        actionIntent: 'rest'
       });
     }
 

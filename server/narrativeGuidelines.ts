@@ -179,7 +179,7 @@ The narrative must remain vivid, atmospheric, consistent with its established re
    - Never instantly grant Level 100, infinite wealth, a huge army, or unearned godhood. Progression must feel meaningful and earned through narrative trials.
 
 10. KEEP THE NARRATIVE MOVING:
-    - Always output a compelling scene continuation, authentic character dialogue, and 3 distinct, tactical choices with riskLevel and stamina costs.
+    - Always output a compelling scene continuation, authentic character dialogue, and 3 distinct, tactical choices with riskLevel (safe, moderate, perilous) and tactical consequences.
 
 ${hariDirective}`;
 }

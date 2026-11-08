@@ -12,12 +12,7 @@ export class StoryValidator {
   public static validateStateInvariants(state: EngineAuthoritativeState): InvariantValidationResult {
     const errors: string[] = [];
 
-    // 1. Stamina constraints
-    if (state.stamina < 0 || state.stamina > 100) {
-      errors.push(`Stamina must be between 0 and 100 (current: ${state.stamina}).`);
-    }
-
-    // 3. Power level
+    // 1. Power level
     if (state.powerLevel < 1 || state.powerLevel > 100) {
       errors.push(`Power level must be between 1 and 100 (current: ${state.powerLevel}).`);
     }

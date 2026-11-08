@@ -99,7 +99,7 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
             {story.title}
           </h2>
           <p className="text-xs text-dark-muted">
-            Hero: <strong className="text-dark-text">{story.hero.name}</strong> • Level {story.state.powerLevel} • Stamina: <strong className="text-amber-400">{story.state.stamina}</strong>
+            Hero: <strong className="text-dark-text">{story.hero.name}</strong> • Level {story.state.powerLevel}
           </p>
         </div>
 

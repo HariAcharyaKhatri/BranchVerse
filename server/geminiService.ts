@@ -42,7 +42,7 @@ export interface StoryTurnContext {
   hero: {
     name: string;
     powerLevel: number;
-    stamina: number;
+    stamina?: number; // Deprecated
     inventory: string[];
   };
   genre: string;
@@ -363,7 +363,7 @@ PACING RULES:
 2. Ground the scene with sensory atmospheric cues and ${context.hero.name}'s perspective.
 3. STORY CONTEXT & SETTING RULE: Explicitly establish WHERE ${context.hero.name} is located (city, settlement, landmark, or realm), WHAT immediate crisis or situation is occurring, and WHY this moment matters to their goals. The reader must never feel dropped into an unknown situation without context.
 4. Include 1 spoken character dialogue line with emotion cue.
-5. Propose 3 distinct, tactical choices with riskLevel (safe, moderate, perilous) and stamina costs (4 to 12).
+5. Propose 3 distinct, tactical choices with riskLevel (safe, moderate, perilous) and tactical consequences.
 Do NOT generate an entire long story. Generate only the immediate opening scene and choices needed to start playing.`;
 
     const result = await this.callWithRetry(modelId, prompt, maxTokens, 'initial');
@@ -397,7 +397,6 @@ Do NOT generate an entire long story. Generate only the immediate opening scene 
     }
 
     const heroName = context.hero?.name || 'Protagonist';
-    const heroStamina = typeof context.hero?.stamina === 'number' ? context.hero.stamina : 100;
     const heroPower = typeof context.hero?.powerLevel === 'number' ? context.hero.powerLevel : 30;
     const location = context.currentLocation || 'Unknown Realm';
     const inventoryText = Array.isArray(context.hero?.inventory) && context.hero.inventory.length > 0
@@ -441,7 +440,7 @@ Do NOT generate an entire long story. Generate only the immediate opening scene 
 
     const prompt = `You are the AI Narrative Director for BranchVerse, continuing an ongoing role-playing chronicle.
 
-PROTAGONIST: ${heroName} | Stamina: ${heroStamina}/100 | Power: ${heroPower} | Location: ${location} | Items: ${inventoryText}${npcContextText}${factsText}
+PROTAGONIST: ${heroName} | Power: ${heroPower} | Location: ${location} | Items: ${inventoryText}${npcContextText}${factsText}
 
 RECENT CONTEXT:
 ${recentHistoryText || 'Story commenced.'}
@@ -457,7 +456,7 @@ ROLE-PLAY INSTRUCTIONS:
 1. ${lengthRequirement}
 2. Deliver kinetic consequences or dialogue responses to the player's move.
 3. Include 1 authentic character dialogue response with emotion cue.
-4. Offer 3 varied, contextual next choices with riskLevel and stamina cost.`;
+4. Offer 3 varied, contextual next choices with riskLevel (safe, moderate, perilous) and tactical consequences.`;
 
     const result = await this.callWithRetry(modelId, prompt, maxTokens, 'turn');
     const parseStart = Date.now();
@@ -822,15 +821,14 @@ ROLE-PLAY INSTRUCTIONS:
             text: String(c.text || 'Advance with caution'),
             consequenceHint: c.consequenceHint || undefined,
             riskLevel: (['safe', 'moderate', 'perilous'].includes(c.riskLevel?.toLowerCase()) ? c.riskLevel.toLowerCase() : 'moderate') as 'safe' | 'moderate' | 'perilous',
-            requiredStamina: typeof c.requiredStamina === 'number' ? c.requiredStamina : 8,
+            ...(typeof c.requiredStamina === 'number' ? { requiredStamina: c.requiredStamina } : {}),
             actionIntent: c.actionIntent || 'explore'
           }))
         : [
             {
               choiceId: `choice_fallback_${Date.now()}_1`,
               text: 'Press onward cautiously into the unknown.',
-              riskLevel: 'safe',
-              requiredStamina: 5
+              riskLevel: 'safe'
             }
           ];
 

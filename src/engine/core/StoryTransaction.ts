@@ -47,9 +47,6 @@ export class StoryTransaction {
     }
 
     // Apply delta to staged state
-    if (typeof stateDelta.stamina === 'number') {
-      this.stagedState.stamina = Math.max(0, Math.min(100, stateDelta.stamina));
-    }
     if (typeof stateDelta.powerLevel === 'number') {
       this.stagedState.powerLevel = Math.max(1, Math.min(100, stateDelta.powerLevel));
     }
@@ -150,9 +147,6 @@ export class StoryTransaction {
           ...this.stagedState.worldFlags,
           kingdom: delta.kingdom.trim()
         };
-      }
-      if (typeof delta.stamina === 'number' && !isNaN(delta.stamina)) {
-        this.stagedState.stamina = Math.max(0, Math.min(100, Math.round(delta.stamina)));
       }
       if (typeof delta.powerLevel === 'number' && !isNaN(delta.powerLevel)) {
         this.stagedState.powerLevel = Math.max(1, Math.min(100, Math.round(delta.powerLevel)));

@@ -81,7 +81,7 @@ export interface TranslationDictionary {
     chapter: string;
     turn: string;
     health: string;
-    stamina: string;
+    stamina?: string; // Deprecated
     power: string;
     inventory: string;
     quests: string;
@@ -92,7 +92,7 @@ export interface TranslationDictionary {
     exitStory: string;
     gameOver: string;
     victory: string;
-    actionRequiresStamina: string;
+    actionRequiresStamina?: string; // Deprecated
     actionRequiresItem: string;
     aiThinking: string;
   };

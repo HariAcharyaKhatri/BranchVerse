@@ -239,16 +239,18 @@ export function repairNarrativeProposal(
         const choiceText = rawText.length >= 3 ? rawText : 'Carefully assess your surroundings and move forward.';
         if (rawText.length < 3) repairedFields.push(`choice_${idx}_text_padded`);
 
-        let stamina = typeof c.requiredStamina === 'number' ? c.requiredStamina : typeof c.requiredStamina === 'string' ? parseInt(c.requiredStamina, 10) : 8;
-        if (isNaN(stamina) || stamina < 0) stamina = 8;
-        if (stamina > 40) stamina = 40;
+        const stamina = typeof c.requiredStamina === 'number'
+          ? c.requiredStamina
+          : typeof c.requiredStamina === 'string'
+            ? parseInt(c.requiredStamina, 10)
+            : undefined;
 
         proposedChoices.push({
           choiceId: typeof c.choiceId === 'string' && c.choiceId.trim() ? c.choiceId.trim() : `choice_ai_${Date.now()}_${idx}`,
           text: choiceText,
           consequenceHint: typeof c.consequenceHint === 'string' ? c.consequenceHint.trim() : undefined,
           riskLevel: normalizeRiskLevel(c.riskLevel),
-          requiredStamina: stamina,
+          ...(typeof stamina === 'number' && !isNaN(stamina) ? { requiredStamina: stamina } : {}),
           actionIntent: normalizeActionIntent(c.actionIntent),
         });
       }
@@ -263,7 +265,6 @@ export function repairNarrativeProposal(
         choiceId: `choice_recovery_${Date.now()}_1`,
         text: 'Proceed carefully through the current obstacle.',
         riskLevel: 'safe',
-        requiredStamina: 5,
         actionIntent: 'investigate',
       });
     }
@@ -271,7 +272,6 @@ export function repairNarrativeProposal(
       choiceId: `choice_recovery_${Date.now()}_2`,
       text: 'Take decisive action to shift the advantage in your favor.',
       riskLevel: 'moderate',
-      requiredStamina: 8,
       actionIntent: 'combat',
     });
   } else if (proposedChoices.length > 5) {
@@ -435,14 +435,12 @@ export function repairNarrativeProposal(
         choiceId: `choice_salvage_${Date.now()}_1`,
         text: 'Proceed carefully through the current area.',
         riskLevel: 'safe',
-        requiredStamina: 5,
         actionIntent: 'investigate',
       },
       {
         choiceId: `choice_salvage_${Date.now()}_2`,
         text: 'Take decisive action to overcome the immediate obstacle.',
         riskLevel: 'moderate',
-        requiredStamina: 8,
         actionIntent: 'interact',
       },
     ],

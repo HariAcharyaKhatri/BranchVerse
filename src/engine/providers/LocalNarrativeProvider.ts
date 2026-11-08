@@ -163,7 +163,6 @@ export class LocalNarrativeProvider implements NarrativeProvider {
             text: `${location} के मुख्य केंद्र की ओर आगे बढ़ें और स्थिति का जायज़ा लें।`,
             consequenceHint: 'साहस और तत्परता की परीक्षा। रास्ते में मुठभेड़ हो सकती है।',
             riskLevel: 'moderate',
-            requiredStamina: 12,
             actionIntent: 'travel'
           },
           {
@@ -171,7 +170,6 @@ export class LocalNarrativeProvider implements NarrativeProvider {
             text: `आस-पास के इलाके में छिपे सुराग, उपयोगी सामान और रास्ते खोजें।`,
             consequenceHint: 'कम जोखिम में संसाधन और नई जानकारी मिलने की अच्छी संभावना।',
             riskLevel: 'safe',
-            requiredStamina: 5,
             actionIntent: 'investigate'
           },
           {
@@ -179,7 +177,6 @@ export class LocalNarrativeProvider implements NarrativeProvider {
             text: `अपने साथियों से बात करें और अगली चाल की रणनीति तय करें।`,
             consequenceHint: 'साथियों का भरोसा बढ़ेगा और महत्वपूर्ण जानकारी मिल सकती है।',
             riskLevel: 'safe',
-            requiredStamina: 4,
             actionIntent: 'talk'
           }
         ]
@@ -189,7 +186,6 @@ export class LocalNarrativeProvider implements NarrativeProvider {
             text: `Advance decisively toward the heart of ${location} to seize the tactical initiative.`,
             consequenceHint: 'Tests speed and martial resolve. May prompt enemy confrontation.',
             riskLevel: 'moderate',
-            requiredStamina: 12,
             actionIntent: 'travel'
           },
           {
@@ -197,7 +193,6 @@ export class LocalNarrativeProvider implements NarrativeProvider {
             text: `Scrutinize the surroundings for concealed mechanisms, discarded supplies, or arcane tracks.`,
             consequenceHint: 'High chance of discovering clues or resources with low direct risk.',
             riskLevel: 'safe',
-            requiredStamina: 5,
             actionIntent: 'investigate'
           },
           {
@@ -205,7 +200,6 @@ export class LocalNarrativeProvider implements NarrativeProvider {
             text: `Turn to your allies and deliberate the next maneuver to strengthen camaraderie.`,
             consequenceHint: 'Deepens companion trust and may reveal key backstory knowledge.',
             riskLevel: 'safe',
-            requiredStamina: 4,
             actionIntent: 'talk'
           }
         ];

@@ -21,13 +21,6 @@ export function validateActionFeasibility(
     return { isValid: false, reason: 'Hero is incapacitated and cannot perform rigorous actions.' };
   }
 
-  if (action.requiredStamina && state.stamina < action.requiredStamina) {
-    return {
-      isValid: false,
-      reason: `Insufficient stamina! Requires ${action.requiredStamina} stamina, but you only have ${state.stamina}.`
-    };
-  }
-
   if (action.requiredItem) {
     const hasItem = state.inventory.some(item =>
       item.id.toLowerCase() === action.requiredItem!.toLowerCase() ||
@@ -66,12 +59,7 @@ export function applyStateDelta(
     next.health = Math.max(0, Math.min(next.maxHealth ?? 100, delta.health));
   }
 
-  // 2. Stamina adjustment
-  if (typeof delta.stamina === 'number') {
-    next.stamina = Math.max(0, Math.min(100, delta.stamina));
-  }
-
-  // 3. Power level
+  // 2. Power level
   if (typeof delta.powerLevel === 'number') {
     next.powerLevel = Math.max(1, Math.min(100, delta.powerLevel));
   }

@@ -111,7 +111,7 @@ export class StorySession {
       if (!validation.isValid && !isTerminalFailure) {
         // STORY-FIRST RESILIENCE: The story must never stop.
         // User action (whether a clicked choice or custom input) expresses intent/attempt.
-        // If a precondition fails (e.g. low stamina, missing item, or fatigue),
+        // If a precondition fails (e.g. missing required item or status effect),
         // DO NOT crash or throw! Instead, preserve the constraint and pass it to the Narrative Director.
         customActionConstraint = validation.reason;
         transaction.stageValidation({ isValid: true });
@@ -294,7 +294,7 @@ export class StorySession {
       hero: doc.hero,
       health: doc.state?.health ?? 100,
       maxHealth: doc.state?.maxHealth ?? 100,
-      stamina: doc.state?.stamina ?? 100,
+      stamina: doc.state?.stamina,
       powerLevel: doc.state?.powerLevel ?? (doc.hero.powerLevel || 10),
       statusEffects: doc.state?.statusEffects || [],
 

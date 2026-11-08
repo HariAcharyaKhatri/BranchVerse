@@ -34,16 +34,11 @@ export function executeStoryTurn(
 
     // Check feasibility
     const feasibility = validateActionFeasibility(story.state, {
-      requiredItem: chosenOption.requiredItem,
-      requiredStamina: chosenOption.requiredStamina
+      requiredItem: chosenOption.requiredItem
     });
 
     if (!feasibility.isValid) {
-      if (feasibility.reason?.toLowerCase().includes('stamina')) {
-        story.state.stamina = 15;
-      } else {
-        throw new Error(feasibility.reason || 'Action cannot be performed.');
-      }
+      throw new Error(feasibility.reason || 'Action cannot be performed.');
     }
 
     // Determine target node
@@ -95,11 +90,6 @@ export function executeStoryTurn(
       throw new Error('The story has ended. Please start a new story or load a checkpoint.');
     }
 
-    if (story.state.stamina < 10) {
-      // Story-First: Grant second wind to push through fatigue without halting chronicle
-      story.state.stamina = 15;
-    }
-
     // Interpret user's custom action
     const customResult = interpretCustomAction(story, rawAction);
 
@@ -143,7 +133,6 @@ interface CustomActionInterpretation {
   dialogues?: Array<{ speaker: string; text: string; emotion?: 'calm' | 'furious' | 'mysterious' | 'terrified' | 'warm' }>;
   ambientVisual?: string;
   stateDelta: {
-    stamina?: number;
     powerLevel?: number;
     itemsAdded?: any[];
     itemsRemoved?: string[];
@@ -175,7 +164,6 @@ function interpretCustomAction(story: StoryDocument, actionText: string): Custom
       ],
       ambientVisual: 'Sparkles',
       stateDelta: {
-        stamina: Math.max(10, story.state.stamina - 25),
         powerLevel: Math.min(100, (story.state.powerLevel || 35) + 5),
         itemsAdded: [
           { id: 'secret_orders', name: 'Commander’s Sealed Orders', quantity: 1, description: 'Contains classified troop routes and names of traitors.', category: 'artifact' }
@@ -206,13 +194,12 @@ function interpretCustomAction(story: StoryDocument, actionText: string): Custom
     return {
       sceneTitle: 'The Fury of Battle',
       narrativeText: `Refusing hesitation, you grip your ${weaponName} with iron determination. Channeling your skills in ${hero.skills[0] || 'combat'}, you burst through the opposition in a blur of motion. The shockwave of your offensive throws the enemy formation into total retreat!`,
-      outcomeText: `Your aggressive assault breaks the enemy’s vanguard at the cost of some stamina.`,
+      outcomeText: `Your aggressive assault breaks the enemy’s vanguard with overwhelming force.`,
       dialogues: [
         { speaker: hero.name, text: 'If you stand against justice, you will fall before my blade.', emotion: 'furious' }
       ],
       ambientVisual: 'Sword',
       stateDelta: {
-        stamina: Math.max(10, story.state.stamina - 30),
         powerLevel: Math.min(100, story.state.powerLevel + 2)
       },
       choices: [
@@ -239,7 +226,6 @@ function interpretCustomAction(story: StoryDocument, actionText: string): Custom
       outcomeText: `A stealthy reconnaissance yields hidden supplies and tactical awareness.`,
       ambientVisual: 'Eye',
       stateDelta: {
-        stamina: Math.max(10, story.state.stamina - 15),
         itemsAdded: [
           { id: 'found_relic', name: 'Carved Runic Fragment', quantity: 1, description: 'A shard of forgotten knowledge.', category: 'material' }
         ]
@@ -268,7 +254,6 @@ function interpretCustomAction(story: StoryDocument, actionText: string): Custom
       outcomeText: `A diplomatic triumph opens dialogue and defuses immediate hostility.`,
       ambientVisual: 'Crown',
       stateDelta: {
-        stamina: Math.max(10, story.state.stamina - 10),
         npcTrust: { 'Opposition': 10, 'Allies': 40 }
       },
       choices: [
@@ -294,9 +279,7 @@ function interpretCustomAction(story: StoryDocument, actionText: string): Custom
     narrativeText: `You assess the chaotic situation and take daring initiative: "${actionText}". Drawing upon your inner reserves and the distinct traits of your hero's discipline, you execute the move with deliberate precision. The world around you shifts in response to your unpredictable will!`,
     outcomeText: `Your custom action alters the flow of the encounter and opens a fresh path forward.`,
     ambientVisual: 'Sparkles',
-    stateDelta: {
-      stamina: Math.max(10, story.state.stamina - 20)
-    },
+    stateDelta: {},
     choices: [
       {
         choiceId: 'choice_custom_followup_a',
@@ -354,7 +337,6 @@ export function createNewStory(params: {
         consequenceHint: c.consequenceHint,
         riskLevel: ['safe', 'moderate', 'perilous'].includes(c.riskLevel) ? c.riskLevel : 'moderate',
         requiredItem: c.requiredItem,
-        requiredStamina: typeof c.requiredStamina === 'number' ? c.requiredStamina : 8,
         stateImpact: c.stateImpact,
         nextSceneId: c.nextSceneId
       }))
@@ -505,8 +487,7 @@ export async function executeAdvancedStoryTurn(
       text: c.text,
       consequenceHint: c.consequenceHint,
       riskLevel: c.riskLevel,
-      requiredItem: c.requiredItem,
-      requiredStamina: c.requiredStamina
+      requiredItem: c.requiredItem
     })),
     selectedChoiceId: action.choiceId,
     customActionText: action.customActionText,

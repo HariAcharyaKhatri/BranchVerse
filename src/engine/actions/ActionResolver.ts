@@ -23,73 +23,51 @@ export class ActionResolver {
 
     switch (action.intent) {
       case 'rest': {
-        const staminaGain = Math.min(35, 100 - state.stamina);
-        delta.stamina = state.stamina + staminaGain;
-        consequences.push(`Restored ${staminaGain} Stamina and focus through rest.`);
+        consequences.push('Rested and gathered focus, surveying the surroundings.');
         break;
       }
 
       case 'combat': {
-        const staminaCost = 15;
-        delta.stamina = Math.max(0, state.stamina - staminaCost);
         if (state.powerLevel < 25) {
-          const extraStrain = 10;
-          delta.stamina = Math.max(0, delta.stamina - extraStrain);
-          consequences.push(`Engaged in fierce combat! Spent ${staminaCost + extraStrain} stamina against overwhelming odds.`);
+          consequences.push('Engaged in fierce combat against overwhelming odds.');
         } else {
           // Combat victory
           delta.powerLevel = Math.min(100, state.powerLevel + 2);
-          consequences.push(`Fought decisively! Spent ${staminaCost} stamina, honing battle prowess (+2 Power).`);
+          consequences.push('Fought decisively, honing battle prowess (+2 Power).');
         }
         break;
       }
 
       case 'stealth': {
-        const staminaCost = 10;
-        delta.stamina = Math.max(0, state.stamina - staminaCost);
-        consequences.push(`Moved unseen through shadows, expending ${staminaCost} stamina to maintain vigilance.`);
+        consequences.push('Moved unseen through shadows, maintaining keen vigilance.');
         break;
       }
 
       case 'travel': {
-        const staminaCost = 10;
-        delta.stamina = Math.max(0, state.stamina - staminaCost);
         if (action.target) {
           delta.currentLocation = action.target;
-          consequences.push(`Traveled toward "${action.target}", expending ${staminaCost} stamina.`);
+          consequences.push(`Traveled toward "${action.target}".`);
         } else {
-          consequences.push(`Advanced deeper into the uncharted terrain (-${staminaCost} stamina).`);
+          consequences.push('Advanced deeper into the uncharted terrain.');
         }
         break;
       }
 
       case 'talk':
       case 'persuade': {
-        const staminaCost = 5;
-        delta.stamina = Math.max(0, state.stamina - staminaCost);
-        consequences.push(`Engaged in dialogue, assessing intentions and forging social bonds.`);
+        consequences.push('Engaged in dialogue, assessing intentions and forging social bonds.');
         break;
       }
 
       case 'investigate': {
-        const staminaCost = 5;
-        delta.stamina = Math.max(0, state.stamina - staminaCost);
-        consequences.push(`Scoured the surroundings for clues, tracks, and latent anomalies.`);
+        consequences.push('Scoured the surroundings for clues, tracks, and latent anomalies.');
         break;
       }
 
       default: {
-        const staminaCost = 5;
-        delta.stamina = Math.max(0, state.stamina - staminaCost);
-        consequences.push(`Executed action: "${action.rawText}" (-${staminaCost} stamina).`);
+        consequences.push(`Executed action: "${action.rawText}".`);
         break;
       }
-    }
-
-    // Story-First: Ensure stamina never permanently dead-locks at 0
-    if (typeof delta.stamina === 'number' && delta.stamina < 12 && action.intent !== 'rest') {
-      delta.stamina = Math.max(12, delta.stamina);
-      consequences.push('Pushed through physical exhaustion with adrenaline and fierce resolve.');
     }
 
     // Story-First Invariant Guards on State Alteration

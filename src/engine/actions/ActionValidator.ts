@@ -11,7 +11,7 @@ export class ActionValidator {
     factStore: WorldFactStore,
     options?: {
       requiredItem?: string;
-      requiredStamina?: number;
+      requiredStamina?: number; // Deprecated
     }
   ): ActionPreconditionCheck {
     // 1. Is story already finished?
@@ -39,17 +39,7 @@ export class ActionValidator {
       };
     }
 
-    // 4. Required stamina
-    const staminaCost = options?.requiredStamina ?? this.estimateStaminaRequirement(action.intent);
-    if (action.intent !== 'rest' && state.stamina < staminaCost) {
-      return {
-        isValid: false,
-        reason: `Exhaustion! This action requires at least ${staminaCost} stamina, but you only have ${state.stamina}.`,
-        suggestedCorrection: 'Take a moment to rest or use an energy draught.'
-      };
-    }
-
-    // 5. Required Item Check
+    // 4. Required Item Check
     const requiredItemName = options?.requiredItem || action.relevantItemName;
     if (requiredItemName && (action.intent === 'use_item' || options?.requiredItem)) {
       const hasItem = state.inventory.some(item =>
@@ -103,26 +93,5 @@ export class ActionValidator {
     }
 
     return { isValid: true };
-  }
-
-  private static estimateStaminaRequirement(intent: ParsedAction['intent']): number {
-    switch (intent) {
-      case 'combat':
-        return 15;
-      case 'stealth':
-        return 10;
-      case 'travel':
-        return 10;
-      case 'persuade':
-        return 5;
-      case 'investigate':
-        return 5;
-      case 'rest':
-        return 0;
-      case 'use_item':
-        return 0;
-      default:
-        return 5;
-    }
   }
 }

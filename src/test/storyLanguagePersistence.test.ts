@@ -354,7 +354,7 @@ describe('Story Language Persistence & Natural Hindi Narration', () => {
     expect(result.updatedStory.settings.storyLanguage).toBe('en');
   });
 
-  it('12. Prevents Story Generation Paused crash when player stamina is depleted after many turns', async () => {
+  it('12. Prevents Story Generation Paused crash when player makes consecutive turns without stamina restrictions', async () => {
     const exhaustedStory = createNewStory({
       title: 'Exhausted Hero Chronicle',
       hero: mockHero,
@@ -370,10 +370,10 @@ describe('Story Language Persistence & Natural Hindi Narration', () => {
       storyLanguage: 'hi',
     });
 
-    // Artificially deplete stamina to 0 (simulating 15+ turns of continuous adventuring)
+    // Older save with stamina set to 0
     exhaustedStory.state.stamina = 0;
 
-    // Player selects a choice costing stamina
+    // Player selects a choice without any stamina barrier
     const choiceId = exhaustedStory.turns[0].choices[0].choiceId;
     const result = await executeAdvancedStoryTurn(
       exhaustedStory,
@@ -383,6 +383,6 @@ describe('Story Language Persistence & Natural Hindi Narration', () => {
 
     expect(result.updatedStory.turns.length).toBe(2);
     expect(result.updatedStory.storyLanguage).toBe('hi');
-    expect(result.updatedStory.state.stamina).toBeGreaterThanOrEqual(10);
+    expect(result.updatedStory.turns[1].narrativeText.length).toBeGreaterThan(20);
   });
 });

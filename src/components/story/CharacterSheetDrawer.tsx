@@ -161,20 +161,12 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
                     {isBusiness ? 'Influence Level' : 'Mastery Level'}
                   </span>
                   <p className="font-semibold text-indigo-300 truncate">Level {state.powerLevel}</p>
-                  <p className="text-[10px] text-dark-muted truncate">{state.stamina} / 100 Stamina</p>
                 </div>
               </div>
             </div>
 
             {/* Vitals Progress Bars */}
             <div className="space-y-2 bg-dark-elevated/40 p-3 rounded-2xl border border-dark-border">
-              <ProgressBar
-                label="Stamina & Narrative Focus"
-                sublabel={`${state.stamina} / 100`}
-                value={state.stamina}
-                max={100}
-                variant="amber"
-              />
               <ProgressBar
                 label={isBusiness ? 'Business Acumen & Market Reach' : 'Power Level & Mastery'}
                 sublabel={`Level ${state.powerLevel}`}

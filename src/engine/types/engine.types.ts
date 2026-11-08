@@ -215,7 +215,7 @@ export interface EngineAuthoritativeState {
   hero: HeroProfile;
   health?: number;
   maxHealth?: number;
-  stamina: number;
+  stamina?: number; // Deprecated: retained as optional for backward compatibility
   powerLevel: number;
   statusEffects: string[];
 

@@ -287,14 +287,13 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
     const item = story.state.inventory.find(i => i.id === itemId);
     if (!item) return;
 
-    const staminaGain = 35;
     const nextInventory = story.state.inventory
       .map(i => i.id === itemId ? { ...i, quantity: i.quantity - 1 } : i)
       .filter(i => i.quantity > 0);
 
     const nextState = {
       ...story.state,
-      stamina: Math.min(100, story.state.stamina + staminaGain),
+      health: typeof story.state.health === 'number' ? Math.min(story.state.maxHealth ?? 100, story.state.health + 35) : 100,
       inventory: nextInventory
     };
 
@@ -406,14 +405,14 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               onClick={() => setIsDrawerOpen(true)}
               className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-dark-elevated border border-dark-border text-dark-text hover:border-brand-primary transition-all active:scale-95 flex items-center gap-1.5 text-xs font-semibold shadow-sm"
               aria-label="Open Live Character Status"
-              title={`${story.hero.name} • ${story.state.currentLocation || 'Unknown'} • ${story.state.stamina} Stamina`}
+              title={`${story.hero.name} • ${story.state.currentLocation || 'Unknown'} • Level ${story.state.powerLevel}`}
             >
               <Shield className="w-4 h-4 text-brand-primary shrink-0" />
               <span className="hidden sm:inline font-bold truncate max-w-[100px]">{story.hero.name}</span>
               <span className="hidden md:inline text-[10px] text-dark-muted px-1.5 py-0.5 rounded bg-dark-surface/80 border border-dark-border truncate max-w-[90px]">
                 📍 {story.state.currentLocation || 'Realm'}
               </span>
-              <span className="text-[10px] text-amber-400 font-bold">{story.state.stamina} ST</span>
+              <span className="text-[10px] text-indigo-400 font-bold">Lvl {story.state.powerLevel}</span>
             </button>
 
             {/* View Transcript */}

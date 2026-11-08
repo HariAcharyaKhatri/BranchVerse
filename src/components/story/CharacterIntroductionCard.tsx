@@ -141,7 +141,7 @@ export const CharacterIntroductionCard: React.FC<CharacterIntroductionCardProps>
                 {isBusiness ? 'Standing' : 'Mastery & Focus'}
               </span>
               <p className="font-semibold text-amber-300 truncate mt-0.5">
-                Level {state.powerLevel} • {state.stamina} Stamina
+                Level {state.powerLevel}
               </p>
             </div>
 
@@ -225,7 +225,7 @@ export const CharacterIntroductionCard: React.FC<CharacterIntroductionCardProps>
         /* Collapsed summary pill */
         <div className="mt-2 flex items-center justify-between text-xs text-dark-muted">
           <span>{hero.origin || 'Protagonist'} • {currentLocation}</span>
-          <span className="text-amber-400 font-semibold">{state.stamina} ST • Lvl {state.powerLevel}</span>
+          <span className="text-amber-400 font-semibold">Lvl {state.powerLevel}</span>
         </div>
       )}
     </div>

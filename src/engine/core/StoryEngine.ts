@@ -52,7 +52,6 @@ export class StoryEngine {
       hero: params.hero,
       health: 100,
       maxHealth: 100,
-      stamina: 100,
       powerLevel: params.hero.powerLevel || 10,
       statusEffects: [],
 
@@ -72,10 +71,10 @@ export class StoryEngine {
           name: 'Restorative Salve',
           quantity: 2,
           category: 'consumable',
-          description: 'Herbal compound that revitalizes fatigue (+35 Stamina).',
+          description: 'Herbal compound that revitalizes vitality and eases physical strain.',
           isUnique: false,
           isEquipped: false,
-          effectDescription: 'Restores 35 Stamina on consumption.'
+          effectDescription: 'Restores vitality and eases physical strain on consumption.'
         }
       ],
       quests: {

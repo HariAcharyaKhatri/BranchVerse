@@ -32,11 +32,10 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
     initialState: (hero: HeroProfile): StoryState => ({
       health: 100,
       maxHealth: 100,
-      stamina: 90,
       powerLevel: hero.powerLevel || 35,
       inventory: [
         { id: 'start_weapon', name: hero.weapons[0] || 'Iron Bastard Sword', quantity: 1, description: 'A reliable blade balanced for battle.', category: 'weapon' },
-        { id: 'healing_salve', name: 'Elder-Leaf Healing Salve', quantity: 2, description: 'Restores 35 Stamina when applied to wounds.', category: 'consumable', effectDescription: '+35 Stamina' },
+        { id: 'healing_salve', name: 'Elder-Leaf Healing Salve', quantity: 2, description: 'Restores vitality when applied to wounds.', category: 'consumable', effectDescription: '+35 Vitality' },
         { id: 'silver_talisman', name: 'Silver Vanguard Talisman', quantity: 1, description: 'An insignia proving allegiance to the realm’s protectors.', category: 'artifact' }
       ],
       activeQuests: [
@@ -67,7 +66,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'High risk of injury, but greatly bolsters Ronald’s trust and defends the innocents.',
             riskLevel: 'moderate',
             stateImpact: {
-              stamina: 75,
               npcTrust: { 'Captain Ronald': 60, 'Villagers': 70, 'Masked Harbinger': -100 }
             },
             nextSceneId: 'node_rescue_success'
@@ -78,7 +76,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'Tactical gambit: bypasses the hounds to cut off the enemy leader directly.',
             riskLevel: 'perilous',
             stateImpact: {
-              stamina: 60,
               health: 85
             },
             nextSceneId: 'node_ambush_boss'
@@ -86,10 +83,9 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
           {
             choiceId: 'choice_rune_barrier',
             text: 'Ignite your runic powers to manifest a barrier sealing off the village perimeter.',
-            consequenceHint: 'Consumes immense stamina but shields the entire quadrant from reinforcements.',
+            consequenceHint: 'Manifests a powerful ward that shields the entire quadrant from reinforcements.',
             riskLevel: 'safe',
             stateImpact: {
-              stamina: 40,
               health: 100
             },
             nextSceneId: 'node_barrier_hold'
@@ -113,7 +109,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'Requires maximum focus; could decisively end the rift incursion.',
             riskLevel: 'perilous',
             stateImpact: {
-              stamina: 30,
               health: 80,
               powerLevel: 45
             },
@@ -125,7 +120,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'Calculated tactical victory minimizing collateral damage.',
             riskLevel: 'safe',
             stateImpact: {
-              stamina: 55,
               health: 95
             },
             nextSceneId: 'node_rift_sealed'
@@ -149,8 +143,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'Reveals a vital plot secret but leaves you exposed to a retaliatory blast.',
             riskLevel: 'perilous',
             stateImpact: {
-              health: 70,
-              stamina: 40
+              health: 70
             },
             nextSceneId: 'node_secret_unmasked'
           },
@@ -160,7 +153,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'Safe tactical disarm, reducing the enemy’s lethality.',
             riskLevel: 'moderate',
             stateImpact: {
-              stamina: 50,
               health: 90
             },
             nextSceneId: 'node_rift_sealed'
@@ -184,7 +176,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'Decisively purges the rift but exhausts your magical reserves.',
             riskLevel: 'moderate',
             stateImpact: {
-              stamina: 20,
               health: 95
             },
             nextSceneId: 'node_final_clash'
@@ -195,7 +186,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             consequenceHint: 'Maximizes civilian survival and unlocks grateful faction allies.',
             riskLevel: 'safe',
             stateImpact: {
-              stamina: 45,
               npcTrust: { 'Villagers': 100, 'Captain Ronald': 85 }
             },
             nextSceneId: 'node_rift_sealed'
@@ -220,7 +210,6 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             stateImpact: {
               timelineStep: 3,
               health: 100,
-              stamina: 100,
               activeQuests: [
                 { id: 'quest_save_village', title: 'Defend Valen’s Crossing', giver: 'Captain Ronald', objective: 'Repel the void-rift marauders.', status: 'completed' },
                 { id: 'quest_silver_spire', title: 'Audience with the Archmagi', giver: 'Captain Ronald', objective: 'Travel to the Silver Spire and deliver the rift core fragment.', status: 'active' }
@@ -247,7 +236,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             riskLevel: 'safe',
             stateImpact: {
               inventory: [
-                { id: 'sunstone', name: 'Celestial Sunstone', quantity: 1, description: 'An ancient relic that pulses with warm solar energy.', category: 'artifact', effectDescription: 'Grants steady stamina recovery and resilience.' }
+                { id: 'sunstone', name: 'Celestial Sunstone', quantity: 1, description: 'An ancient relic that pulses with warm solar energy.', category: 'artifact', effectDescription: 'Grants steady spiritual illumination and resilience.' }
               ],
               activeQuests: [
                 { id: 'quest_save_village', title: 'Defend Valen’s Crossing', giver: 'Captain Ronald', objective: 'Repel the void-rift marauders.', status: 'completed' }
@@ -293,10 +282,10 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
           {
             choiceId: 'choice_camp_rest',
             text: 'Set camp under the starlit sky, sharpen your blades, and reflect on the road ahead.',
-            consequenceHint: 'Fully restores stamina and battle focus.',
+            consequenceHint: 'Restores health and battle focus.',
             riskLevel: 'safe',
             stateImpact: {
-              stamina: 100
+              health: 100
             },
             nextSceneId: 'node_1'
           }
@@ -310,11 +299,10 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
     initialState: (hero: HeroProfile): StoryState => ({
       health: 100,
       maxHealth: 100,
-      stamina: 100,
       powerLevel: hero.powerLevel || 40,
       inventory: [
         { id: 'cyber_sidearm', name: hero.weapons[0] || 'Arakawa Heavy Rail Pistol', quantity: 1, description: 'Armor-piercing sidearm with smart-targeting optic.', category: 'weapon' },
-        { id: 'trauma_stim', name: 'Militech Combat Stim', quantity: 2, description: 'Restores 40 Stamina and boosts sensory reflexes.', category: 'consumable', effectDescription: '+40 Stamina' },
+        { id: 'trauma_stim', name: 'Militech Combat Stim', quantity: 2, description: 'Restores 40 Vitality and boosts sensory reflexes.', category: 'consumable', effectDescription: '+40 Vitality' },
         { id: 'cyberdeck', name: 'Arasaka MK-IV Neural Cyberdeck', quantity: 1, description: 'Direct neural interface loaded with counter-intrusion daemons.', category: 'artifact' }
       ],
       activeQuests: [
@@ -343,7 +331,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             text: 'Jack your cyberdeck into the external junction box to upload a reboot daemon to the drones.',
             consequenceHint: 'Quiet tactical entry; risks neural backlash if the ICE fights back.',
             riskLevel: 'moderate',
-            stateImpact: { stamina: 75 },
+            stateImpact: {},
             nextSceneId: 'node_hack_route'
           },
           {
@@ -351,7 +339,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             text: 'Engage your cloaking unit and drop directly onto the drone chassis with blades extended.',
             consequenceHint: 'Visceral combat takedown; fast and loud.',
             riskLevel: 'perilous',
-            stateImpact: { stamina: 65, health: 85 },
+            stateImpact: { health: 85 },
             nextSceneId: 'node_combat_route'
           },
           {
@@ -359,7 +347,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             text: 'Bypass the loading dock entirely by cutting through the high-pressure steam conduits.',
             consequenceHint: 'Safe stealth detour; costs more time and requires precise agility.',
             riskLevel: 'safe',
-            stateImpact: { stamina: 85 },
+            stateImpact: {},
             nextSceneId: 'node_stealth_route'
           }
         ]
@@ -403,7 +391,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             text: 'Trigger your Sandevistan neural booster to sprint past bullet trajectories and breach the vault.',
             consequenceHint: 'High reflex maneuver that puts your cyberware into overdrive.',
             riskLevel: 'perilous',
-            stateImpact: { stamina: 30, health: 70 },
+            stateImpact: { health: 70 },
             nextSceneId: 'node_heist_victory'
           }
         ]
@@ -439,7 +427,7 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             choiceId: 'choice_reset_cycle',
             text: 'Hide out at Doc Kuro’s clinic to upgrade your chrome for the next job.',
             riskLevel: 'safe',
-            stateImpact: { health: 100, stamina: 100 },
+            stateImpact: { health: 100 },
             nextSceneId: 'node_1'
           }
         ]
@@ -452,11 +440,10 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
     initialState: (hero: HeroProfile): StoryState => ({
       health: 100,
       maxHealth: 100,
-      stamina: 100,
       powerLevel: hero.powerLevel || 50,
       inventory: [
         { id: 'spirit_sword', name: hero.weapons[0] || 'Azure Sky Spirit Sword', quantity: 1, description: 'Refined from thousand-year frost iron, hums with sword intent.', category: 'weapon' },
-        { id: 'qi_pill', name: 'Nine-Turn Qi Restorative Pill', quantity: 3, description: 'Cleanses meridians and replenishes 35 Qi stamina instantly.', category: 'consumable', effectDescription: '+35 Stamina' }
+        { id: 'qi_pill', name: 'Nine-Turn Qi Restorative Pill', quantity: 3, description: 'Cleanses meridians and replenishes 35 Qi vitality instantly.', category: 'consumable', effectDescription: '+35 Qi Vitality' }
       ],
       activeQuests: [
         { id: 'quest_tribulation', title: 'Pass the Heavenly Tribulation', giver: 'Sect Patriarch', objective: 'Withstand the ancestral lightning trial at the summit of Azure Peak.', status: 'active' }
@@ -483,14 +470,14 @@ export const STARTER_SCENARIOS: Record<string, ScenarioDefinition> = {
             choiceId: 'choice_sword_intent',
             text: 'Unsheathe your sword and unleash the "Nine-Sun Heavenly Sword Intent" to cleave the dragon.',
             riskLevel: 'moderate',
-            stateImpact: { stamina: 65, powerLevel: 65 },
+            stateImpact: { powerLevel: 65 },
             nextSceneId: 'node_breakthrough'
           },
           {
             choiceId: 'choice_body_refine',
             text: 'Channel the lightning directly into your meridians to temper your physical body into immortal diamond.',
             riskLevel: 'perilous',
-            stateImpact: { health: 70, stamina: 40, powerLevel: 75 },
+            stateImpact: { health: 70, powerLevel: 75 },
             nextSceneId: 'node_body_immortal'
           }
         ]

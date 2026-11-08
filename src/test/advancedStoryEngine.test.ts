@@ -221,15 +221,14 @@ describe('Advanced Story Engine Tests', () => {
       expect(check.reason).toContain('incapacitated');
     });
 
-    it('rejects action requiring more stamina than available', () => {
+    it('allows actions without stamina restrictions', () => {
       const state = createMockState();
       state.stamina = 5;
-      const parsed = ActionParser.parse('Attack with full fury'); // combat requires 15
+      const parsed = ActionParser.parse('Attack with full fury');
       const factStore = new WorldFactStore(state.facts);
 
       const check = ActionValidator.validate(state, parsed, factStore);
-      expect(check.isValid).toBe(false);
-      expect(check.reason).toContain('Exhaustion');
+      expect(check.isValid).toBe(true);
     });
 
     it('rejects conversation or combat targeting an entity already dead', () => {
@@ -370,7 +369,7 @@ describe('Advanced Story Engine Tests', () => {
       const transaction = new StoryTransaction(state);
 
       transaction.stageValidation({ isValid: true });
-      transaction.stagePlan({ stamina: 45, currentLocation: 'Inner Sanctum' });
+      transaction.stagePlan({ powerLevel: 45, currentLocation: 'Inner Sanctum' });
       transaction.stageNarrative(
         {
           sceneTitle: 'The Inner Sanctum',
@@ -388,14 +387,14 @@ describe('Advanced Story Engine Tests', () => {
       const { committedState, newTurn } = transaction.commit();
       expect(committedState.version).toBe(state.version + 1);
       expect(committedState.currentLocation).toBe('Inner Sanctum');
-      expect(committedState.stamina).toBe(45);
+      expect(committedState.powerLevel).toBe(45);
       expect(committedState.turns.length).toBe(1);
       expect(newTurn.sceneTitle).toBe('The Inner Sanctum');
     });
 
     it('rolls back cleanly without mutating original state on validation failure', () => {
       const state = createMockState();
-      const originalStamina = state.stamina;
+      const originalPower = state.powerLevel;
       const transaction = new StoryTransaction(state);
 
       expect(() => {
@@ -406,8 +405,8 @@ describe('Advanced Story Engine Tests', () => {
       }).toThrow('Hero is incapacitated.');
 
       const rolledBack = transaction.rollback();
-      expect(rolledBack.stamina).toBe(originalStamina);
-      expect(state.stamina).toBe(originalStamina);
+      expect(rolledBack.powerLevel).toBe(originalPower);
+      expect(state.powerLevel).toBe(originalPower);
       expect(transaction.status).toBe('FAILED');
     });
   });

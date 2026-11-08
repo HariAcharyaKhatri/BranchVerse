@@ -262,7 +262,6 @@ describe('Character Introduction & Live Dynamic Status Panel', () => {
       expect(screen.getByText('120 Silver Shillings')).toBeInTheDocument();
       expect(screen.getByText('Master Inscriber')).toBeInTheDocument();
       expect(screen.getAllByText('Level 35').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText(/85 \/ 100/i).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/Awakened Senses/i)).toBeInTheDocument();
 
       // TEST LIVE UPDATE 1: Character changes cities (Travels to Grand Citadel)

@@ -47,7 +47,7 @@ export interface NpcRelationship {
 export interface StoryState {
   health?: number; // Deprecated/purged: retained as optional for backward compatibility
   maxHealth?: number;
-  stamina: number; // 0 - 100
+  stamina?: number; // Deprecated: retained as optional for backward compatibility with older saves
   powerLevel: number;
   inventory: InventoryItem[];
   activeQuests: Quest[];

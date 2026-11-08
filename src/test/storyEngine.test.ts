@@ -41,11 +41,10 @@ describe('BranchVerse Story Engine & Validation Tests', () => {
   });
 
   describe('State Machine & Deterministic Invariant Rules', () => {
-    it('prevents actions when hero is incapacitated or lacks stamina', () => {
+    it('prevents actions when hero is incapacitated or game is over without stamina limitation', () => {
       const deadState = {
         health: 0,
         maxHealth: 100,
-        stamina: 50,
         powerLevel: 30,
         inventory: [],
         activeQuests: [],
@@ -60,10 +59,10 @@ describe('BranchVerse Story Engine & Validation Tests', () => {
       const check1 = validateActionFeasibility(deadState, { requiredStamina: 10 });
       expect(check1.isValid).toBe(false);
 
-      const exhaustedState = { ...deadState, health: 100, stamina: 5, isGameOver: false };
-      const check2 = validateActionFeasibility(exhaustedState, { requiredStamina: 20 });
-      expect(check2.isValid).toBe(false);
-      expect(check2.reason).toContain('Insufficient stamina');
+      // Hero with low stamina is free to act without artificial restriction
+      const activeHeroState = { ...deadState, health: 100, isGameOver: false };
+      const check2 = validateActionFeasibility(activeHeroState, { requiredStamina: 20 });
+      expect(check2.isValid).toBe(true);
     });
 
     it('enforces item possession check when action requires a specific item', () => {
@@ -90,11 +89,10 @@ describe('BranchVerse Story Engine & Validation Tests', () => {
       expect(fail.reason).toContain('Required item');
     });
 
-    it('applies state delta with bounded health and stamina clamping', () => {
+    it('applies state delta with bounded health and power clamping', () => {
       const baseState = {
         health: 50,
         maxHealth: 100,
-        stamina: 40,
         powerLevel: 30,
         inventory: [],
         activeQuests: [],
@@ -106,9 +104,9 @@ describe('BranchVerse Story Engine & Validation Tests', () => {
         isGameOver: false
       };
 
-      const next = applyStateDelta(baseState, { health: 150, stamina: -10 });
+      const next = applyStateDelta(baseState, { health: 150, powerLevel: 105 });
       expect(next.health).toBe(100); // clamped to maxHealth
-      expect(next.stamina).toBe(0);   // clamped to 0
+      expect(next.powerLevel).toBe(100); // clamped to 100
       expect(next.timelineStep).toBe(2);
     });
   });
