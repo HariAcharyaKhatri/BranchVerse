@@ -24,6 +24,7 @@ import { LoginPage } from './pages/LoginPage';
 import { CreateStoryWizardPage } from './pages/CreateStoryWizardPage';
 import { RoleplaySetupPage } from './pages/RoleplaySetupPage';
 import { IsekaiProloguePage } from './pages/IsekaiProloguePage';
+import { IsekaiReincarnationPage } from './pages/IsekaiReincarnationPage';
 
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -356,14 +357,11 @@ const AppContent: React.FC = () => {
       );
     }
 
-    // 3. New Dedicated Creation Modes
-    if (currentRoute === '#/isekai' || currentRoute === '#/prologue') {
+    // 3. Isekai Reincarnation Experience & Dedicated Creation Modes
+    if (currentRoute === '#/isekai' || currentRoute === '#/prologue' || currentRoute === '#/reincarnation') {
       return (
-        <IsekaiProloguePage
-          onBack={() => {
-            setLaunchError(null);
-            navigate('#/');
-          }}
+        <IsekaiReincarnationPage
+          onNavigate={navigate}
           onLaunchStory={handleLaunchStory}
           isGenerating={isGeneratingStory}
         />
@@ -478,6 +476,8 @@ const AppContent: React.FC = () => {
         onNavigate={navigate}
         onOpenStory={(id) => navigate(`#/reader/${id}`)}
         onQuickPlay={handleQuickPlay}
+        onLaunchStory={handleLaunchStory}
+        isGenerating={isGeneratingStory}
       />
     );
   };
