@@ -326,7 +326,7 @@ const AppContent: React.FC = () => {
   // 2. Strict Authentication Gate: Without Google login, the app does not open!
   if (!user) {
     return (
-      <div className="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-dark-bg text-dark-text relative shadow-2xl overflow-hidden font-sans select-none">
+      <div className="flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-dark-bg text-dark-text relative shadow-2xl overflow-hidden font-sans">
         <LoginPage onSuccess={() => navigate('#/')} />
       </div>
     );
@@ -485,9 +485,9 @@ const AppContent: React.FC = () => {
   const isReaderActive = currentRoute.startsWith('#/reader/');
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full bg-dark-bg text-dark-text relative overflow-hidden font-sans select-none">
+    <div className="flex flex-col h-[100dvh] w-full bg-dark-bg text-dark-text relative overflow-hidden font-sans">
       {/* Active Screen View */}
-      <main className={`flex-1 overflow-hidden ${!isReaderActive ? 'pb-16' : ''}`}>
+      <main className={`flex-1 min-h-0 relative overflow-hidden flex flex-col ${!isReaderActive ? 'pb-16' : ''}`}>
         {renderCurrentScreen()}
       </main>
 

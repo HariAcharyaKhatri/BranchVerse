@@ -148,10 +148,19 @@ export function repairNarrativeProposal(
     raw.narrativeText ??
     raw.narrative ??
     raw.story ??
+    raw.storyText ??
     raw.text ??
     raw.content ??
     raw.narration ??
-    raw.description;
+    raw.description ??
+    raw.prose ??
+    raw.passage ??
+    raw.chapterText ??
+    raw.chapterContent ??
+    raw.sceneText ??
+    raw.sceneContent ??
+    raw.response ??
+    (raw.scene && typeof raw.scene === 'object' ? (raw.scene.text || raw.scene.narrative) : undefined);
 
   if (typeof rawNarrative !== 'string') {
     rawNarrative = '';

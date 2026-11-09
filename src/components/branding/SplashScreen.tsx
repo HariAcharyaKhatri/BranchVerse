@@ -45,63 +45,74 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       aria-live="polite"
       aria-label="BranchVerse Splash Screen"
     >
-      {/* Background Artwork with Vignette and Gradient Overlay */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {bgLoaded && (
+      {bgLoaded ? (
+        /* Full Cinematic Splash Screen Artwork (Image 2) */
+        <div className="absolute inset-0 flex items-center justify-center bg-[#080511] overflow-hidden">
           <img
             src={BRANDING.assets.splashArt}
-            alt=""
-            aria-hidden="true"
-            className="w-full h-full object-cover object-center scale-105 animate-[pulse_6s_ease-in-out_infinite] opacity-35 filter blur-[0.5px]"
+            alt="BranchVerse: Your Choices. Your World. Your Story."
+            className="w-full h-full max-w-md object-cover object-center shadow-2xl animate-[fadeIn_0.6s_ease-out]"
           />
-        )}
-        {/* Radial Dark Vignette */}
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#090514]/75 to-[#05020a]" />
-        {/* Ambient colored lighting glows */}
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-[120px] pointer-events-none" />
-        <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full bg-amber-500/15 blur-[100px] pointer-events-none" />
-      </div>
+          {/* Subtle edge vignette to blend seamlessly into background */}
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#080511]/60 via-transparent to-[#080511]/30" />
 
-      {/* Top Brand Decorative Star */}
-      <div className="relative z-10 pt-4 flex items-center justify-center opacity-70">
-        <div className="flex items-center gap-2 text-xs tracking-[0.3em] font-serif uppercase text-amber-300/80">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
-          <span>Interactive Multiverse RPG</span>
-          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
+          {/* Accessible Semantic Elements for screen readers and test runners */}
+          <div className="sr-only">
+            <h1>BRANCHVERSE</h1>
+            <p>{BRANDING.tagline}</p>
+            <span>Interactive Multiverse RPG</span>
+            <span>{message}</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Fallback HTML layout when image is loading / headless */
+        <>
+          {/* Ambient colored lighting glows */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#090514]/75 to-[#05020a]" />
+            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-[120px] pointer-events-none" />
+            <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full bg-amber-500/15 blur-[100px] pointer-events-none" />
+          </div>
 
-      {/* Central Brand Crest & Identity */}
-      <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-sm mx-auto my-auto animate-[fadeIn_0.8s_ease-out]">
-        {/* Emblem with Ethereal Glowing Ring */}
-        <div className="relative group">
-          <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-violet-600 via-indigo-500 to-amber-400 opacity-40 blur-xl group-hover:opacity-75 transition-opacity duration-700 animate-pulse" />
-          <BrandEmblem size="xl" variant="icon" showGlow={false} priority={true} />
-        </div>
+          {/* Top Brand Decorative Star */}
+          <div className="relative z-10 pt-4 flex items-center justify-center opacity-70">
+            <div className="flex items-center gap-2 text-xs tracking-[0.3em] font-serif uppercase text-amber-300/80">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
+              <span>Interactive Multiverse RPG</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
+            </div>
+          </div>
 
-        {/* Brand Typography */}
-        <div className="space-y-2">
-          <h1 className="text-4xl sm:text-5xl font-serif font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white via-indigo-100 to-amber-200 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
-            {BRANDING.name.toUpperCase()}
-          </h1>
-          <p className="text-xs sm:text-sm font-medium tracking-[0.18em] text-indigo-200/90 font-serif">
-            {BRANDING.tagline}
-          </p>
-        </div>
-      </div>
+          {/* Central Brand Crest & Identity */}
+          <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-sm mx-auto my-auto animate-[fadeIn_0.8s_ease-out]">
+            <div className="relative group">
+              <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-violet-600 via-indigo-500 to-amber-400 opacity-40 blur-xl group-hover:opacity-75 transition-opacity duration-700 animate-pulse" />
+              <BrandEmblem size="xl" variant="icon" showGlow={false} priority={true} />
+            </div>
 
-      {/* Bottom Loading Status & Subtle Celestial Spinner */}
-      <div className="relative z-10 pb-6 flex flex-col items-center space-y-3">
-        {/* Branching Constellation Orbit Spinner */}
-        <div className="relative w-8 h-8 flex items-center justify-center" aria-hidden="true">
-          <div className="absolute inset-0 rounded-full border-2 border-violet-500/30 border-t-amber-400 border-r-indigo-400 animate-spin" />
-          <div className="w-2 h-2 rounded-full bg-amber-300 shadow-[0_0_8px_#fde047]" />
-        </div>
+            <div className="space-y-2">
+              <h1 className="text-4xl sm:text-5xl font-serif font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-white via-indigo-100 to-amber-200 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+                {BRANDING.name.toUpperCase()}
+              </h1>
+              <p className="text-xs sm:text-sm font-medium tracking-[0.18em] text-indigo-200/90 font-serif">
+                {BRANDING.tagline}
+              </p>
+            </div>
+          </div>
 
-        <p className="text-xs tracking-wider text-indigo-300/80 font-mono animate-pulse">
-          {message}
-        </p>
-      </div>
+          {/* Bottom Loading Status & Subtle Celestial Spinner */}
+          <div className="relative z-10 pb-6 flex flex-col items-center space-y-3">
+            <div className="relative w-8 h-8 flex items-center justify-center" aria-hidden="true">
+              <div className="absolute inset-0 rounded-full border-2 border-violet-500/30 border-t-amber-400 border-r-indigo-400 animate-spin" />
+              <div className="w-2 h-2 rounded-full bg-amber-300 shadow-[0_0_8px_#fde047]" />
+            </div>
+
+            <p className="text-xs tracking-wider text-indigo-300/80 font-mono animate-pulse">
+              {message}
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 };

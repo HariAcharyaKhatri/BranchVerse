@@ -334,7 +334,7 @@ export const ReincarnationProfilePanel: React.FC<ReincarnationProfilePanelProps>
             onClick={onConfirmProfile}
             className="w-full justify-center font-bold shadow-lg shadow-amber-400/20"
           >
-            <span>Proceed to Final Review</span>
+            <span>Review Detailed Profile</span>
             <ChevronRight className="w-4 h-4 ml-1.5" />
           </Button>
         </div>

@@ -12,6 +12,7 @@ import {
   CANON_OPENING_SCENES,
   CANON_ANGEL,
 } from '../features/reincarnation/reincarnationCanon';
+import { FATE_WHEEL_CATEGORIES } from '../features/reincarnation/fateWheelCatalogs';
 import {
   createInitialReincarnationSession,
   generateAngelDialogue,
@@ -32,16 +33,12 @@ import {
   RotateCcw,
   Send,
   Dices,
-  CheckCircle2,
   BookOpen,
   Settings,
   User,
   LogIn,
-  Layers,
   ArrowRight,
-  Globe,
-  Shield,
-  Zap,
+  Check,
 } from 'lucide-react';
 
 export interface IsekaiReincarnationPageProps {
@@ -55,7 +52,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
   onLaunchStory,
   isGenerating = false,
 }) => {
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
 
   // Load or initialize persistent session
   const [session, setSession] = useState<ReincarnationSession>(() => {
@@ -68,12 +65,11 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
   const [currentSceneIndex, setCurrentSceneIndex] = useState<number>(() => {
     return session.currentSceneIndex ?? 0;
   });
+  const [guidedStep, setGuidedStep] = useState<number>(1);
   const [userChatInput, setUserChatInput] = useState<string>('');
   const [isFateWheelOpen, setIsFateWheelOpen] = useState<boolean>(false);
   const [activeFateWheelCategory, setActiveFateWheelCategory] = useState<FateWheelCategory>('world_type');
-  const [mobileActiveTab, setMobileActiveTab] = useState<'dialogue' | 'profile'>('dialogue');
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   const dialogueEndRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +78,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
     if (typeof dialogueEndRef.current?.scrollIntoView === 'function') {
       dialogueEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [session.dialogueHistory.length]);
+  }, [session.dialogueHistory?.length]);
 
   // Synchronize user display name if changed
   useEffect(() => {
@@ -152,12 +148,6 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
     setIsFateWheelOpen(false);
   };
 
-  // Handle Spin All Undecided
-  const handleSpinAllUndecided = () => {
-    const nextSession = spinAllUndecidedCategories(session);
-    setSession(nextSession);
-  };
-
   // Handle Manual Field Edit in Profile Panel
   const handleUpdateProfileField = (category: keyof ReincarnationProfile, field: string, value: any) => {
     const nextSession = updateProfileFieldManually(session, category, field, value);
@@ -170,6 +160,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
     const fresh = createInitialReincarnationSession(user?.displayName || '');
     setSession(fresh);
     setCurrentSceneIndex(0);
+    setGuidedStep(1);
     setIsResetConfirmOpen(false);
   };
 
@@ -216,31 +207,31 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
   const isNameUndecided = session.profile.character.name.status === 'undecided' || !session.userNameChosen;
 
   return (
-    <div className="flex flex-col h-full w-full bg-dark-bg text-dark-text relative overflow-x-hidden font-sans select-none">
+    <div className="flex flex-col h-full w-full bg-dark-bg text-dark-text relative overflow-hidden font-sans">
       {/* Dynamic Celestial Backdrop */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-brand-primary/10 blur-3xl animate-pulse" />
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-brand-primary/10 blur-3xl" />
         <div className="absolute top-1/2 -right-40 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
         <div className="absolute -bottom-32 left-1/3 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl" />
       </div>
 
       {/* TOP SECONDARY HEADER BAR */}
-      <header className="relative z-20 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-dark-border/40 bg-dark-bg/80 backdrop-blur-md">
-        <div className="flex items-center gap-3">
+      <header className="relative z-20 flex items-center justify-between px-3 sm:px-6 py-2.5 border-b border-dark-border/40 bg-dark-bg/90 backdrop-blur-md shrink-0">
+        <div className="flex items-center gap-2.5">
           <BrandEmblem size="sm" variant="icon" />
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-base text-white tracking-tight">BranchVerse</span>
-            <span className="text-[10px] text-amber-300 font-mono font-bold uppercase bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-400/30">
+          <div className="flex items-center gap-1.5">
+            <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">BranchVerse</span>
+            <span className="text-[9px] sm:text-[10px] text-amber-300 font-mono font-bold uppercase bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-400/30">
               Isekai Reincarnation
             </span>
           </div>
         </div>
 
         {/* Secondary Controls: Library, Settings, Reset, Profile */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => onNavigate('#/library')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-surface border border-dark-border hover:border-brand-primary/50 text-xs text-dark-muted hover:text-white transition-all shadow-sm"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-dark-surface border border-dark-border hover:border-brand-primary/50 text-[11px] text-dark-muted hover:text-white transition-all shadow-sm"
             title="Saved Chronicles & Library"
           >
             <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
@@ -249,7 +240,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
 
           <button
             onClick={() => onNavigate('#/settings')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-dark-surface border border-dark-border hover:border-brand-primary/50 text-xs text-dark-muted hover:text-white transition-all shadow-sm"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-dark-surface border border-dark-border hover:border-brand-primary/50 text-[11px] text-dark-muted hover:text-white transition-all shadow-sm"
             title="Preferences & Audio Settings"
           >
             <Settings className="w-3.5 h-3.5 text-dark-muted" />
@@ -258,49 +249,49 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
 
           <button
             onClick={() => setIsResetConfirmOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-dark-surface border border-dark-border hover:border-rose-500/50 text-xs text-dark-muted hover:text-rose-300 transition-all shadow-sm"
-            title="Restart Journey from the Beginning"
+            className="flex items-center gap-1 px-2 py-1 rounded-full bg-dark-surface border border-dark-border hover:border-rose-500/50 text-[11px] text-dark-muted hover:text-rose-300 transition-all shadow-sm"
+            title="Restart Journey from Beginning"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+            <RotateCcw className="w-3 h-3 text-rose-400" />
             <span className="hidden md:inline">Restart</span>
           </button>
 
           {user ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-dark-surface border border-brand-primary/30 text-xs text-white shadow-sm">
-              <User className="w-3.5 h-3.5 text-brand-primary" />
-              <span className="max-w-[100px] truncate font-medium">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-dark-surface border border-brand-primary/30 text-[11px] text-white shadow-sm">
+              <User className="w-3 h-3 text-brand-primary" />
+              <span className="max-w-[80px] sm:max-w-[110px] truncate font-medium">
                 {user.displayName?.split(' ')[0] || 'Hero'}
               </span>
             </div>
           ) : (
             <button
               onClick={() => onNavigate('#/login')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-primary/20 border border-brand-primary/40 hover:bg-brand-primary/30 text-xs text-brand-glow font-bold transition-all shadow-sm"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-primary/20 border border-brand-primary/40 text-[11px] text-brand-glow font-bold transition-all shadow-sm"
             >
-              <LogIn className="w-3.5 h-3.5 text-brand-primary" />
+              <LogIn className="w-3 h-3 text-brand-primary" />
               <span>Sign In</span>
             </button>
           )}
         </div>
       </header>
 
-      {/* STAGE 1: FIXED OPENING STORY (SCENES 1 TO 4) */}
+      {/* STAGE 1: FIXED OPENING STORY (PAGINATED SCENES 1 TO 4 — NO SCROLL NEEDED) */}
       {session.stage === 'opening_scenes' && (
-        <main className="relative z-10 flex-1 flex flex-col justify-between max-w-3xl mx-auto w-full p-4 sm:p-8 overflow-y-auto">
+        <main className="relative z-10 flex-1 min-h-0 flex flex-col justify-between max-w-2xl mx-auto w-full p-3 sm:p-6 overflow-hidden">
           {/* Scene Progress Indicator */}
-          <div className="space-y-2 mb-6">
-            <div className="flex items-center justify-between text-xs text-dark-muted">
+          <div className="space-y-1.5 shrink-0">
+            <div className="flex items-center justify-between text-[11px] text-dark-muted">
               <span className="font-mono text-amber-300 font-semibold uppercase tracking-wider">
                 Scene {currentScene.order} of {CANON_OPENING_SCENES.length}
               </span>
-              <span className="text-[11px] text-dark-muted/80">{currentScene.atmosphere}</span>
+              <span className="text-[10px] text-dark-muted/80">{currentScene.atmosphere}</span>
             </div>
-            {/* Visual Step Bar */}
-            <div className="grid grid-cols-4 gap-2">
+            {/* Visual Step Dots */}
+            <div className="grid grid-cols-4 gap-1.5">
               {CANON_OPENING_SCENES.map((s, idx) => (
                 <div
                   key={s.id}
-                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
                     idx === currentSceneIndex
                       ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
                       : idx < currentSceneIndex
@@ -312,60 +303,60 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
             </div>
           </div>
 
-          {/* Narrative Card */}
-          <div className="relative p-6 sm:p-10 rounded-3xl bg-gradient-to-b from-dark-surface/90 via-dark-surface/80 to-dark-bg/95 border border-dark-border/60 shadow-2xl backdrop-blur-md space-y-6 flex-1 flex flex-col justify-center">
-            {/* Ambient Aura */}
-            <div className="absolute top-0 right-1/4 w-72 h-32 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="space-y-2 text-center">
-              <span className="inline-block text-[11px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/25">
+          {/* Focused Cinematic Narrative Card (Fits screen height perfectly) */}
+          <div className="relative my-auto p-4 sm:p-7 rounded-2xl sm:rounded-3xl bg-gradient-to-b from-dark-surface/95 via-dark-surface/85 to-dark-bg/95 border border-dark-border/60 shadow-xl backdrop-blur-md flex flex-col justify-center space-y-3 sm:space-y-4">
+            <div className="space-y-1 text-center">
+              <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/25">
                 The Chronicle Begins
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-white font-serif tracking-tight">
+              <h1 className="text-lg sm:text-2xl font-black text-white font-serif tracking-tight">
                 {currentScene.title}
               </h1>
             </div>
 
-            {/* Prose Text */}
-            <div className="space-y-4 text-sm sm:text-base text-dark-text/90 leading-relaxed font-serif max-w-2xl mx-auto">
+            {/* Prose Paragraphs — Concise, highly evocative, fits on mobile */}
+            <div
+              className="space-y-2.5 text-xs sm:text-sm text-dark-text/90 leading-relaxed font-serif max-h-[38vh] sm:max-h-none overflow-y-auto touch-scroll pr-1"
+              style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+            >
               {currentScene.narrativeText.split('\n\n').map((paragraph, pIdx) => (
-                <p key={pIdx} className="first-letter:text-2xl first-letter:font-bold first-letter:text-amber-300">
+                <p key={pIdx} className="first-letter:text-lg sm:first-letter:text-xl first-letter:font-bold first-letter:text-amber-300">
                   {paragraph}
                 </p>
               ))}
             </div>
 
-            {/* In-world Visual Cue */}
-            <div className="p-3.5 rounded-2xl bg-brand-primary/5 border border-brand-primary/20 text-xs text-indigo-300 flex items-center justify-center gap-2 italic text-center">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            {/* Visual Cue */}
+            <div className="p-2 sm:p-2.5 rounded-xl bg-brand-primary/10 border border-brand-primary/20 text-[11px] text-indigo-300 flex items-center justify-center gap-1.5 italic text-center">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>{currentScene.visualCues}</span>
             </div>
           </div>
 
-          {/* Bottom Actions */}
-          <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-dark-border/40">
+          {/* Bottom Actions — Always pinned and visible on mobile */}
+          <div className="flex items-center justify-between gap-3 pt-2 border-t border-dark-border/40 shrink-0">
             <button
               onClick={handleSkipToAngel}
-              className="text-xs text-dark-muted hover:text-white transition-colors underline-offset-4 hover:underline"
+              className="text-[11px] text-dark-muted hover:text-white transition-colors underline-offset-4 hover:underline"
             >
               Skip to Angel Encounter
             </button>
 
             <Button
               variant="primary"
-              size="lg"
+              size="md"
               onClick={handleNextOpeningScene}
-              className="px-8 shadow-lg shadow-brand-primary/30 font-bold"
+              className="px-6 sm:px-8 shadow-lg shadow-brand-primary/30 font-bold text-xs sm:text-sm"
             >
               {currentSceneIndex < CANON_OPENING_SCENES.length - 1 ? (
                 <>
                   <span>Continue</span>
-                  <ChevronRight className="w-4 h-4 ml-1.5" />
+                  <ChevronRight className="w-4 h-4 ml-1" />
                 </>
               ) : (
                 <>
                   <span>Approach the Angel</span>
-                  <Sparkles className="w-4 h-4 ml-1.5 text-amber-300" />
+                  <Sparkles className="w-4 h-4 ml-1 text-amber-300" />
                 </>
               )}
             </Button>
@@ -373,120 +364,94 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
         </main>
       )}
 
-      {/* STAGE 2: ANGEL CONVERSATION & LIVE EDITABLE PROFILE */}
+      {/* STAGE 2: ANGEL SERAPHINA ENCOUNTER & REINCARNATION PAGINATED FLOW */}
       {session.stage === 'angel_dialogue' && (
-        <main className="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto w-full p-3 sm:p-6 overflow-hidden">
-          {/* Mobile Tab Switcher */}
-          <div className="flex lg:hidden items-center justify-between pb-3 mb-2 border-b border-dark-border/40">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setMobileActiveTab('dialogue')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  mobileActiveTab === 'dialogue'
-                    ? 'bg-brand-primary text-white shadow-md'
-                    : 'bg-dark-surface text-dark-muted hover:text-white'
-                }`}
-              >
-                Angel Seraphina
-              </button>
-              <button
-                onClick={() => setMobileActiveTab('profile')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  mobileActiveTab === 'profile'
-                    ? 'bg-brand-primary text-white shadow-md'
-                    : 'bg-dark-surface text-dark-muted hover:text-white'
-                }`}
-              >
-                <span>Reincarnation Profile</span>
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
-              </button>
+        <main className="relative z-10 flex-1 min-h-0 flex flex-col max-w-7xl mx-auto w-full p-2.5 sm:p-5 overflow-hidden">
+          {/* Top Actions: Fate Wheel & Proceed to Review */}
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-dark-border/40 shrink-0">
+            {/* Step Indicator */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-400/15 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                Phase {guidedStep} of 6
+              </span>
+              <span className="text-[11px] text-dark-muted hidden sm:inline">
+                {guidedStep === 1 && 'Soul Name & Identity'}
+                {guidedStep === 2 && 'Destination World'}
+                {guidedStep === 3 && 'Vessel & Race'}
+                {guidedStep === 4 && 'Social Origin'}
+                {guidedStep === 5 && 'Magic Affinities'}
+                {guidedStep === 6 && 'Narration Language'}
+              </span>
             </div>
 
-            <Button
-              variant="amber"
-              size="sm"
-              onClick={handleProceedToReview}
-              className="text-xs font-bold"
-            >
-              <span>Review</span>
-              <ChevronRight className="w-3.5 h-3.5 ml-1" />
-            </Button>
+            {/* Actions */}
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setActiveFateWheelCategory('world_type');
+                  setIsFateWheelOpen(true);
+                }}
+                className="text-[11px] text-amber-300 border border-amber-400/30 px-2 py-1"
+              >
+                <Dices className="w-3 h-3 mr-1 text-amber-400" />
+                <span>Fate Wheel</span>
+              </Button>
+
+              <Button
+                variant="amber"
+                size="sm"
+                onClick={handleProceedToReview}
+                className="text-[11px] font-bold px-2.5 py-1 shadow-md shadow-amber-400/20"
+              >
+                <span>Proceed to Final Review</span>
+                <ChevronRight className="w-3 h-3 ml-0.5" />
+              </Button>
+            </div>
           </div>
 
-          {/* Desktop Two-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
-            {/* LEFT COLUMN: SERAPHINA CONVERSATION & INPUT */}
-            <div
-              className={`lg:col-span-7 flex flex-col justify-between h-full bg-dark-surface/60 rounded-3xl border border-dark-border/60 p-4 sm:p-6 backdrop-blur-md shadow-xl overflow-hidden ${
-                mobileActiveTab === 'dialogue' ? 'flex' : 'hidden lg:flex'
-              }`}
-            >
-              {/* Angel Identity Banner */}
-              <div className="flex items-center justify-between pb-4 border-b border-dark-border/40 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-indigo-500/20 to-purple-500/30 border border-amber-400/50 flex items-center justify-center shadow-lg shadow-amber-400/10">
-                      <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
-                    </div>
-                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-dark-bg" />
+          {/* Desktop Two-Column / Mobile Single Clean View */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1 min-h-0">
+            {/* PRIMARY COLUMN: UNIFIED ZERO-SCROLL DIALOGUE & GUIDED STEPPER */}
+            <div className="lg:col-span-7 flex flex-col justify-between h-full bg-dark-surface/60 rounded-2xl sm:rounded-3xl border border-dark-border/60 p-3 sm:p-5 backdrop-blur-md shadow-xl overflow-hidden min-h-0">
+              {/* Angel Presence Card Header */}
+              <div className="flex items-center justify-between pb-2 border-b border-dark-border/40 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500/20 via-indigo-500/20 to-purple-500/30 border border-amber-400/50 flex items-center justify-center shadow-md">
+                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-white font-serif">{CANON_ANGEL.name}</h2>
-                    <p className="text-[11px] text-amber-300/90">{CANON_ANGEL.title}</p>
+                    <h2 className="text-xs sm:text-sm font-bold text-white font-serif">{CANON_ANGEL.name}</h2>
+                    <p className="text-[10px] text-amber-300/90">{CANON_ANGEL.title}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setActiveFateWheelCategory('world_type');
-                      setIsFateWheelOpen(true);
-                    }}
-                    className="text-xs text-amber-300 hover:bg-amber-400/10 border border-amber-400/30"
-                  >
-                    <Dices className="w-3.5 h-3.5 mr-1 text-amber-400" />
-                    <span>Fate Wheel</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSpinAllUndecided}
-                    className="text-xs text-indigo-300 hover:bg-indigo-400/10 border border-indigo-400/30 hidden sm:flex"
-                    title="Spin randomized choices for remaining undecided fields"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 mr-1 text-indigo-400" />
-                    <span>Spin All Undecided</span>
-                  </Button>
-                </div>
+                <span className="text-[10px] font-mono text-dark-muted hidden sm:inline">
+                  The Nexus of Divine Grace
+                </span>
               </div>
 
-              {/* Dialogue Scroll Stream */}
-              <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1 min-h-[220px]">
+              {/* Dialogue Scroll Stream (Compact, touch-scrolling enabled if many messages) */}
+              <div
+                className="flex-1 min-h-[90px] max-h-[30vh] sm:max-h-[35vh] overflow-y-auto touch-scroll py-2 space-y-2 pr-1"
+                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+              >
                 {session.dialogueHistory.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${
-                      msg.speaker === 'user' ? 'items-end' : 'items-start'
-                    }`}
+                    className={`flex flex-col ${msg.speaker === 'user' ? 'items-end' : 'items-start'}`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1 px-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-dark-muted">
+                    <div className="flex items-center gap-1.5 mb-0.5 px-1">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-dark-muted">
                         {msg.speaker === 'angel' ? CANON_ANGEL.name : (session.userNameChosen || 'You')}
                       </span>
-                      {msg.speaker === 'angel' && (
-                        <span className="text-[9px] text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">
-                          Herald
-                        </span>
-                      )}
                     </div>
-
                     <div
-                      className={`max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
+                      className={`max-w-[88%] rounded-2xl p-2.5 text-xs leading-relaxed ${
                         msg.speaker === 'user'
                           ? 'bg-brand-primary text-white rounded-tr-none shadow-md'
-                          : 'bg-dark-bg/90 text-dark-text border border-amber-400/30 rounded-tl-none shadow-lg shadow-amber-400/5 font-serif'
+                          : 'bg-dark-bg/90 text-dark-text border border-amber-400/30 rounded-tl-none font-serif'
                       }`}
                     >
                       {msg.text}
@@ -496,75 +461,219 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                 <div ref={dialogueEndRef} />
               </div>
 
-              {/* Quick Inquiry / Contextual Reply Chips */}
-              <div className="py-2 shrink-0">
-                <div className="text-[10px] text-dark-muted uppercase font-bold tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>Suggested Inquiries</span>
-                  {isNameUndecided && (
-                    <span className="text-amber-400 font-normal">State your true name to proceed</span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {isNameUndecided ? (
-                    <>
+              {/* GUIDED REINCARNATION STEPPER OPTIONS (FITS MOBILE HEIGHT PERFECTLY) */}
+              <div className="py-2 border-t border-dark-border/40 shrink-0">
+                {/* STEP 1: SOUL IDENTITY & NAME */}
+                {guidedStep === 1 && (
+                  <div className="space-y-1.5 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider">Step 1: Your Soul's Name</span>
+                      {session.userNameChosen && (
+                        <span className="text-[10px] text-emerald-400 font-bold">Confirmed: {session.userNameChosen}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {['Hari Khatri', 'Kaelen', 'Aria', 'कबीर'].map((nm) => (
+                        <button
+                          key={nm}
+                          onClick={() => {
+                            handleQuickInquiry(`My name is ${nm}.`);
+                            setGuidedStep(2);
+                          }}
+                          className="px-2 py-0.5 rounded-full bg-dark-bg border border-dark-border text-[10px] text-amber-300 hover:border-amber-400/60"
+                        >
+                          "{nm}"
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: DESTINATION REALM */}
+                {guidedStep === 2 && (
+                  <div className="space-y-1.5 animate-fadeIn">
+                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Step 2: Choose Destination Realm</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {FATE_WHEEL_CATEGORIES.world_type.options.slice(0, 4).map((opt: any) => {
+                        const isSelected = session.profile.world.genre.value === opt.data.genre;
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => {
+                              handleFateWheelSelect('world_type', opt);
+                            }}
+                            className={`p-1.5 rounded-xl text-left border transition-all ${
+                              isSelected
+                                ? 'bg-amber-400/15 border-amber-400 text-white shadow-sm'
+                                : 'bg-dark-bg/60 border-dark-border text-dark-muted hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[11px] font-bold">
+                              <span className="truncate">{opt.label}</span>
+                              {isSelected && <Check className="w-3 h-3 text-amber-300 shrink-0" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: VESSEL & RACE */}
+                {guidedStep === 3 && (
+                  <div className="space-y-1.5 animate-fadeIn">
+                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Step 3: Choose Vessel & Race</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {FATE_WHEEL_CATEGORIES.race.options.map((opt: any) => {
+                        const isSelected = session.profile.character.race.value === opt.data.race;
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => handleFateWheelSelect('race', opt)}
+                            className={`p-1.5 rounded-xl text-left border transition-all ${
+                              isSelected
+                                ? 'bg-amber-400/15 border-amber-400 text-white shadow-sm'
+                                : 'bg-dark-bg/60 border-dark-border text-dark-muted hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[11px] font-bold">
+                              <span className="truncate">{opt.data.race}</span>
+                              {isSelected && <Check className="w-2.5 h-2.5 text-amber-300 shrink-0" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4: SOCIAL ORIGIN */}
+                {guidedStep === 4 && (
+                  <div className="space-y-1.5 animate-fadeIn">
+                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Step 4: Social Origin</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {FATE_WHEEL_CATEGORIES.origin.options.map((opt: any) => {
+                        const isSelected = session.profile.character.socialStatus.value === opt.data.socialStatus;
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => handleFateWheelSelect('origin', opt)}
+                            className={`p-1.5 rounded-xl text-left border transition-all ${
+                              isSelected
+                                ? 'bg-amber-400/15 border-amber-400 text-white shadow-sm'
+                                : 'bg-dark-bg/60 border-dark-border text-dark-muted hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[11px] font-bold">
+                              <span className="truncate">{opt.data.socialStatus.split(' ')[0]}</span>
+                              {isSelected && <Check className="w-2.5 h-2.5 text-amber-300 shrink-0" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 5: MAGIC AFFINITY */}
+                {guidedStep === 5 && (
+                  <div className="space-y-1.5 animate-fadeIn">
+                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Step 5: Magic Gift</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {FATE_WHEEL_CATEGORIES.abilities.options.map((opt: any) => {
+                        const isSelected = session.profile.abilities.magicAffinity.value.includes(opt.data.magicAffinity[0]);
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => handleFateWheelSelect('abilities', opt)}
+                            className={`p-1.5 rounded-xl text-left border transition-all ${
+                              isSelected
+                                ? 'bg-amber-400/15 border-amber-400 text-white shadow-sm'
+                                : 'bg-dark-bg/60 border-dark-border text-dark-muted hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between text-[11px] font-bold">
+                              <span className="truncate">{opt.data.magicAffinity[0]}</span>
+                              {isSelected && <Check className="w-2.5 h-2.5 text-amber-300 shrink-0" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 6: TONE & LANGUAGE */}
+                {guidedStep === 6 && (
+                  <div className="space-y-1.5 animate-fadeIn">
+                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Step 6: Language & Pacing</span>
+                    <div className="grid grid-cols-2 gap-1.5">
                       <button
-                        onClick={() => handleQuickInquiry('My name is Hari Khatri.')}
-                        className="px-2.5 py-1 rounded-full bg-dark-bg border border-amber-400/40 text-[11px] text-amber-300 hover:bg-amber-400/10 transition-colors"
+                        onClick={() => handleUpdateProfileField('preferences', 'storyLanguage', 'hi')}
+                        className={`p-1.5 rounded-xl text-[11px] font-bold border transition-all text-center ${
+                          session.profile.preferences.storyLanguage.value === 'hi'
+                            ? 'bg-amber-400 text-black border-amber-400'
+                            : 'bg-dark-bg border-dark-border text-dark-text'
+                        }`}
                       >
-                        "My name is Hari Khatri."
+                        हिंदी (Hindi - Default)
                       </button>
                       <button
-                        onClick={() => handleQuickInquiry('Call me Kaelen.')}
-                        className="px-2.5 py-1 rounded-full bg-dark-bg border border-dark-border text-[11px] text-dark-text hover:border-brand-primary transition-colors"
+                        onClick={() => handleUpdateProfileField('preferences', 'storyLanguage', 'en')}
+                        className={`p-1.5 rounded-xl text-[11px] font-bold border transition-all text-center ${
+                          session.profile.preferences.storyLanguage.value === 'en'
+                            ? 'bg-amber-400 text-black border-amber-400'
+                            : 'bg-dark-bg border-dark-border text-dark-text'
+                        }`}
                       >
-                        "Call me Kaelen."
+                        English
                       </button>
-                      <button
-                        onClick={() => handleQuickInquiry('मेरा नाम कबीर है।')}
-                        className="px-2.5 py-1 rounded-full bg-dark-bg border border-dark-border text-[11px] text-indigo-300 hover:border-brand-primary transition-colors"
-                      >
-                        "मेरा नाम कबीर है।"
-                      </button>
-                    </>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stepper Navigation Buttons */}
+                <div className="flex items-center justify-between gap-2 pt-2">
+                  {guidedStep > 1 ? (
+                    <button
+                      onClick={() => setGuidedStep((p) => Math.max(1, p - 1))}
+                      className="text-[11px] text-dark-muted hover:text-white flex items-center gap-0.5"
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                      <span>Back</span>
+                    </button>
                   ) : (
-                    <>
-                      <button
-                        onClick={() => handleQuickInquiry('What worlds can I choose from?')}
-                        className="px-2.5 py-1 rounded-full bg-dark-bg border border-dark-border text-[11px] text-dark-text hover:border-brand-primary transition-colors"
-                      >
-                        "What worlds can I choose from?"
-                      </button>
-                      <button
-                        onClick={() => handleQuickInquiry('Can I ever return to Earth?')}
-                        className="px-2.5 py-1 rounded-full bg-dark-bg border border-dark-border text-[11px] text-dark-text hover:border-brand-primary transition-colors"
-                      >
-                        "Can I return to Earth?"
-                      </button>
-                      <button
-                        onClick={() => handleQuickInquiry('I want a High Fantasy world with celestial magic leylines.')}
-                        className="px-2.5 py-1 rounded-full bg-dark-bg border border-dark-border text-[11px] text-amber-300 hover:border-amber-400/50 transition-colors"
-                      >
-                        "I want a High Fantasy world."
-                      </button>
-                      <button
-                        onClick={() => handleQuickInquiry('मुझे कहानी हिंदी में पढ़नी है।')}
-                        className="px-2.5 py-1 rounded-full bg-dark-bg border border-dark-border text-[11px] text-indigo-300 hover:border-indigo-400/50 transition-colors"
-                      >
-                        "हिंदी में कहानी सुनाओ।"
-                      </button>
-                    </>
+                    <span />
+                  )}
+
+                  {guidedStep < 6 ? (
+                    <button
+                      onClick={() => setGuidedStep((p) => Math.min(6, p + 1))}
+                      className="px-3 py-1 rounded-lg bg-dark-surface border border-dark-border hover:border-amber-400 text-[11px] font-bold text-amber-300 flex items-center gap-1"
+                    >
+                      <span>Next Phase</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleProceedToReview}
+                      className="px-3 py-1 rounded-lg bg-amber-400 text-black text-[11px] font-bold flex items-center gap-1 shadow-sm"
+                    >
+                      <span>Review Destiny Affirmation</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
                   )}
                 </div>
               </div>
 
-              {/* Natural Language Input Bar */}
-              <div className="pt-3 border-t border-dark-border/40 shrink-0">
+              {/* Text Input Bar (Send custom queries in English or Hindi) */}
+              <div className="pt-2 border-t border-dark-border/40 shrink-0">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     handleSendMessage();
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1.5"
                 >
                   <input
                     type="text"
@@ -573,29 +682,26 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                     placeholder={
                       isNameUndecided
                         ? "Seraphina awaits your name (e.g. 'My name is Hari Khatri')..."
-                        : "Speak with Seraphina in English or Hindi (e.g. 'I want to be an elven scholar')..."
+                        : "Speak with Seraphina in English or Hindi..."
                     }
-                    className="flex-1 px-4 py-2.5 rounded-2xl bg-dark-bg border border-dark-border text-xs sm:text-sm text-dark-text placeholder-dark-muted focus:outline-none focus:border-amber-400/80 transition-colors"
+                    className="flex-1 px-3 py-2 rounded-xl bg-dark-bg border border-dark-border text-xs text-white focus:outline-none focus:border-amber-400"
                   />
                   <Button
                     type="submit"
                     variant="primary"
+                    size="sm"
                     disabled={!userChatInput.trim()}
-                    className="rounded-2xl px-4 py-2.5 shrink-0"
+                    className="px-3 py-2 shrink-0"
                     aria-label="Send response to Angel"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3.5 h-3.5" />
                   </Button>
                 </form>
               </div>
             </div>
 
-            {/* RIGHT COLUMN: LIVE EDITABLE REINCARNATION PROFILE */}
-            <div
-              className={`lg:col-span-5 flex flex-col h-full ${
-                mobileActiveTab === 'profile' ? 'flex' : 'hidden lg:flex'
-              }`}
-            >
+            {/* DESKTOP RIGHT COLUMN: LIVE EDITABLE REINCARNATION PROFILE */}
+            <div className="hidden lg:flex lg:col-span-5 flex-col h-full min-h-0">
               <ReincarnationProfilePanel
                 profile={session.profile}
                 onUpdateField={handleUpdateProfileField}
@@ -610,162 +716,100 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
         </main>
       )}
 
-      {/* STAGE 3: REVIEW & REINCARNATION AFFIRMATION */}
+      {/* STAGE 3: REVIEW & REINCARNATION AFFIRMATION (ZERO-SCROLL VIEWPORT CARD) */}
       {session.stage === 'review_confirmation' && (
-        <main className="relative z-10 flex-1 flex flex-col justify-between max-w-4xl mx-auto w-full p-4 sm:p-8 overflow-y-auto">
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="text-center space-y-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/25">
-                Dimensional Gate Primed
-              </span>
-              <h1 className="text-2xl sm:text-4xl font-black text-white font-serif tracking-tight">
-                Reincarnation Affirmation
-              </h1>
-              <p className="text-xs sm:text-sm text-dark-muted max-w-lg mx-auto">
-                Divine Angel Seraphina has crystallized your soul’s blueprint. Review your destiny before crossing the threshold.
+        <main className="relative z-10 flex-1 min-h-0 flex flex-col justify-between max-w-2xl mx-auto w-full p-3 sm:p-6 overflow-hidden">
+          {/* Header */}
+          <div className="text-center space-y-1 shrink-0">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/25">
+              Dimensional Gate Primed
+            </span>
+            <h1 className="text-lg sm:text-2xl font-black text-white font-serif tracking-tight">
+              Reincarnation Affirmation
+            </h1>
+            <p className="text-[11px] text-dark-muted">
+              Divine Angel Seraphina has crystallized your soul’s blueprint.
+            </p>
+          </div>
+
+          {/* Compact Zero-Scroll Summary Dossier */}
+          <div className="my-auto p-4 rounded-2xl bg-dark-surface/90 border border-dark-border/80 space-y-3 shadow-xl backdrop-blur-md">
+            <div className="flex items-center justify-between pb-2 border-b border-dark-border/40">
+              <div>
+                <span className="text-[10px] text-dark-muted uppercase font-bold tracking-wider">Soul Vessel</span>
+                <h3 className="text-base font-bold text-white font-serif">
+                  {session.profile.character.name.value || 'Hari Khatri'}
+                </h3>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="primary">{session.profile.character.race.value}</Badge>
+                <Badge variant="amber">{session.profile.world.genre.value}</Badge>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2 rounded-xl bg-dark-bg/60 border border-dark-border/60">
+                <span className="text-[10px] text-dark-muted block">Destination Realm:</span>
+                <span className="font-bold text-white truncate block">{session.profile.world.name.value}</span>
+                <span className="text-[10px] text-amber-300/80 block mt-0.5">{session.profile.world.era.value}</span>
+              </div>
+
+              <div className="p-2 rounded-xl bg-dark-bg/60 border border-dark-border/60">
+                <span className="text-[10px] text-dark-muted block">Status & Origin:</span>
+                <span className="font-bold text-white truncate block">{session.profile.character.socialStatus.value}</span>
+                <span className="text-[10px] text-dark-muted truncate block mt-0.5">{session.profile.circumstances.birthplace.value}</span>
+              </div>
+
+              <div className="p-2 rounded-xl bg-dark-bg/60 border border-dark-border/60 col-span-2">
+                <span className="text-[10px] text-dark-muted block">Inherent Gifts & Language:</span>
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="text-amber-300 font-medium">
+                    {session.profile.abilities.magicAffinity.value.join(', ')}
+                  </span>
+                  <span className="text-[10px] text-indigo-300 font-mono">
+                    {session.profile.preferences.storyLanguage.value.toUpperCase()} • {session.profile.preferences.pacing.value}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Angel's Farewell Blessing */}
+            <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-indigo-500/10 border border-amber-400/30 text-[11px] text-amber-200/90 flex items-start gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+              <p className="font-serif italic leading-relaxed">
+                "{CANON_ANGEL.farewellBlessing}"
               </p>
-            </div>
-
-            {/* Comprehensive Dossier Card */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Identity Card */}
-              <div className="p-5 rounded-3xl bg-dark-surface border border-dark-border/70 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-dark-border/40">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-bold text-white">Vessel & Soul</h3>
-                  </div>
-                  <Badge variant="amber">{session.profile.character.race.value}</Badge>
-                </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">True Name:</span>
-                    <span className="font-bold text-white">{session.profile.character.name.value || 'Hari Khatri'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">Lineage & Status:</span>
-                    <span className="text-dark-text">{session.profile.character.socialStatus.value}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">Personality:</span>
-                    <span className="text-dark-text">{session.profile.character.personality.value.join(', ')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">Origin Borough:</span>
-                    <span className="text-dark-text">{session.profile.circumstances.birthplace.value}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* World Card */}
-              <div className="p-5 rounded-3xl bg-dark-surface border border-dark-border/70 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-dark-border/40">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-indigo-400" />
-                    <h3 className="text-sm font-bold text-white">Destination Realm</h3>
-                  </div>
-                  <Badge variant="primary">{session.profile.world.genre.value}</Badge>
-                </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">World Name:</span>
-                    <span className="font-bold text-white">{session.profile.world.name.value}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">Era:</span>
-                    <span className="text-dark-text">{session.profile.world.era.value}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">Power System:</span>
-                    <span className="text-dark-text truncate max-w-[200px]">{session.profile.world.magicSystem.value}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-dark-muted">Pacing & Language:</span>
-                    <span className="text-amber-300 font-mono">
-                      {session.profile.preferences.storyLanguage.value.toUpperCase()} • {session.profile.preferences.pacing.value}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Inherent Gifts & Knowledge */}
-              <div className="p-5 rounded-3xl bg-dark-surface border border-dark-border/70 space-y-3 md:col-span-2">
-                <div className="flex items-center gap-2 pb-2 border-b border-dark-border/40">
-                  <Zap className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-sm font-bold text-white">Affinities, Skills & Prior Life Retention</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="space-y-1">
-                    <span className="text-dark-muted block">Magic Affinities:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {session.profile.abilities.magicAffinity.value.map((aff, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-dark-bg border border-amber-400/30 text-amber-300 font-medium">
-                          {aff}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-dark-muted block">Trained Skills:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {session.profile.abilities.skills.value.map((sk, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-dark-bg border border-dark-border text-dark-text">
-                          {sk}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-dark-muted block">Earth Memories:</span>
-                    <p className="text-dark-text/90 italic leading-relaxed">
-                      {session.profile.abilities.previousLifeKnowledge.value}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Angel's Departure Blessing */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-amber-500/10 border border-amber-400/40 text-xs text-amber-200/90 flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="font-serif italic">
-                  "{CANON_ANGEL.farewellBlessing}"
-                </p>
-                <p className="text-[10px] text-dark-muted">— Seraphina, Divine Herald</p>
-              </div>
             </div>
           </div>
 
-          {/* Bottom Action Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-4 border-t border-dark-border/40">
+          {/* Bottom Action Bar — Always pinned and visible on mobile */}
+          <div className="flex items-center justify-between gap-3 pt-2 border-t border-dark-border/40 shrink-0">
             <Button
               variant="ghost"
-              size="md"
+              size="sm"
               onClick={handleBackToAngel}
-              className="text-xs text-dark-muted hover:text-white w-full sm:w-auto"
+              className="text-xs text-dark-muted hover:text-white"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              <span>Back to Angel Seraphina</span>
+              <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+              <span>Back to Angel</span>
             </Button>
 
             <Button
               variant="amber"
-              size="lg"
+              size="md"
               disabled={isGenerating}
               onClick={handleConfirmReincarnation}
-              className="w-full sm:w-auto px-8 shadow-xl shadow-amber-400/20 font-bold"
+              className="px-6 font-bold shadow-xl shadow-amber-400/20 text-xs sm:text-sm"
             >
               {isGenerating ? (
                 <>
-                  <Sparkles className="w-4 h-4 mr-2 animate-spin text-amber-300" />
-                  <span>Awakening in New World...</span>
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5 animate-spin text-amber-300" />
+                  <span>Awakening in Realm...</span>
                 </>
               ) : (
                 <>
                   <span>Awaken in {session.profile.world.name.value}</span>
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                 </>
               )}
             </Button>
@@ -785,17 +829,17 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
       {/* RESTART CONFIRMATION MODAL */}
       {isResetConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="p-6 rounded-3xl bg-dark-surface border border-dark-border max-w-sm w-full space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-white">Restart Reincarnation Journey?</h3>
+          <div className="p-5 rounded-2xl bg-dark-surface border border-dark-border max-w-xs w-full space-y-3 shadow-2xl">
+            <h3 className="text-sm font-bold text-white">Restart Reincarnation Journey?</h3>
             <p className="text-xs text-dark-muted leading-relaxed">
-              This will reset your conversation with Angel Seraphina and return you to Scene 1 of the afterlife transition.
+              This will reset your conversation with Angel Seraphina and return you to Scene 1.
             </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-1">
               <Button variant="ghost" size="sm" onClick={() => setIsResetConfirmOpen(false)}>
                 Cancel
               </Button>
               <Button variant="danger" size="sm" onClick={handleResetSession}>
-                Reset Journey
+                Reset
               </Button>
             </div>
           </div>

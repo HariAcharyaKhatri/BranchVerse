@@ -789,9 +789,18 @@ ROLE-PLAY INSTRUCTIONS:
         parsed.narrativeText ??
         parsed.narrative ??
         parsed.story ??
+        parsed.storyText ??
         parsed.text ??
         parsed.content ??
         parsed.narration ??
+        parsed.description ??
+        parsed.prose ??
+        parsed.passage ??
+        parsed.chapterText ??
+        parsed.chapterContent ??
+        parsed.sceneText ??
+        parsed.sceneContent ??
+        (parsed.scene && typeof parsed.scene === 'object' ? (parsed.scene.text || parsed.scene.narrative) : undefined) ??
         ''
       );
       const sceneTitle = String(
