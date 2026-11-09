@@ -23,6 +23,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { CreateStoryWizardPage } from './pages/CreateStoryWizardPage';
 import { RoleplaySetupPage } from './pages/RoleplaySetupPage';
+import { IsekaiProloguePage } from './pages/IsekaiProloguePage';
 
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -356,6 +357,19 @@ const AppContent: React.FC = () => {
     }
 
     // 3. New Dedicated Creation Modes
+    if (currentRoute === '#/isekai' || currentRoute === '#/prologue') {
+      return (
+        <IsekaiProloguePage
+          onBack={() => {
+            setLaunchError(null);
+            navigate('#/');
+          }}
+          onLaunchStory={handleLaunchStory}
+          isGenerating={isGeneratingStory}
+        />
+      );
+    }
+
     if (currentRoute === '#/create-story') {
       return (
         <CreateStoryWizardPage

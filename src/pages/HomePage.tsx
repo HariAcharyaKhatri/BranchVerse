@@ -118,6 +118,43 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenStory, onQ
         </p>
       </div>
 
+      {/* PREMIER FEATURED EXPERIENCE: ISEKAI REBIRTH PROLOGUE */}
+      <div
+        onClick={() => onNavigate('#/isekai')}
+        className="relative group p-6 rounded-3xl bg-gradient-to-r from-violet-950/70 via-indigo-950/60 to-purple-950/70 border border-violet-500/40 hover:border-amber-400/80 shadow-2xl cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-violet-600/20 via-amber-400/10 to-transparent blur-2xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="relative shrink-0">
+              <BrandEmblem size="md" variant="icon" showGlow priority />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-300 bg-amber-400/15 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                  Featured Experience
+                </span>
+                <span className="text-[10px] text-indigo-300 font-mono hidden sm:inline">
+                  Interactive Multiverse Prologue
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white font-serif group-hover:text-amber-200 transition-colors">
+                Begin Your Isekai Rebirth
+              </h2>
+              <p className="text-xs text-dark-muted max-w-xl leading-relaxed">
+                Awaken beyond your first life, converse with the mysterious Arbiter of Threads, shape your race and affinities, and step through the Multiverse Gateway.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-300 shrink-0 self-end sm:self-center">
+            <span>Enter Astral Void</span>
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+          </div>
+        </div>
+      </div>
+
       {/* 2 PRIMARY MAJOR MODES (Side by Side on Tablet/Desktop, Stacked on Mobile) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* MODE 1: CREATE STORY */}

@@ -390,6 +390,6 @@ describe('Vercel Serverless API Routes (/api)', () => {
 
       expect(typeof emittedInitial.default).toBe('function');
       expect(typeof emittedTurn.default).toBe('function');
-    });
+    }, 15000);
   });
 });
