@@ -10,7 +10,8 @@ import {
   BookOpen,
   Zap,
   Key,
-  Lock
+  Lock,
+  Compass
 } from 'lucide-react';
 
 interface LoginPageProps {
@@ -30,6 +31,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess }) => {
     error,
     signInWithGoogle,
     signInWithGoogleRedirect,
+    signInAsGuest,
     clearError
   } = useAuth();
 
@@ -266,6 +268,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onSuccess }) => {
               Sign-in popup blocked? Click to use full-page Google Redirect
             </button>
           )}
+
+          {/* Guest Mode Entry */}
+          <div className="pt-2 flex flex-col items-center gap-2">
+            <div className="w-full flex items-center gap-2 text-dark-muted/40">
+              <div className="flex-1 h-px bg-dark-border/40" />
+              <span className="text-[10px] font-mono tracking-widest uppercase">or</span>
+              <div className="flex-1 h-px bg-dark-border/40" />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (signInAsGuest) {
+                  signInAsGuest();
+                }
+              }}
+              className="w-full h-11 px-4 rounded-xl font-medium text-xs text-dark-muted hover:text-white bg-dark-surface/80 hover:bg-dark-elevated border border-dark-border/80 hover:border-violet-500/40 transition-all flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+            >
+              <Compass className="w-4 h-4 text-violet-400" />
+              <span>Enter as Guest Pilgrim</span>
+            </button>
+          </div>
         </div>
 
         {/* Security & Privacy Footer Note */}

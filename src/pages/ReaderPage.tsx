@@ -445,17 +445,97 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
         </div>
       )}
 
-      {/* Main Narrative Area */}
-      <div className="flex-1 overflow-y-auto overscroll-contain">
-        <NarrativeReader
-          story={story}
-          onSelectChoice={handleSelectChoice}
-          onSubmitAction={handleSubmitAction}
-          onCancelGeneration={handleCancelGeneration}
-          isLoading={isProcessingTurn}
-          fontSize={fontSize}
-          fontFamily={fontFamily}
-        />
+      {/* Main Content Area: Responsive Multi-panel */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Desktop Left Sidebar: Hero Status, Quests & Vitals */}
+        <aside
+          className="hidden lg:flex w-72 xl:w-80 flex-col border-r border-dark-border/40 bg-dark-surface/40 backdrop-blur-md p-4 overflow-y-auto space-y-4 shrink-0"
+          data-testid="reader-desktop-sidebar"
+        >
+          {/* Hero Profile Summary Card */}
+          <div className="p-3.5 rounded-2xl bg-dark-surface border border-violet-500/20 shadow-md space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300">
+                Active Pilgrim
+              </span>
+              <TierBadge tier={story.state.powerLevel} size="xs" variant="pill" showTitle />
+            </div>
+            <h3 className="text-sm font-bold text-white font-serif truncate">
+              {story.hero.name}
+            </h3>
+            <p className="text-xs text-dark-muted truncate">
+              {story.hero.race} • {story.hero.origin || 'Adventurer'}
+            </p>
+            <div className="flex items-center justify-between pt-1 border-t border-dark-border/40 text-[11px]">
+              <span className="text-dark-muted">Location:</span>
+              <span className="text-violet-300 font-medium truncate max-w-[140px]">
+                📍 {story.state.currentLocation || story.worldName}
+              </span>
+            </div>
+          </div>
+
+          {/* Active Quests */}
+          <div className="p-3.5 rounded-2xl bg-dark-surface border border-dark-border/60 shadow-md space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-white">
+              <span>Active Quests</span>
+              <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20">
+                {story.state.activeQuests?.length || 0}
+              </span>
+            </div>
+            {story.state.activeQuests && story.state.activeQuests.length > 0 ? (
+              <ul className="space-y-1.5 text-xs text-dark-muted">
+                {story.state.activeQuests.slice(0, 3).map((quest, idx) => (
+                  <li key={idx} className="flex items-start gap-1.5 p-1.5 rounded-lg bg-dark-elevated/40">
+                    <span className="text-amber-400 font-bold shrink-0">•</span>
+                    <span className="text-[11px] leading-snug line-clamp-2">
+                      {typeof quest === 'string' ? quest : quest.title || quest.objective}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[11px] text-dark-muted italic">No active quests recorded.</p>
+            )}
+          </div>
+
+          {/* Quick Inventory */}
+          <div className="p-3.5 rounded-2xl bg-dark-surface border border-dark-border/60 shadow-md space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-white">
+              <span>Inventory</span>
+              <span className="text-[10px] text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full border border-indigo-500/20">
+                {story.state.inventory?.length || 0}
+              </span>
+            </div>
+            {story.state.inventory && story.state.inventory.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {story.state.inventory.slice(0, 6).map((item) => (
+                  <span
+                    key={item.id}
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-dark-elevated border border-dark-border text-dark-text truncate max-w-[120px]"
+                    title={item.name}
+                  >
+                    {item.name} {item.quantity > 1 ? `x${item.quantity}` : ''}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-dark-muted italic">Empty pouch.</p>
+            )}
+          </div>
+        </aside>
+
+        {/* Narrative Reading Column */}
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          <NarrativeReader
+            story={story}
+            onSelectChoice={handleSelectChoice}
+            onSubmitAction={handleSubmitAction}
+            onCancelGeneration={handleCancelGeneration}
+            isLoading={isProcessingTurn}
+            fontSize={fontSize}
+            fontFamily={fontFamily}
+          />
+        </div>
       </div>
 
       {/* Live Character Status Panel Drawer */}

@@ -75,7 +75,7 @@ export const CharacterIntroductionCard: React.FC<CharacterIntroductionCardProps>
   const initialEquipment = state.inventory.slice(0, 3).map(i => i.name);
 
   // Active status / title
-  const activeStatus = state.statusEffects[0] || (hero.origin ? `Active as ${hero.origin}` : 'Prepared for the Journey');
+  const activeStatus = state.statusEffects?.[0] || (hero.origin ? `Active as ${hero.origin}` : 'Prepared for the Journey');
 
   return (
     <div

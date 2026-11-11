@@ -820,13 +820,13 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
       )}
 
       {/* Navigation Buttons (Bottom Controls) */}
-      <div className="flex items-center justify-between pt-3 border-t border-dark-border/60">
+      <div className="flex items-center justify-between pt-3 border-t border-dark-border/60 safe-area-bottom">
         {currentStep > 1 ? (
           <button
             type="button"
             onClick={() => setCurrentStep(currentStep - 1)}
             disabled={isGenerating}
-            className="px-4 py-2 rounded-xl bg-dark-elevated border border-dark-border text-xs text-dark-text hover:text-white flex items-center gap-1.5 transition-all"
+            className="min-h-[44px] px-4 py-2 rounded-xl bg-dark-elevated border border-dark-border text-xs text-dark-text hover:text-white flex items-center gap-1.5 transition-all"
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
@@ -840,7 +840,7 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
               <button
                 type="button"
                 onClick={() => setCurrentStep(currentStep + 1)}
-                className="px-3 py-2 rounded-xl text-xs text-dark-muted hover:text-white"
+                className="min-h-[44px] px-3 py-2 rounded-xl text-xs text-dark-muted hover:text-white"
               >
                 Skip / Next
               </button>
@@ -849,6 +849,7 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
                 size="md"
                 onClick={() => setCurrentStep(currentStep + 1)}
                 iconRight={<ArrowRight className="w-4 h-4" />}
+                className="min-h-[44px]"
               >
                 Next Step
               </Button>
@@ -860,6 +861,7 @@ export const CreateStoryWizardPage: React.FC<CreateStoryWizardPageProps> = ({
               onClick={handleFinalLaunch}
               disabled={isGenerating}
               iconLeft={<Sparkles className="w-4 h-4" />}
+              className="min-h-[44px]"
             >
               {isGenerating ? 'Weaving Story with Gemini...' : 'Begin Chronicle'}
             </Button>

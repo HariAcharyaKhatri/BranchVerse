@@ -15,6 +15,7 @@ export interface AuthUser {
   email: string | null;
   photoURL: string | null;
   providerId: string;
+  isGuest?: boolean;
 }
 
 export interface AuthContextType {
@@ -26,6 +27,7 @@ export interface AuthContextType {
   error: string | null;
   signInWithGoogle: () => Promise<AuthUser | null>;
   signInWithGoogleRedirect: () => Promise<void>;
+  signInAsGuest: () => AuthUser;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -208,6 +210,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInAsGuest = (): AuthUser => {
+    const guestUser: AuthUser = {
+      uid: `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      displayName: 'Guest Pilgrim',
+      email: null,
+      photoURL: null,
+      providerId: 'guest',
+      isGuest: true,
+    };
+    setUser(guestUser);
+    setError(null);
+    return guestUser;
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -223,6 +239,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         signInWithGoogle,
         signInWithGoogleRedirect,
+        signInAsGuest,
         signOut,
         clearError
       }}
