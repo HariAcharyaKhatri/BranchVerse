@@ -299,5 +299,22 @@ describe('BranchVerse Isekai Reincarnation Experience & Engine', () => {
       expect(launchPayload.overrideHero.name).toBe('Hari Khatri');
       expect(launchPayload.generationMode).toBe('ai');
     });
+
+    it('honors "give me best in all", selects Human species, God Tier talents, and maximum combat rating', () => {
+      const session = createInitialReincarnationSession('Hari');
+      const text = 'IF i tell angel to give me best in all , select all option in god tear and give maximum combat rating and select best spisies i prefer human by default in best because it can unlock all potential other have limits';
+      const updated = generateAngelDialogue(session, text);
+
+      expect(updated.profile.character.race.value).toBe('Human');
+      expect(updated.profile.character.socialStatus.value).toBe('Chosen Transcendent of Destiny');
+      expect(updated.profile.abilities.powerTier?.value).toBe('GOD');
+      expect(updated.profile.abilities.skills.value).toEqual(['Archmage', 'Swordsman', 'Tactician']);
+      expect(updated.profile.abilities.talents.value.length).toBeGreaterThanOrEqual(3);
+
+      const lastAngelMsg = updated.dialogueHistory[updated.dialogueHistory.length - 1];
+      expect(lastAngelMsg.text).toContain('Human');
+      expect(lastAngelMsg.text).toContain('GOD Tier');
+      expect(lastAngelMsg.text).toContain('Level 100 / Apex Transcendent');
+    });
   });
 });

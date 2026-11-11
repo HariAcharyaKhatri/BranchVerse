@@ -23,10 +23,12 @@ import {
   loadReincarnationSession,
   saveReincarnationSession,
   clearReincarnationSession,
+  GOD_TIER_SUPREME_TALENTS,
 } from '../features/reincarnation/reincarnationEngine';
 import { FateWheelModal } from '../components/reincarnation/FateWheelModal';
 import { TierBadge } from '../components/character/TierBadge';
 import { TierSelectorModal } from '../components/character/TierSelectorModal';
+import { OptionDetailModal, OptionDetailData } from '../components/character/OptionDetailModal';
 import { ALL_POWER_TIERS, PowerTierCode, PowerTierInfo, calculateCombatEffectiveness } from '../features/character/tierSystem';
 import {
   SPECIES_CATALOGUE,
@@ -69,6 +71,8 @@ import {
   Layers,
   ArrowRight,
   Edit2,
+  Info,
+  Eye,
 } from 'lucide-react';
 
 export interface IsekaiReincarnationPageProps {
@@ -138,6 +142,11 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
 
   // Toast / Feedback State
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+
+  // Option Inspection Detail Modal State
+  const [inspectOptionData, setInspectOptionData] = useState<OptionDetailData | null>(null);
+  const [isInspectModalOpen, setIsInspectModalOpen] = useState<boolean>(false);
+  const [isAngelThinking, setIsAngelThinking] = useState<boolean>(false);
 
   const dialogueEndRef = useRef<HTMLDivElement>(null);
 
@@ -212,33 +221,108 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
     const textToSend = (messageText || userChatInput).trim();
     if (!textToSend) return;
 
+    setUserChatInput('');
+    setIsAngelThinking(true);
+
+    const lower = textToSend.toLowerCase();
+    const isBestInAll =
+      lower.includes('best in all') ||
+      lower.includes('best in everything') ||
+      lower.includes('best build') ||
+      lower.includes('god tear') ||
+      lower.includes('god tier') ||
+      lower.includes('maximum combat rating') ||
+      lower.includes('max combat') ||
+      lower.includes('overpowered') ||
+      lower.includes('best species') ||
+      lower.includes('best spisies') ||
+      (lower.includes('best') && (lower.includes('human') || lower.includes('option') || lower.includes('all')));
+
+    if (isBestInAll) {
+      setCharacterLevel(100);
+      setSelectedTalents(GOD_TIER_SUPREME_TALENTS as any);
+    }
+
     // 1. Immediately update local session so tests & instant UI responses fire
     const nextSession = generateAngelDialogue(session, textToSend);
     setSession(nextSession);
-    setUserChatInput('');
+    saveReincarnationSession(nextSession);
 
     // 2. Synchronously check if name was chosen
     if (guidedStep === 1 && nextSession.userNameChosen) {
       setGuidedStep(2);
     }
 
-    // 3. Optional: asynchronous call to live Gemini AI Angel backend
+    // 3. Online live Gemini AI Angel backend communion
     try {
-      angelService
-        .communeWithAngel({
-          userMessage: textToSend,
-          conversationHistory: nextSession.dialogueHistory.map((d) => ({
-            role: d.speaker === 'angel' ? 'angel' : 'user',
-            text: d.text,
-          })),
-          currentDraft: {
-            name: nextSession.userNameChosen,
-            race: nextSession.profile.character.race.value,
-            socialStatus: nextSession.profile.character.socialStatus.value,
-          },
-        })
-        .catch(() => {});
-    } catch (_) {}
+      const res = await angelService.communeWithAngel({
+        userMessage: textToSend,
+        conversationHistory: nextSession.dialogueHistory.map((d) => ({
+          role: d.speaker === 'angel' ? 'angel' : 'user',
+          text: d.text,
+        })),
+        currentDraft: {
+          name: nextSession.userNameChosen,
+          race: nextSession.profile.character.race.value,
+          socialStatus: nextSession.profile.character.socialStatus.value,
+          characterLevel: isBestInAll ? 100 : characterLevel,
+          professions: nextSession.profile.abilities.skills.value || [],
+        },
+      });
+
+      if (res) {
+        setSession((prev) => {
+          let updated = { ...prev };
+          if (res.proposedChanges) {
+            const pc = res.proposedChanges as any;
+            if (pc.race || pc.species) {
+              updated = updateProfileFieldManually(updated, 'character', 'race', pc.race || pc.species);
+            }
+            if (pc.socialStatus) {
+              updated = updateProfileFieldManually(updated, 'character', 'socialStatus', pc.socialStatus);
+            }
+            if (pc.professions && Array.isArray(pc.professions) && pc.professions.length > 0) {
+              updated = updateProfileFieldManually(updated, 'abilities', 'skills', pc.professions);
+            } else if (pc.skills && Array.isArray(pc.skills) && pc.skills.length > 0) {
+              updated = updateProfileFieldManually(updated, 'abilities', 'skills', pc.skills);
+            }
+            if (pc.name) {
+              updated = updateProfileFieldManually(updated, 'character', 'name', pc.name);
+            }
+            if (pc.characterLevel) {
+              setCharacterLevel(pc.characterLevel);
+            }
+            if (pc.talents && Array.isArray(pc.talents) && pc.talents.length > 0) {
+              setSelectedTalents(pc.talents as any);
+              const talentLabels = pc.talents.map((t: any) => `${t.name} (${t.tier || 'GOD'} Tier)`);
+              updated = updateProfileFieldManually(updated, 'abilities', 'talents', talentLabels);
+            }
+          }
+
+          if (res.angelDialogue) {
+            const history = [...(updated.dialogueHistory || [])];
+            for (let i = history.length - 1; i >= 0; i--) {
+              if (history[i].speaker === 'angel' || history[i].sender === 'angel') {
+                history[i] = {
+                  ...history[i],
+                  text: res.angelDialogue,
+                };
+                break;
+              }
+            }
+            updated.dialogueHistory = history;
+            updated.conversationHistory = history;
+          }
+
+          saveReincarnationSession(updated);
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.warn('[IsekaiReincarnation] Angel live commune fell back to local celestial engine:', err);
+    } finally {
+      setIsAngelThinking(false);
+    }
   };
 
   const handleQuickInquiry = (inquiryText: string) => {
@@ -748,6 +832,17 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                     </div>
                   </div>
                 ))}
+                {isAngelThinking && (
+                  <div className="flex flex-col items-start animate-in fade-in">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-amber-300 mb-0.5 px-1">
+                      {CANON_ANGEL.name}
+                    </span>
+                    <div className="rounded-2xl p-2.5 text-xs bg-dark-bg/90 text-amber-200 border border-amber-400/40 rounded-tl-none font-serif flex items-center gap-2 shadow-lg">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                      <span>Angel Seraphina is communing with the celestial leylines...</span>
+                    </div>
+                  </div>
+                )}
                 <div ref={dialogueEndRef} />
               </div>
 
@@ -843,53 +938,88 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
                       {SPECIES_CATALOGUE.map((s) => {
                         const isSelected = session.profile.character.race.value === s.name;
                         return (
-                          <button
+                          <div
                             key={s.id}
-                            type="button"
                             onClick={() => {
                               handleUpdateProfileField('character', 'race', s.name);
                             }}
-                            className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                            className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between cursor-pointer group ${
                               isSelected
                                 ? 'bg-violet-950/40 border-violet-400 text-white shadow-md ring-1 ring-violet-400/50'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-violet-500/30'
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                {(s.portraitPath || s.iconPath) && (
-                                  <div className="w-7 h-7 rounded-lg overflow-hidden bg-black/60 border border-dark-border shrink-0 flex items-center justify-center p-0.5">
-                                    <img
-                                      src={s.portraitPath || s.iconPath}
-                                      alt=""
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                                <span className="text-xs font-bold text-white font-serif truncate">{s.name}</span>
+                            <div>
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  {(s.portraitPath || s.iconPath) && (
+                                    <div className="w-7 h-7 rounded-lg overflow-hidden bg-black/60 border border-dark-border shrink-0 flex items-center justify-center p-0.5">
+                                      <img
+                                        src={s.portraitPath || s.iconPath}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                  <span className="text-xs sm:text-sm font-bold text-white font-serif break-words leading-tight flex-1">
+                                    {s.name}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border text-amber-300">
+                                    {s.rarity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setInspectOptionData({
+                                        id: s.id,
+                                        title: s.name,
+                                        category: 'Species & Racial Lineage',
+                                        rarity: s.rarity,
+                                        portraitPath: s.portraitPath,
+                                        iconPath: s.iconPath,
+                                        description: s.description,
+                                        traits: s.traits,
+                                        isSelected,
+                                      });
+                                      setIsInspectModalOpen(true);
+                                    }}
+                                    className="p-1 rounded-md bg-dark-surface hover:bg-amber-400/20 text-dark-muted hover:text-amber-300 transition-colors"
+                                    title="Inspect Full Details & Lore"
+                                    aria-label={`Inspect ${s.name} Details`}
+                                  >
+                                    <Info className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border text-amber-300 shrink-0">
-                                {s.rarity}
+                              <p className="text-[11px] text-dark-muted mt-1.5 leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all">
+                                {s.description}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-2.5 pt-2 border-t border-dark-border/40 items-center justify-between">
+                              <div className="flex flex-wrap gap-1 flex-1">
+                                {s.traits.map((tr, idx) => (
+                                  <span key={idx} className="text-[9px] px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border/50 text-dark-text">
+                                    {tr}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
+                                isSelected ? 'bg-amber-500 text-black border-amber-500' : 'bg-dark-surface text-amber-300 border-amber-400/30'
+                              }`}>
+                                {isSelected ? 'Selected ✓' : 'Select'}
                               </span>
                             </div>
-                            <p className="text-[11px] text-dark-muted mt-1 leading-normal line-clamp-2">
-                              {s.description}
-                            </p>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {s.traits.slice(0, 2).map((tr, idx) => (
-                                <span key={idx} className="text-[9px] px-1.5 py-0.2 rounded bg-dark-surface text-dark-text">
-                                  {tr}
-                                </span>
-                              ))}
-                            </div>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -908,34 +1038,66 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
                       {SOCIAL_BACKGROUNDS.map((b) => {
                         const isSelected = session.profile.character.socialStatus.value === b.name;
                         return (
-                          <button
+                          <div
                             key={b.id}
-                            type="button"
                             onClick={() => {
                               handleUpdateProfileField('character', 'socialStatus', b.name);
                             }}
-                            className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                            className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between cursor-pointer group ${
                               isSelected
                                 ? 'bg-amber-950/40 border-amber-400 text-white shadow-md ring-1 ring-amber-400/50'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-amber-500/30'
                             }`}
                           >
-                            <span className="text-xs font-bold text-white font-serif">{b.name}</span>
-                            <p className="text-[11px] text-dark-muted mt-1 leading-normal line-clamp-2">
-                              {b.description}
-                            </p>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {b.traits.slice(0, 2).map((tr, idx) => (
-                                <span key={idx} className="text-[9px] px-1.5 py-0.2 rounded bg-dark-surface text-dark-text">
-                                  {tr}
+                            <div>
+                              <div className="flex items-start justify-between gap-1.5">
+                                <span className="text-xs sm:text-sm font-bold text-white font-serif break-words leading-tight flex-1">
+                                  {b.name}
                                 </span>
-                              ))}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setInspectOptionData({
+                                      id: b.id,
+                                      title: b.name,
+                                      category: 'Social Station & Upbringing',
+                                      description: b.description,
+                                      traits: b.traits,
+                                      isSelected,
+                                    });
+                                    setIsInspectModalOpen(true);
+                                  }}
+                                  className="p-1 rounded-md bg-dark-surface hover:bg-amber-400/20 text-dark-muted hover:text-amber-300 transition-colors shrink-0"
+                                  title="Inspect Full Details"
+                                  aria-label={`Inspect ${b.name} Details`}
+                                >
+                                  <Info className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <p className="text-[11px] text-dark-muted mt-1.5 leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all">
+                                {b.description}
+                              </p>
                             </div>
-                          </button>
+                            <div className="flex flex-wrap gap-1 mt-2.5 pt-2 border-t border-dark-border/40 items-center justify-between">
+                              <div className="flex flex-wrap gap-1 flex-1">
+                                {b.traits.map((tr, idx) => (
+                                  <span key={idx} className="text-[9px] px-1.5 py-0.5 rounded bg-dark-surface text-dark-text border border-dark-border/50">
+                                    {tr}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
+                                isSelected ? 'bg-amber-500 text-black border-amber-500' : 'bg-dark-surface text-amber-300 border-amber-400/30'
+                              }`}>
+                                {isSelected ? 'Selected ✓' : 'Select'}
+                              </span>
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
@@ -963,15 +1125,14 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
                       {PROFESSIONS_CATALOGUE.map((p) => {
                         const currentSkills = session.profile.abilities.skills.value || [];
                         const isSelected = currentSkills.includes(p.name);
                         const isNonCombat = !['warrior', 'knight', 'swordsman', 'mage', 'archmage', 'healer', 'archer', 'assassin', 'rogue', 'berserker', 'necromancer', 'summoner', 'monk', 'spearman'].some(cr => p.id.includes(cr));
                         return (
-                          <button
+                          <div
                             key={p.id}
-                            type="button"
                             onClick={() => {
                               let updated: string[];
                               if (isSelected) {
@@ -981,38 +1142,77 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                               }
                               handleUpdateProfileField('abilities', 'skills', updated.length > 0 ? updated : [p.name]);
                             }}
-                            className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                            className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between cursor-pointer group ${
                               isSelected
                                 ? 'bg-violet-950/40 border-violet-400 text-white shadow-md ring-1 ring-violet-400/50'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-violet-500/30'
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                {(p.iconPath || p.portraitPath) && (
-                                  <div className="w-6 h-6 rounded-md overflow-hidden bg-black/60 border border-dark-border shrink-0 p-0.5 flex items-center justify-center">
-                                    <img
-                                      src={p.iconPath || p.portraitPath}
-                                      alt=""
-                                      className="w-full h-full object-contain"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                                <span className="text-xs font-bold text-white font-serif truncate">{p.name.split('/')[0]}</span>
+                            <div>
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  {(p.iconPath || p.portraitPath) && (
+                                    <div className="w-7 h-7 rounded-md overflow-hidden bg-black/60 border border-dark-border shrink-0 p-0.5 flex items-center justify-center">
+                                      <img
+                                        src={p.iconPath || p.portraitPath}
+                                        alt=""
+                                        className="w-full h-full object-contain"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                  {/* Full Calling Name! NEVER truncated with split or truncate! */}
+                                  <span className="text-xs sm:text-sm font-bold text-white font-serif break-words leading-tight flex-1">
+                                    {p.name}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {isNonCombat && (
+                                    <span className="text-[9px] font-mono text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                      Trade/Civic
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setInspectOptionData({
+                                        id: p.id,
+                                        title: p.name,
+                                        category: isNonCombat ? 'Civilian & Trade Calling' : 'Martial & Arcane Calling',
+                                        iconPath: p.iconPath,
+                                        portraitPath: p.portraitPath,
+                                        description: p.description,
+                                        isSelected,
+                                      });
+                                      setIsInspectModalOpen(true);
+                                    }}
+                                    className="p-1 rounded-md bg-dark-surface hover:bg-violet-400/20 text-dark-muted hover:text-violet-300 transition-colors"
+                                    title="Inspect Full Calling Details"
+                                    aria-label={`Inspect ${p.name} Details`}
+                                  >
+                                    <Info className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                              {isNonCombat && (
-                                <span className="text-[9px] font-mono text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
-                                  Trade/Civic
-                                </span>
-                              )}
+                              <p className="text-[11px] text-dark-muted mt-2 leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all">
+                                {p.description}
+                              </p>
                             </div>
-                            <p className="text-[11px] text-dark-muted mt-1 leading-normal line-clamp-2">
-                              {p.description}
-                            </p>
-                          </button>
+
+                            <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-dark-border/40">
+                              <span className="text-[10px] text-dark-muted font-mono">
+                                {isNonCombat ? 'Economic / Wisdom' : 'Combat Discipline'}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
+                                isSelected ? 'bg-violet-500 text-white border-violet-400 shadow-sm' : 'bg-dark-surface text-violet-300 border-violet-400/30'
+                              }`}>
+                                {isSelected ? 'Chosen ✓' : '+ Choose'}
+                              </span>
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
@@ -1091,7 +1291,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                     </div>
 
                     {/* Power Cards Grid (Paginated) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[38vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[38vh] overflow-y-auto touch-scroll pr-1">
                       {pagedPowers.map((p) => {
                         const isSelected = selectedTalents.some((t) => t.id === p.id);
                         const talentEntry = selectedTalents.find((t) => t.id === p.id);
@@ -1104,41 +1304,66 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:border-violet-500/30'
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-1.5">
-                              <div className="flex items-center gap-2 min-w-0">
-                                {p.svgPath ? (
-                                  <div className="w-6 h-6 rounded-md overflow-hidden bg-black/60 border border-dark-border/80 p-0.5 flex items-center justify-center shrink-0">
-                                    <img
-                                      src={p.svgPath}
-                                      alt=""
-                                      className="w-full h-full object-contain"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
+                            <div>
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  {p.svgPath ? (
+                                    <div className="w-6 h-6 rounded-md overflow-hidden bg-black/60 border border-dark-border/80 p-0.5 flex items-center justify-center shrink-0">
+                                      <img
+                                        src={p.svgPath}
+                                        alt=""
+                                        className="w-full h-full object-contain"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm shrink-0">{p.icon}</span>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <span className="text-xs sm:text-sm font-bold text-white font-serif break-words leading-tight block">{p.name}</span>
+                                    <span className="text-[9px] text-dark-muted block">Cat: {p.category.replace('_', ' ')}</span>
                                   </div>
-                                ) : (
-                                  <span className="text-sm shrink-0">{p.icon}</span>
-                                )}
-                                <div className="min-w-0">
-                                  <span className="text-xs font-bold text-white font-serif truncate block">{p.name}</span>
-                                  <span className="text-[9px] text-dark-muted block">Cat: {p.category.replace('_', ' ')}</span>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTargetTalentForTier(p.id);
+                                      setIsTierModalOpen(true);
+                                    }}
+                                    title="Click to adjust Talent Tier"
+                                  >
+                                    <TierBadge tier={talentEntry?.tier || p.defaultTier} size="xs" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setInspectOptionData({
+                                        id: p.id,
+                                        title: p.name,
+                                        category: p.category,
+                                        tier: talentEntry?.tier || p.defaultTier,
+                                        iconText: p.icon,
+                                        iconPath: p.svgPath,
+                                        description: p.description,
+                                        isSelected,
+                                      });
+                                      setIsInspectModalOpen(true);
+                                    }}
+                                    className="p-1 rounded-md bg-dark-surface hover:bg-amber-400/20 text-dark-muted hover:text-amber-300 transition-colors"
+                                    title="Inspect Power Details & Lore"
+                                    aria-label={`Inspect ${p.name} Details`}
+                                  >
+                                    <Info className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setTargetTalentForTier(p.id);
-                                  setIsTierModalOpen(true);
-                                }}
-                                title="Click to adjust Talent Tier"
-                              >
-                                <TierBadge tier={talentEntry?.tier || p.defaultTier} size="xs" />
-                              </button>
+                              <p className="text-[11px] text-dark-muted mt-2 leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all">
+                                {p.description}
+                              </p>
                             </div>
-                            <p className="text-[11px] text-dark-muted mt-1 leading-normal line-clamp-2">
-                              {p.description}
-                            </p>
                             <div className="pt-2 mt-2 border-t border-dark-border/40 flex items-center justify-between">
                               <button
                                 type="button"
@@ -1236,9 +1461,8 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       {WORLD_CATALOG.map((w) => {
                         const isSelected = session.profile.world.name.value === w.name;
                         return (
-                          <button
+                          <div
                             key={w.id}
-                            type="button"
                             onClick={() => {
                               setSession((prev) => {
                                 let next = updateProfileFieldManually(prev, 'world', 'name', w.name);
@@ -1247,7 +1471,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                                 return next;
                               });
                             }}
-                            className={`rounded-2xl text-left border transition-all overflow-hidden flex flex-col justify-between group ${
+                            className={`rounded-2xl text-left border transition-all overflow-hidden flex flex-col justify-between group cursor-pointer ${
                               isSelected
                                 ? 'bg-amber-950/40 border-amber-400 text-white shadow-xl ring-2 ring-amber-400/70 scale-[1.01]'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:border-amber-500/40 hover:bg-dark-elevated'
@@ -1271,17 +1495,47 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                             )}
                             <div className="p-3 flex-1 flex flex-col justify-between">
                               <div>
-                                <span className="text-xs sm:text-sm font-bold text-white font-serif block">{w.name}</span>
-                                <p className="text-[11px] text-dark-muted mt-1 leading-relaxed line-clamp-2">
+                                <div className="flex items-start justify-between gap-1.5">
+                                  <span className="text-xs sm:text-sm font-bold text-white font-serif break-words leading-tight flex-1">
+                                    {w.name}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setInspectOptionData({
+                                        id: w.id,
+                                        title: w.name,
+                                        category: `Multiverse Horizon (${w.primaryGenreId})`,
+                                        badge: w.primaryGenreId,
+                                        imagePath: w.imagePath,
+                                        description: w.synopsis,
+                                        magicSystem: w.magicSystem?.name,
+                                        threats: w.threats,
+                                        factions: w.factions?.map((f) => f.name),
+                                        isSelected,
+                                      });
+                                      setIsInspectModalOpen(true);
+                                    }}
+                                    className="p-1 rounded-md bg-dark-surface hover:bg-amber-400/20 text-dark-muted hover:text-amber-300 transition-colors shrink-0"
+                                    title="Inspect World Lore & Factions"
+                                    aria-label={`Inspect ${w.name} Details`}
+                                  >
+                                    <Info className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <p className="text-[11px] text-dark-muted mt-1.5 leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all">
                                   {w.synopsis}
                                 </p>
                               </div>
                               <div className="mt-2.5 pt-2 border-t border-dark-border/40 text-[10px] text-dark-muted font-mono flex items-center justify-between">
                                 <span>Magic: {w.magicSystem?.name || 'Leylines'}</span>
-                                <span>Threat: {w.threats?.[0] || 'Monsters'}</span>
+                                <span className={`font-bold px-1.5 py-0.5 rounded ${isSelected ? 'text-amber-300 bg-amber-400/20' : 'text-dark-muted'}`}>
+                                  {isSelected ? 'Chosen Realm ✓' : 'Select Realm'}
+                                </span>
                               </div>
                             </div>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -1558,6 +1812,44 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
           subtitle="Select the innate potential tier for this specific gift (E to God Tier)."
         />
       )}
+
+      {/* Universal Option Inspection Detail Modal */}
+      <OptionDetailModal
+        isOpen={isInspectModalOpen}
+        onClose={() => setIsInspectModalOpen(false)}
+        data={inspectOptionData}
+        onSelect={(item) => {
+          if (item.category?.includes('Species')) {
+            handleUpdateProfileField('character', 'race', item.title);
+          } else if (item.category?.includes('Social')) {
+            handleUpdateProfileField('character', 'socialStatus', item.title);
+          } else if (item.category?.includes('Calling') || item.category?.includes('Discipline')) {
+            const currentSkills = session.profile.abilities.skills.value || [];
+            const isSelected = currentSkills.includes(item.title);
+            let updated: string[];
+            if (isSelected) {
+              updated = currentSkills.filter((s: string) => s !== item.title);
+            } else {
+              updated = currentSkills.length >= 3 ? [...currentSkills.slice(1), item.title] : [...currentSkills, item.title];
+            }
+            handleUpdateProfileField('abilities', 'skills', updated.length > 0 ? updated : [item.title]);
+          } else if (item.category?.includes('Multiverse Horizon')) {
+            setSession((prev) => {
+              let next = updateProfileFieldManually(prev, 'world', 'name', item.title);
+              if (item.badge) {
+                next = updateProfileFieldManually(next, 'world', 'genre', item.badge);
+              }
+              saveReincarnationSession(next);
+              return next;
+            });
+          } else {
+            const powerDef = ALL_POWER_DEFINITIONS.find((p) => p.id === item.id);
+            if (powerDef) {
+              handleToggleTalent(powerDef);
+            }
+          }
+        }}
+      />
     </div>
   );
 };

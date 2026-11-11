@@ -114,7 +114,47 @@ export interface ExtractedPreferencesResult {
   race?: string;
   magicAffinities?: string[];
   themes?: string[];
+  isBestInAll?: boolean;
 }
+
+/**
+ * Supreme God-Tier Innate Talents bestowed during absolute potential ascension.
+ */
+export const GOD_TIER_SUPREME_TALENTS = [
+  {
+    id: 'con_god_leyline',
+    name: 'Primordial Leyline Sovereignty',
+    category: 'conceptual',
+    tier: 'GOD' as const,
+    mastery: 'Grandmaster' as const,
+    isGodTier: true,
+    godTierOrigin: 'Direct celestial blessing from Angel Seraphina and the Source of Creation',
+    description: 'Absolute dominion over cosmic leylines, infinite magical capacity, and instant spell realization with zero casting delay.',
+    source: 'Divine Blessing',
+  },
+  {
+    id: 'div_god_akashic',
+    name: 'Akashic Omniscience & World Comprehension',
+    category: 'divine',
+    tier: 'GOD' as const,
+    mastery: 'Grandmaster' as const,
+    isGodTier: true,
+    godTierOrigin: 'Awakened Soul Fragment connected to the Akashic Hall of the Multiverse',
+    description: 'Instant analysis and comprehension of all magic, battle trajectories, enemy weaknesses, and hidden secrets across dimensions.',
+    source: 'Cosmic Phenomenon',
+  },
+  {
+    id: 'comb_god_martial',
+    name: 'Infinite Martial Dao Body',
+    category: 'combat',
+    tier: 'GOD' as const,
+    mastery: 'Grandmaster' as const,
+    isGodTier: true,
+    godTierOrigin: 'Transcendent Human Soul Resonance with Heaven and Earth',
+    description: 'Flawless physical resilience, transcendent reflex speeds, and supreme sword and weapon mastery that cuts through space and time.',
+    source: 'Divine Blessing',
+  },
+];
 
 /**
  * Natural language intent and preference extraction supporting English and Hindi.
@@ -299,6 +339,44 @@ export const extractReincarnationPreferences = (
     }
   }
 
+  // 9. Best in All / God Tier & Maximum Combat Rating Ascension
+  const isBestInAll =
+    lower.includes('best in all') ||
+    lower.includes('best in everything') ||
+    lower.includes('best build') ||
+    lower.includes('god tear') ||
+    lower.includes('god tier') ||
+    lower.includes('maximum combat rating') ||
+    lower.includes('max combat') ||
+    lower.includes('overpowered') ||
+    lower.includes('best species') ||
+    lower.includes('best spisies') ||
+    (lower.includes('best') && (lower.includes('human') || lower.includes('option') || lower.includes('all')));
+
+  if (isBestInAll) {
+    extractedFields.push('Apex Vessel: Human (Limitless Potential)');
+    extractedFields.push('Combat Rating: Maximum Celestial Apex (God-Tier)');
+    extractedFields.push('Talents: GOD Tier (Triple Grandmastery)');
+    extractedFields.push('Calling: Archmage, Swordsman, Tactician');
+
+    updates.character = updates.character || { ...currentProfile.character };
+    updates.character.race = createField('Human', 'confirmed');
+    updates.character.socialStatus = createField('Chosen Transcendent of Destiny', 'confirmed');
+    updates.character.personality = createField(['Visionary', 'Unyielding', 'Cosmic Bound'], 'confirmed');
+
+    updates.abilities = updates.abilities || { ...currentProfile.abilities };
+    updates.abilities.powerTier = createField('GOD', 'confirmed');
+    updates.abilities.skills = createField(['Archmage', 'Swordsman', 'Tactician'], 'confirmed');
+    updates.abilities.talents = createField(
+      GOD_TIER_SUPREME_TALENTS.map((t) => `${t.name} (${t.tier} Tier)`),
+      'confirmed'
+    );
+    updates.abilities.magicAffinity = createField(
+      ['Primordial Leyline Arcana', 'Starlight', 'Void'],
+      'confirmed'
+    );
+  }
+
   return {
     extractedUpdates: updates,
     extractedName,
@@ -308,6 +386,7 @@ export const extractReincarnationPreferences = (
     race: detectedRace,
     magicAffinities: detectedAffinities.length > 0 ? detectedAffinities : undefined,
     themes: detectedThemes.length > 0 ? detectedThemes : undefined,
+    isBestInAll,
   };
 };
 
@@ -357,6 +436,19 @@ export const generateAngelDialogue = (
   // 3. Formulate Angel's Response
   let angelReplyText = '';
 
+  const isBestInAll =
+    lower.includes('best in all') ||
+    lower.includes('best in everything') ||
+    lower.includes('best build') ||
+    lower.includes('god tear') ||
+    lower.includes('god tier') ||
+    lower.includes('maximum combat rating') ||
+    lower.includes('max combat') ||
+    lower.includes('overpowered') ||
+    lower.includes('best species') ||
+    lower.includes('best spisies') ||
+    (lower.includes('best') && (lower.includes('human') || lower.includes('option') || lower.includes('all')));
+
   const requestsFate =
     lower.includes('wheel') ||
     lower.includes('fate') ||
@@ -368,7 +460,9 @@ export const generateAngelDialogue = (
     lower.includes('kismat') ||
     lower.includes('किस्मत');
 
-  if (requestsFate) {
+  if (isBestInAll) {
+    angelReplyText = `By celestial decree, I hear your vow to transcend all mortal constraints, ${currentHeroName}!\n\nAs you have chosen, your vessel is forged as a Human—the only species in the multiverse whose soul holds zero racial ceilings, capable of unlocking infinite potential across all cosmic disciplines.\n\nI have unlocked the highest GOD Tier authorities into your soul matrix: Primordial Leyline Sovereignty, Akashic Omniscience, and the Infinite Martial Dao Body, elevating your Combat Rating to the maximum celestial apex (Level 100 / Apex Transcendent). All options have been chosen and aligned with your supreme destiny.`;
+  } else if (requestsFate) {
     angelReplyText = `You need not carry the burden of deciding every thread yourself, ${currentHeroName}. The Great Weave of Destiny is vast. Let us spin the Wheel of Fate to reveal what the cosmos holds for you.`;
   } else if (!hasConfirmedName && extractedName) {
     angelReplyText = `It is an honor to meet you, ${extractedName}. The resonance of your true name is now inscribed upon the celestial chronicle.\n\nNow, tell me... what manner of world would you like to enter? Perhaps a realm of grand kingdoms and dragons, a high-tech arcana megalopolis, or something born of your own imagination?`;
