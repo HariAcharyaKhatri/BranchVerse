@@ -17,7 +17,6 @@ import {
   createInitialReincarnationSession,
   generateAngelDialogue,
   applyFateWheelResult,
-  spinAllUndecidedCategories,
   updateProfileFieldManually,
   buildReincarnationLaunchPackage,
   loadReincarnationSession,
@@ -26,6 +25,9 @@ import {
 } from '../features/reincarnation/reincarnationEngine';
 import { FateWheelModal } from '../components/reincarnation/FateWheelModal';
 import { ReincarnationProfilePanel } from '../components/reincarnation/ReincarnationProfilePanel';
+import { TierBadge } from '../components/character/TierBadge';
+import { TierSelectorModal } from '../components/character/TierSelectorModal';
+import { ALL_POWER_TIERS } from '../features/character/tierSystem';
 import {
   Sparkles,
   ChevronRight,
@@ -39,6 +41,7 @@ import {
   LogIn,
   ArrowRight,
   Check,
+  Trophy,
 } from 'lucide-react';
 
 export interface IsekaiReincarnationPageProps {
@@ -70,6 +73,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
   const [isFateWheelOpen, setIsFateWheelOpen] = useState<boolean>(false);
   const [activeFateWheelCategory, setActiveFateWheelCategory] = useState<FateWheelCategory>('world_type');
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
+  const [isTierModalOpen, setIsTierModalOpen] = useState<boolean>(false);
 
   const dialogueEndRef = useRef<HTMLDivElement>(null);
 
@@ -575,10 +579,22 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                   </div>
                 )}
 
-                {/* STEP 5: MAGIC AFFINITY */}
+                {/* STEP 5: MAGIC AFFINITY & SOUL POWER TIER */}
                 {guidedStep === 5 && (
-                  <div className="space-y-1.5 animate-fadeIn">
-                    <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Step 5: Magic Gift</span>
+                  <div className="space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Step 5: Magic Gift & Tier</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsTierModalOpen(true)}
+                        className="text-[10px] text-amber-300 font-bold hover:text-white flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30"
+                      >
+                        <Trophy className="w-2.5 h-2.5 text-amber-400" />
+                        <span>All Tiers (E to God)</span>
+                      </button>
+                    </div>
+
+                    {/* Magic Affinities */}
                     <div className="grid grid-cols-3 gap-1.5">
                       {FATE_WHEEL_CATEGORIES.abilities.options.map((opt: any) => {
                         const isSelected = session.profile.abilities.magicAffinity.value.includes(opt.data.magicAffinity[0]);
@@ -599,6 +615,33 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Starting Soul Tier Chips (E to SSS and God Tier) */}
+                    <div className="pt-1.5 border-t border-dark-border/40">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-dark-muted font-semibold">Starting Soul Tier</span>
+                        <TierBadge tier={session.profile.abilities.powerTier?.value || 'B'} size="xs" variant="pill" showTitle={true} />
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {ALL_POWER_TIERS.map((t) => {
+                          const isSelected = (session.profile.abilities.powerTier?.value || 'B') === t.code;
+                          return (
+                            <button
+                              key={t.code}
+                              type="button"
+                              onClick={() => handleUpdateProfileField('abilities', 'powerTier', t.code)}
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all ${
+                                isSelected
+                                  ? `${t.bgClass} ${t.borderClass} ${t.color} ring-1 ring-amber-400/50 shadow-sm scale-105`
+                                  : 'bg-dark-bg/60 border-dark-border/60 text-dark-muted hover:text-white'
+                              }`}
+                            >
+                              {t.code === 'GOD' ? 'GOD TIER' : t.code}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -742,6 +785,13 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                 </h3>
               </div>
               <div className="flex items-center gap-1.5">
+                <TierBadge
+                  tier={session.profile.abilities.powerTier?.value || 'B'}
+                  size="sm"
+                  variant="badge"
+                  showTitle={true}
+                  onClick={() => setIsTierModalOpen(true)}
+                />
                 <Badge variant="primary">{session.profile.character.race.value}</Badge>
                 <Badge variant="amber">{session.profile.world.genre.value}</Badge>
               </div>
@@ -824,6 +874,14 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
         categoryKey={activeFateWheelCategory}
         onSelectCategory={(cat) => setActiveFateWheelCategory(cat)}
         onOptionSelected={handleFateWheelSelect}
+      />
+
+      {/* TIER SELECTION MODAL */}
+      <TierSelectorModal
+        isOpen={isTierModalOpen}
+        onClose={() => setIsTierModalOpen(false)}
+        selectedTier={session.profile.abilities.powerTier?.value || 'B'}
+        onSelectTier={(tier) => handleUpdateProfileField('abilities', 'powerTier', tier.code)}
       />
 
       {/* RESTART CONFIRMATION MODAL */}

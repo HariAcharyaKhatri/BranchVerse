@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { HeroProfile } from '../../types/character';
 import { StoryState } from '../../types/story';
+import { TierBadge } from '../character/TierBadge';
+import { getPowerTier } from '../../features/character/tierSystem';
 import {
   Compass,
   Sparkles,
@@ -134,15 +136,19 @@ export const CharacterIntroductionCard: React.FC<CharacterIntroductionCardProps>
               <p className="text-[10px] text-dark-muted truncate">{regionOrKingdom}</p>
             </div>
 
-            {/* Mastery or Rank */}
-            <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border/60">
-              <span className="text-[10px] text-dark-muted font-medium flex items-center gap-1">
-                <Award className="w-3 h-3 text-amber-400" />
-                {isBusiness ? 'Standing' : 'Mastery & Focus'}
+            {/* Mastery, Tier, or Rank */}
+            <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border/60 flex flex-col justify-between">
+              <span className="text-[10px] text-dark-muted font-medium flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Award className="w-3 h-3 text-amber-400" />
+                  {isBusiness ? 'Standing' : 'Power Tier'}
+                </span>
+                <span className="text-[9px] font-mono text-dark-muted">Lvl {state.powerLevel}</span>
               </span>
-              <p className="font-semibold text-amber-300 truncate mt-0.5">
-                Level {state.powerLevel}
-              </p>
+              <div className="mt-1 flex items-center gap-1.5">
+                <TierBadge tier={state.powerLevel} size="xs" variant="pill" showTitle={true} />
+                <span className="sr-only">Level {state.powerLevel}</span>
+              </div>
             </div>
 
             {/* Wealth or Resources (Genre Adaptive) */}
@@ -225,7 +231,10 @@ export const CharacterIntroductionCard: React.FC<CharacterIntroductionCardProps>
         /* Collapsed summary pill */
         <div className="mt-2 flex items-center justify-between text-xs text-dark-muted">
           <span>{hero.origin || 'Protagonist'} • {currentLocation}</span>
-          <span className="text-amber-400 font-semibold">Lvl {state.powerLevel}</span>
+          <div className="flex items-center gap-1.5">
+            <TierBadge tier={state.powerLevel} size="xs" variant="pill" />
+            <span className="text-amber-400 font-semibold text-[10px]">Lvl {state.powerLevel}</span>
+          </div>
         </div>
       )}
     </div>

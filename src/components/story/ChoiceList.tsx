@@ -45,37 +45,46 @@ export const ChoiceList: React.FC<ChoiceListProps> = ({
       <div className="text-xs font-bold uppercase tracking-wider text-dark-muted px-1">
         Available Choices
       </div>
-      <div className="space-y-2">
-        {choices.map((choice) => (
-          <button
-            key={choice.choiceId}
-            onClick={() => onSelectChoice(choice.choiceId)}
-            disabled={isLoading}
-            className="w-full text-left p-3.5 rounded-2xl bg-dark-surface hover:bg-dark-elevated border border-dark-border hover:border-brand-primary/60 transition-all duration-150 active:scale-[0.99] group shadow-sm disabled:opacity-50"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  {getRiskBadge(choice.riskLevel)}
-                  {choice.requiredItem && (
-                    <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                      Req: {choice.requiredItem}
-                    </span>
+      <div className="space-y-2.5">
+        {choices.map((choice) => {
+          const riskBorderHover =
+            choice.riskLevel === 'safe'
+              ? 'hover:border-emerald-500/60 hover:shadow-[0_0_18px_rgba(16,185,129,0.18)]'
+              : choice.riskLevel === 'perilous'
+              ? 'hover:border-rose-500/60 hover:shadow-[0_0_18px_rgba(244,63,94,0.18)]'
+              : 'hover:border-amber-500/60 hover:shadow-[0_0_18px_rgba(245,158,11,0.18)]';
+
+          return (
+            <button
+              key={choice.choiceId}
+              onClick={() => onSelectChoice(choice.choiceId)}
+              disabled={isLoading}
+              className={`w-full text-left p-4 rounded-2xl bg-gradient-to-r from-dark-surface/95 via-dark-surface/90 to-dark-elevated/80 border border-dark-border/80 ${riskBorderHover} transition-all duration-200 active:scale-[0.99] group shadow-md disabled:opacity-50 backdrop-blur-md relative overflow-hidden`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    {getRiskBadge(choice.riskLevel)}
+                    {choice.requiredItem && (
+                      <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 font-medium">
+                        Requires: {choice.requiredItem}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm font-semibold text-dark-text group-hover:text-white transition-colors leading-snug">
+                    {choice.text}
+                  </div>
+                  {choice.consequenceHint && (
+                    <p className="text-xs text-dark-muted/90 group-hover:text-dark-muted mt-1 leading-relaxed">
+                      {choice.consequenceHint}
+                    </p>
                   )}
                 </div>
-                <div className="text-sm font-semibold text-dark-text group-hover:text-brand-glow transition-colors leading-snug">
-                  {choice.text}
-                </div>
-                {choice.consequenceHint && (
-                  <p className="text-xs text-dark-muted mt-1 leading-relaxed">
-                    {choice.consequenceHint}
-                  </p>
-                )}
+                <ArrowRight className="w-4 h-4 text-dark-muted group-hover:text-amber-400 shrink-0 mt-1 transition-all group-hover:translate-x-1" />
               </div>
-              <ArrowRight className="w-4 h-4 text-dark-muted group-hover:text-brand-primary shrink-0 mt-1 transition-transform group-hover:translate-x-0.5" />
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useMemo } from 'react';
 import { StoryDocument, LANGUAGE_LABELS } from '../../types/story';
 import { BottomInteractionArea } from './BottomInteractionArea';
 import { CharacterIntroductionCard } from './CharacterIntroductionCard';
+import { TierBadge } from '../character/TierBadge';
 import { getSceneBackground, getCharacterPortrait } from '../../features/assets/assetSelector';
 import { Sparkles, Sword, Shield, Flame, Zap, Eye, Cpu, Crown, Compass, BookOpen, MessageSquare, Activity } from 'lucide-react';
 import { useI18n } from '../../i18n';
@@ -98,9 +99,12 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
           <h2 className="text-xl sm:text-2xl font-bold text-dark-text tracking-tight">
             {story.title}
           </h2>
-          <p className="text-xs text-dark-muted">
-            Hero: <strong className="text-dark-text">{story.hero.name}</strong> • Level {story.state.powerLevel}
-          </p>
+          <div className="flex items-center flex-wrap gap-2 text-xs text-dark-muted">
+            <span>Hero: <strong className="text-dark-text">{story.hero.name}</strong></span>
+            <span>•</span>
+            <TierBadge tier={story.state.powerLevel} size="xs" variant="pill" showTitle={true} />
+            <span className="text-[10px] text-dark-muted font-mono">Level {story.state.powerLevel}</span>
+          </div>
         </div>
 
         {/* Character Introduction at the Start of the Chronicle */}
@@ -270,10 +274,10 @@ export const NarrativeReader: React.FC<NarrativeReaderProps> = ({
 
               {/* Scene Divider */}
               {!isLatest && (
-                <div className="flex items-center justify-center gap-2 py-4 text-dark-border">
-                  <div className="w-12 h-px bg-dark-border" />
-                  <span className="text-xs">•</span>
-                  <div className="w-12 h-px bg-dark-border" />
+                <div className="flex items-center justify-center gap-3 py-6 select-none opacity-60">
+                  <div className="w-16 h-px bg-gradient-to-r from-transparent to-amber-500/40" />
+                  <span className="text-amber-400/80 text-xs font-serif tracking-widest">✦ ── ✧ ── ✦</span>
+                  <div className="w-16 h-px bg-gradient-to-l from-transparent to-amber-500/40" />
                 </div>
               )}
             </article>

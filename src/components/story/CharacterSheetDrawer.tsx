@@ -4,6 +4,9 @@ import { StoryState } from '../../types/story';
 import { BottomSheet } from '../ui/BottomSheet';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Badge } from '../ui/Badge';
+import { TierBadge } from '../character/TierBadge';
+import { TierSelectorModal } from '../character/TierSelectorModal';
+import { getPowerTier, getTierProgress } from '../../features/character/tierSystem';
 import {
   Shield,
   Package,
@@ -16,7 +19,8 @@ import {
   Briefcase,
   Sparkles,
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  Trophy
 } from 'lucide-react';
 
 interface CharacterSheetDrawerProps {
@@ -39,6 +43,10 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
   onUseItem
 }) => {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory' | 'quests' | 'lore'>('stats');
+  const [isTierModalOpen, setIsTierModalOpen] = useState(false);
+
+  const tierInfo = getPowerTier(state.powerLevel);
+  const tierProgress = getTierProgress(state.powerLevel);
 
   const genreStr = (genres.length > 0 ? genres.join(' ') : 'Fantasy').toLowerCase();
   const isFantasy = /fantasy|magic|supernatural|myth|cultivation|wuxia/i.test(genreStr);
@@ -79,7 +87,7 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={hero.name}
-      subtitle={`${hero.race} • ${currentRank} • Lvl ${state.powerLevel}`}
+      subtitle={`${hero.race} • ${currentRank} • ${tierInfo.name} (Level ${state.powerLevel})`}
     >
       <div className="space-y-4" data-testid="live-character-status-panel">
         {/* Compact Navigation Tabs */}
@@ -153,15 +161,28 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Power / Mastery */}
-              <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border flex items-center gap-2">
-                <Zap className="w-4 h-4 text-indigo-400 shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-[10px] text-dark-muted font-medium block">
-                    {isBusiness ? 'Influence Level' : 'Mastery Level'}
-                  </span>
-                  <p className="font-semibold text-indigo-300 truncate">Level {state.powerLevel}</p>
+              {/* Power Tier & Mastery */}
+              <div className="p-2.5 rounded-xl bg-dark-elevated/70 border border-dark-border flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Zap className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-dark-muted font-medium block">
+                      {isBusiness ? 'Influence Tier' : 'Power Tier'}
+                    </span>
+                    <p className="font-bold text-white truncate text-xs">
+                      {tierInfo.name} • {tierInfo.rankName}
+                    </p>
+                    <span className="text-[10px] text-indigo-300 font-mono block">Level {state.powerLevel}</span>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setIsTierModalOpen(true)}
+                  className="px-2 py-1 rounded-lg bg-dark-surface border border-dark-border hover:border-amber-400/50 text-[10px] text-amber-300 font-bold shrink-0 flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                  title="View RPG Tier Ladder (E to SSS and God Tier)"
+                >
+                  <Trophy className="w-3 h-3 text-amber-400" />
+                  <span>Ladder</span>
+                </button>
               </div>
             </div>
 
@@ -169,8 +190,8 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
             <div className="space-y-2 bg-dark-elevated/40 p-3 rounded-2xl border border-dark-border">
               <ProgressBar
                 label={isBusiness ? 'Business Acumen & Market Reach' : 'Power Level & Mastery'}
-                sublabel={`Level ${state.powerLevel}`}
-                value={Math.min(100, state.powerLevel * 2)}
+                sublabel={`Level ${state.powerLevel}${tierProgress.nextTier ? ` • ${tierInfo.name} → ${tierProgress.nextTier.name}` : ' • Ascended'}`}
+                value={state.powerLevel}
                 max={100}
                 variant="indigo"
               />
@@ -341,6 +362,15 @@ export const CharacterSheetDrawer: React.FC<CharacterSheetDrawerProps> = ({
           </div>
         )}
       </div>
+
+      <TierSelectorModal
+        isOpen={isTierModalOpen}
+        onClose={() => setIsTierModalOpen(false)}
+        selectedTier={state.powerLevel}
+        onSelectTier={() => {}}
+        title="Multiverse Power Tier Ladder"
+        subtitle="Authoritative RPG progression ladder from Tier E to Tier SSS, culminating in God Tier."
+      />
     </BottomSheet>
   );
 };

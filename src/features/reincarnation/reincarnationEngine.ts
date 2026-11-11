@@ -12,6 +12,7 @@ import { HeroProfile, MoralAlignment } from '../../types/character';
 import { WorldDefinition } from '../../types/world';
 import { WORLD_CATALOG } from '../../catalogs/worlds';
 import { StorySettings, SupportedLanguage } from '../../types/story';
+import { PowerTierCode, getPowerForTier } from '../character/tierSystem';
 
 const STORAGE_KEY = 'bv_reincarnation_session_v2';
 
@@ -53,6 +54,7 @@ export const createInitialProfile = (userName?: string): ReincarnationProfile =>
       socialStatus: createField('Respected Commoner / Promising Aspirant'),
     },
     abilities: {
+      powerTier: createField<PowerTierCode>('B', 'confirmed'),
       magicAffinity: createField(['Lightning', 'Starlight']),
       specialAbilities: createField(['Starlight Blink', 'Tempest Infusion', 'Mana Decryption']),
       skills: createField(['Swordsmanship', 'Tactical Analysis', 'Ancient Lore Appraisal']),
@@ -528,7 +530,8 @@ export const buildReincarnationLaunchPackage = (
     powers: p.abilities.magicAffinity.value.map((aff) => `${aff} Manipulation`),
     weapons: ['Sunforged Longsword', 'Dimensional Signet Ring'],
     weaknesses: ['Dimensional Anchor Fluctuation', 'Unfamiliar Local Politics'],
-    powerLevel: 45,
+    powerLevel: p.abilities.powerTier?.value ? getPowerForTier(p.abilities.powerTier.value) : 45,
+    tier: p.abilities.powerTier?.value || 'B',
     goals: [`Establish influence in ${matchedWorld.name}`, 'Uncover the higher mysteries of the multiverse'],
     motivations: ['Protecting newly forged bonds', 'Shaping a sovereign destiny'],
     fears: ['Severing of former world memories'],

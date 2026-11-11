@@ -1,4 +1,5 @@
 import { HeroProfile } from './character';
+import { PowerTierCode } from '../features/character/tierSystem';
 
 export type SupportedLanguage = 'en' | 'hi' | 'es' | 'fr' | 'ja' | 'ko';
 export type NarrativeLength = 'concise' | 'balanced' | 'detailed';
@@ -49,6 +50,7 @@ export interface StoryState {
   maxHealth?: number;
   stamina?: number; // Deprecated: retained as optional for backward compatibility with older saves
   powerLevel: number;
+  tier?: PowerTierCode;
   inventory: InventoryItem[];
   activeQuests: Quest[];
   worldFlags: Record<string, boolean | string | number>;

@@ -51,6 +51,77 @@
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
+/* BranchVerse Soundryakaran: High-End Fantasy Glassmorphism & Visual Aesthetics */
+.bv-glass-card {
+  background: linear-gradient(135deg, rgba(17, 23, 38, 0.85) 0%, rgba(10, 13, 20, 0.92) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+.bv-glass-card-amber {
+  background: linear-gradient(135deg, rgba(26, 19, 10, 0.85) 0%, rgba(10, 13, 20, 0.92) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+.celestial-glow {
+  position: relative;
+}
+
+.celestial-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Tier Glow utility classes for RPG power presentation */
+.tier-glow-god {
+  box-shadow: 0 0 25px rgba(251, 191, 36, 0.35), inset 0 0 15px rgba(251, 191, 36, 0.15);
+}
+
+.tier-glow-sss {
+  box-shadow: 0 0 25px rgba(244, 63, 94, 0.35), inset 0 0 15px rgba(244, 63, 94, 0.15);
+}
+
+.tier-glow-ss {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.tier-glow-s {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.tier-glow-a {
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.25);
+}
+
+.tier-glow-b {
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.25);
+}
+
+.tier-glow-c {
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.2);
+}
+
+.tier-glow-d {
+  box-shadow: 0 0 12px rgba(148, 163, 184, 0.15);
+}
+
+.tier-glow-e {
+  box-shadow: 0 0 10px rgba(100, 116, 139, 0.1);
+}
+
 /* Mobile safe area utility */
 .safe-area-bottom {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));

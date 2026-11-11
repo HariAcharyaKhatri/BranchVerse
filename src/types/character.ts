@@ -1,3 +1,5 @@
+import { PowerTierCode } from '../features/character/tierSystem';
+
 export type MoralAlignment =
   | 'Lawful Good'
   | 'Neutral Good'
@@ -40,6 +42,7 @@ export interface HeroProfile {
   weapons: string[];
   weaknesses: string[];
   powerLevel: number; // 1 to 100
+  tier?: PowerTierCode;
   goals: string[];
   motivations: string[];
   fears: string[];

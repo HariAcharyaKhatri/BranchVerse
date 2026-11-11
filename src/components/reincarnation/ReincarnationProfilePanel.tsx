@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { ReincarnationProfile, ProfileFieldStatus } from '../../features/reincarnation/reincarnationTypes';
 import { Badge } from '../ui/Badge';
-import { Globe, User, Zap, Castle, BookOpen, Edit2, Check, X, ChevronRight, Sparkles } from 'lucide-react';
+import { Globe, User, Zap, Castle, BookOpen, Edit2, Check, X, ChevronRight, Sparkles, Shield } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { TierBadge } from '../character/TierBadge';
+import { TierSelectorModal } from '../character/TierSelectorModal';
+import { PowerTierCode } from '../../features/character/tierSystem';
 
 interface ReincarnationProfilePanelProps {
   profile: ReincarnationProfile;
@@ -20,6 +23,7 @@ export const ReincarnationProfilePanel: React.FC<ReincarnationProfilePanelProps>
   className = '',
 }) => {
   const [activeTab, setActiveTab] = useState<'world' | 'character' | 'abilities' | 'circumstances' | 'preferences'>('character');
+  const [showTierModal, setShowTierModal] = useState(false);
   const [editingField, setEditingField] = useState<{
     category: keyof ReincarnationProfile;
     field: string;
@@ -224,6 +228,31 @@ export const ReincarnationProfilePanel: React.FC<ReincarnationProfilePanelProps>
         {/* ABILITIES TAB */}
         {activeTab === 'abilities' && (
           <div className="space-y-2.5">
+            {/* Dedicated Soul Tier Card */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-950/40 via-dark-surface to-amber-950/20 border border-violet-500/40 hover:border-amber-400/50 transition-all flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-amber-200 font-semibold font-serif">Starting Soul Power Tier</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {renderStatusBadge((profile.abilities.powerTier?.status as ProfileFieldStatus) || 'confirmed')}
+                  <button
+                    onClick={() => setShowTierModal(true)}
+                    className="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-[10px] font-semibold flex items-center gap-1 transition-colors border border-amber-500/30"
+                    title="Select power tier"
+                  >
+                    <Edit2 className="w-2.5 h-2.5" />
+                    <span>Choose Tier</span>
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <TierBadge tier={profile.abilities.powerTier?.value || 'B'} size="sm" variant="badge" showTitle={true} />
+                <span className="text-[10px] text-dark-muted font-mono">Selectable: Tier E to God Tier</span>
+              </div>
+            </div>
+
             {[
               { field: 'magicAffinity', label: 'Magical Affinities', data: profile.abilities.magicAffinity },
               { field: 'specialAbilities', label: 'Signature Abilities', data: profile.abilities.specialAbilities },
@@ -372,6 +401,17 @@ export const ReincarnationProfilePanel: React.FC<ReincarnationProfilePanelProps>
           </div>
         </div>
       )}
+
+      {/* Tier Selector Modal for Soul Power Tier (E to God) */}
+      <TierSelectorModal
+        isOpen={showTierModal}
+        onClose={() => setShowTierModal(false)}
+        selectedTier={profile.abilities.powerTier?.value || 'B'}
+        onSelectTier={(tier) => {
+          onUpdateField('abilities', 'powerTier', tier.code);
+          setShowTierModal(false);
+        }}
+      />
     </div>
   );
 };

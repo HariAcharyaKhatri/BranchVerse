@@ -11,6 +11,7 @@ import { SaveIndicator } from '../components/story/SaveIndicator';
 import { ExportModal } from '../components/history/ExportModal';
 import { FateDiceRoller } from '../components/story/FateDiceRoller';
 import { AtmosphereSoundscape } from '../components/story/AtmosphereSoundscape';
+import { TierBadge } from '../components/character/TierBadge';
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import {
@@ -412,7 +413,7 @@ export const ReaderPage: React.FC<ReaderPageProps> = ({
               <span className="hidden md:inline text-[10px] text-dark-muted px-1.5 py-0.5 rounded bg-dark-surface/80 border border-dark-border truncate max-w-[90px]">
                 📍 {story.state.currentLocation || 'Realm'}
               </span>
-              <span className="text-[10px] text-indigo-400 font-bold">Lvl {story.state.powerLevel}</span>
+              <TierBadge tier={story.state.powerLevel} size="xs" variant="pill" />
             </button>
 
             {/* View Transcript */}

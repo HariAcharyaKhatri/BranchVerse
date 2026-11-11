@@ -143,6 +143,27 @@ export function repairNarrativeProposal(
     };
   }
 
+  // 1.5. Unpack Gemini API / OpenAI response wrappers if present
+  if (Array.isArray(raw.candidates) && raw.candidates[0]?.content?.parts?.[0]?.text) {
+    const candidateText = raw.candidates[0].content.parts[0].text;
+    try {
+      raw = JSON.parse(candidateText);
+      repairedFields.push('unpacked_gemini_candidates_json');
+    } catch {
+      raw = { narrativeText: candidateText };
+      repairedFields.push('unpacked_gemini_candidates_raw_text');
+    }
+  } else if (Array.isArray(raw.choices) && raw.choices[0]?.message?.content) {
+    const choiceContent = raw.choices[0].message.content;
+    try {
+      raw = JSON.parse(choiceContent);
+      repairedFields.push('unpacked_openai_choice_json');
+    } catch {
+      raw = { narrativeText: choiceContent };
+      repairedFields.push('unpacked_openai_choice_raw_text');
+    }
+  }
+
   // 2. Extract Narrative Text (Critical)
   let rawNarrative =
     raw.narrativeText ??
@@ -160,6 +181,9 @@ export function repairNarrativeProposal(
     raw.sceneText ??
     raw.sceneContent ??
     raw.response ??
+    raw.message ??
+    raw.output ??
+    raw.result ??
     (raw.scene && typeof raw.scene === 'object' ? (raw.scene.text || raw.scene.narrative) : undefined);
 
   if (typeof rawNarrative !== 'string') {

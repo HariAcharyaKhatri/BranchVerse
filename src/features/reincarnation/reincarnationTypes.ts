@@ -1,6 +1,7 @@
 import { HeroProfile } from '../../types/character';
 import { WorldDefinition } from '../../types/world';
 import { StorySettings, SupportedLanguage } from '../../types/story';
+import { PowerTierCode } from '../character/tierSystem';
 
 export type ProfileFieldStatus = 'confirmed' | 'suggested' | 'random' | 'undecided';
 
@@ -42,6 +43,7 @@ export interface ReincarnationProfile {
   };
   // C. Abilities and Knowledge
   abilities: {
+    powerTier?: ProfileField<PowerTierCode>;
     magicAffinity: ProfileField<string[]>;
     specialAbilities: ProfileField<string[]>;
     skills: ProfileField<string[]>;
