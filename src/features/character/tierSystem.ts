@@ -278,3 +278,163 @@ export function getTierProgress(power: number): {
 
   return { currentTier, nextTier, percent };
 }
+
+/**
+ * =========================================================================
+ * CORE ENGINE INVARIANT: STRICT SEPARATION OF LEVEL AND TALENT TIER
+ * =========================================================================
+ *
+ * 1. Character Level represents acquired development through training,
+ *    practice, battles, experience, and learning (Scale: 1 to 100).
+ *
+ * 2. Talent Tier represents innate rarity and latent potential of a gift,
+ *    element, bloodline, or specialty (E -> D -> C -> B -> A -> S -> SS -> SSS -> GOD).
+ *
+ * 3. Increasing Character Level NEVER automatically changes or increases Talent Tier.
+ *    - A Level 100 hero can have Tier E Fire Magic (extremely skilled through mastery).
+ *    - A Level 1 hero can be born with a God-Tier divine gift (raw cosmic potential, zero control).
+ *
+ * 4. God Tier is NOT an ordinary progression milestone. It cannot be earned
+ *    by reaching Level 100, grinding XP, or training. It requires an explicit
+ *    divine, ancient bloodline, or cosmic origin established authoritatively.
+ */
+
+export interface LevelProgressionResult {
+  previousLevel: number;
+  newLevel: number;
+  levelIncreased: boolean;
+  talentsUnchanged: boolean;
+}
+
+/**
+ * Advances a character's acquired level.
+ * GUARANTEE: Never alters or promotes innate Talent Tiers!
+ */
+export function advanceCharacterLevel(
+  currentLevel: number,
+  levelsToGain: number = 1
+): LevelProgressionResult {
+  const safeCurrent = Math.max(1, Math.min(100, Math.round(currentLevel)));
+  const newLevel = Math.max(1, Math.min(100, safeCurrent + levelsToGain));
+
+  return {
+    previousLevel: safeCurrent,
+    newLevel,
+    levelIncreased: newLevel > safeCurrent,
+    talentsUnchanged: true, // Invariant guarantee: Talent Tier is never mutated by level
+  };
+}
+
+/**
+ * Validates whether a God-Tier talent possesses a legitimate divine, cosmic, or ancient origin.
+ * God Tier cannot be granted by leveling up, ordinary training, or standard progression.
+ */
+export function validateGodTierOrigin(
+  origin?: string,
+  source?: string
+): { isValid: boolean; reason?: string } {
+  if (!origin && !source) {
+    return {
+      isValid: false,
+      reason: 'God Tier requires an explicit divine blessing, ancient bloodline, or cosmic phenomenon origin.',
+    };
+  }
+
+  const combined = `${origin || ''} ${source || ''}`.toLowerCase();
+  const validTriggers = [
+    'divine',
+    'god',
+    'deity',
+    'creator',
+    'cosmic',
+    'celestial',
+    'primordial',
+    'transcendent',
+    'blessing',
+    'angel',
+    'seraphina',
+    'world-soul',
+    'avatar',
+  ];
+
+  const hasLegitimateOrigin = validTriggers.some((t) => combined.includes(t));
+
+  if (!hasLegitimateOrigin) {
+    return {
+      isValid: false,
+      reason: 'God Tier cannot be obtained through mortal training or ordinary battle experience.',
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Mastery proficiency weights.
+ */
+export const MASTERY_MULTIPLIERS: Record<string, number> = {
+  Beginner: 0.2,
+  Novice: 0.4,
+  Adept: 0.7,
+  Expert: 1.0,
+  Master: 1.4,
+  Grandmaster: 1.8,
+};
+
+/**
+ * Calculates current combat effectiveness.
+ * Proves that Talent Tier does not mean immediate combat power:
+ * A Level 80 S-Tier character with Master proficiency easily surpasses
+ * a Level 1 God-Tier character who possesses raw potential but no combat experience or control.
+ */
+export function calculateCombatEffectiveness(params: {
+  level: number;
+  talentTiers: Array<{ tier: PowerTierCode; mastery?: string }>;
+  attributes?: {
+    strength?: number;
+    agility?: number;
+    vitality?: number;
+    intelligence?: number;
+    magicalControl?: number;
+  };
+}): number {
+  const level = Math.max(1, Math.min(100, params.level));
+
+  // 1. Level & Acquired Experience Score (Base foundation)
+  const levelScore = level * 10; // e.g. Level 80 -> 800, Level 1 -> 10
+
+  // 2. Talent Innate Potential Multiplier
+  const tierWeights: Record<PowerTierCode, number> = {
+    E: 10,
+    D: 20,
+    C: 35,
+    B: 50,
+    A: 75,
+    S: 110,
+    SS: 150,
+    SSS: 200,
+    GOD: 260,
+  };
+
+  let talentScore = 0;
+  for (const t of params.talentTiers) {
+    const baseWeight = tierWeights[t.tier] || 50;
+    const masteryMul = MASTERY_MULTIPLIERS[t.mastery || 'Novice'] || 0.4;
+    // Note: Low level significantly dampens high-tier utilization
+    const levelControlFactor = Math.min(1.0, (level + 10) / 70);
+    talentScore += baseWeight * masteryMul * levelControlFactor;
+  }
+
+  // 3. Attributes Impact
+  const attrs = params.attributes || {};
+  const attrAvg =
+    ((attrs.strength || 10) +
+      (attrs.agility || 10) +
+      (attrs.vitality || 10) +
+      (attrs.intelligence || 10) +
+      (attrs.magicalControl || 10)) /
+    5;
+  const attrScore = attrAvg * 2.5;
+
+  return Math.round(levelScore + talentScore + attrScore);
+}

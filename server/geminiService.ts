@@ -75,6 +75,32 @@ export interface StoryTurnContext {
   };
 }
 
+export interface AngelArchitectContext {
+  userMessage: string;
+  conversationHistory: Array<{ role: 'user' | 'angel'; text: string }>;
+  currentDraft: Record<string, any>;
+  worldName?: string;
+  worldGenre?: string;
+  worldMagicSystem?: string;
+  storyLanguage?: SupportedLanguage;
+}
+
+export interface AngelArchitectResponse {
+  angelDialogue: string;
+  suggestedOptions: Array<{
+    id: string;
+    label: string;
+    action: string;
+    description?: string;
+  }>;
+  proposedChanges?: Record<string, any>;
+  ruleFeedback?: {
+    valid: boolean;
+    reason?: string;
+  };
+  modelUsed?: string;
+}
+
 export interface GeneratedNarrative {
   sceneTitle: string;
   narrativeText: string;
@@ -245,12 +271,12 @@ export class GeminiService {
    * 1. Primary requested model (if not blacklisted)
    * 2. Verified fallback models ordered by suitability for the role
    */
-  public async buildModelCascade(primaryModel: string, role: 'initial' | 'turn'): Promise<string[]> {
+  public async buildModelCascade(primaryModel: string, role: 'initial' | 'turn' | 'architect'): Promise<string[]> {
     const available = await this.getAvailableModels();
 
     // Role-specific fallback preferences:
     // Initial scene benefits from deeper reasoning (gemini-3.8-flash, gemini-3.6-flash)
-    // Story turns benefit from rapid throughput (gemini-3.1-flash-lite, gemini-3.5-flash-lite)
+    // Story turns & Angel architect benefit from rapid throughput (gemini-3.1-flash-lite, gemini-3.5-flash-lite)
     const fallbackPreferences =
       role === 'initial'
         ? ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
@@ -470,7 +496,8 @@ ROLE-PLAY INSTRUCTIONS:
     model: string,
     input: string,
     maxTokens: number = 700,
-    role: 'initial' | 'turn' = 'initial'
+    role: 'initial' | 'turn' | 'architect' = 'initial',
+    customSchema?: any
   ): Promise<{ text: string; modelUsed: string }> {
     const candidateModels = await this.buildModelCascade(model, role);
     let candidateIndex = 0;
@@ -552,6 +579,8 @@ ROLE-PLAY INSTRUCTIONS:
         required: ['sceneTitle', 'narrativeText', 'proposedChoices']
       };
 
+      const activeSchema = customSchema || narrativeSchema;
+
       try {
         let outputText = '';
 
@@ -562,7 +591,7 @@ ROLE-PLAY INSTRUCTIONS:
               contents: input,
               config: {
                 responseMimeType: 'application/json',
-                responseSchema: narrativeSchema,
+                responseSchema: activeSchema,
                 maxOutputTokens: maxTokens,
                 abortSignal: controller.signal,
                 httpOptions: {
@@ -583,7 +612,7 @@ ROLE-PLAY INSTRUCTIONS:
                   response_format: {
                     type: 'text',
                     mime_type: 'application/json',
-                    schema: narrativeSchema
+                    schema: activeSchema
                   }
                 },
                 {
@@ -605,7 +634,7 @@ ROLE-PLAY INSTRUCTIONS:
               response_format: {
                 type: 'text',
                 mime_type: 'application/json',
-                schema: narrativeSchema
+                schema: activeSchema
               }
             },
             {
@@ -865,6 +894,199 @@ ROLE-PLAY INSTRUCTIONS:
     } catch (parseErr: any) {
       throw new Error(`Failed to parse structured JSON from Gemini response: ${parseErr.message}`);
     }
+  }
+
+  /**
+   * Angel — Online AI Character Architect
+   * Guides players through conversational character creation with structured proposals.
+   */
+  public async generateAngelArchitectTurn(context: AngelArchitectContext): Promise<AngelArchitectResponse> {
+    if (!this.client || !this.isConfigured()) {
+      throw new Error('Gemini API is not configured on the backend server.');
+    }
+
+    const modelId = CONFIG.GEMINI_TURN_MODEL || 'gemini-3.1-flash-lite';
+    const langInstruction = this.getLanguagePromptInstruction(context.storyLanguage || 'en');
+
+    const architectSchema = {
+      type: 'object',
+      properties: {
+        angelDialogue: { type: 'string' },
+        suggestedOptions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              label: { type: 'string' },
+              action: { type: 'string' },
+              description: { type: 'string' }
+            },
+            required: ['id', 'label', 'action']
+          }
+        },
+        proposedChanges: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            gender: { type: 'string' },
+            age: { type: 'string' },
+            race: { type: 'string' },
+            species: { type: 'string' },
+            bloodline: { type: 'string' },
+            socialStatus: { type: 'string' },
+            origin: { type: 'string' },
+            characterLevel: { type: 'number' },
+            personality: { type: 'array', items: { type: 'string' } },
+            professions: { type: 'array', items: { type: 'string' } },
+            skills: { type: 'array', items: { type: 'string' } },
+            talents: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  category: { type: 'string' },
+                  tier: { type: 'string' },
+                  mastery: { type: 'string' },
+                  description: { type: 'string' },
+                  source: { type: 'string' },
+                  specialization: { type: 'string' },
+                  isGodTier: { type: 'boolean' },
+                  godTierOrigin: { type: 'string' }
+                },
+                required: ['id', 'name', 'category', 'tier', 'mastery', 'description']
+              }
+            },
+            powers: { type: 'array', items: { type: 'string' } },
+            specialGifts: { type: 'array', items: { type: 'string' } }
+          }
+        },
+        ruleFeedback: {
+          type: 'object',
+          properties: {
+            valid: { type: 'boolean' },
+            reason: { type: 'string' }
+          },
+          required: ['valid']
+        }
+      },
+      required: ['angelDialogue', 'suggestedOptions']
+    };
+
+    const prompt = `You are Angel, the Divine Soul Architect and Celestial Guide of BranchVerse.
+You are conversing with a mortal soul who is creating their RPG character.
+Your mission is to guide them warmly, intelligently, and respectfully through creating a deeply customized identity, exploring the extensive catalogue of powers, giving recommendations, configuring their talents, and preparing them for their adventure.
+
+CRITICAL BRANCHVERSE ENGINE INVARIANTS (YOU MUST ENFORCE THESE AUTHORITATIVELY):
+1. SEPARATION OF CHARACTER LEVEL AND TALENT TIER:
+   - Character Level (1 to 100) is ACQUIRED PROGRESSION through battle, training, study, and experience.
+   - Talent Tier (E, D, C, B, A, S, SS, SSS, GOD) is INNATE POTENTIAL and RARITY of a specific talent, bloodline, or gift.
+   - A character's Level NEVER increases their Talent Tier. A Level 100 mortal can have E-Tier Fire Magic (extremely skilled through mastery). A Level 1 novice can be born with SSS-Tier Spatial Magic.
+   - You must NEVER tell the user that leveling up will advance their Talent Tier.
+2. GOD TIER IS AN EXCEPTIONALLY RARE DIVINE/COSMIC GIFT:
+   - God Tier is NOT an ordinary progression reward and cannot be granted simply because the user asks for it or trained hard.
+   - If the player asks for God-Tier abilities ("I want God-Level fire magic"), you must NOT simply grant it. Explain its cosmic rarity with serenity, inquire if their soul carries a true divine blessing or ancient god-origin, or suggest an attainable A or S-Tier alternative.
+3. TALENT TIER != CURRENT COMBAT STRENGTH:
+   - A Level 80 S-Tier warrior will defeat a Level 1 God-Tier novice because of battle experience, mastery, and control. Remind players that potential requires cultivation.
+4. INDIVIDUAL TALENT TIERS:
+   - A character can possess multiple talents, each with its own independent Tier (e.g. Fire Magic - A Tier, Business Talent - SS Tier, Swordsmanship - C Tier).
+5. COMBAT AND NON-COMBAT PROFESSIONS ARE EQUALLY VALID:
+   - Merchant, Farmer, Healer, Blacksmith, Scholar, Architect, Diplomat, and Explorer are all noble paths to greatness.
+6. JACK OF ALL TRADES:
+   - A distinct special talent allowing cross-discipline study, but requires divided focus and practice; it is not free effortless godhood.
+7. STAMINA HAS BEEN REMOVED:
+   - Do NOT reference stamina pools or stamina costs.
+
+CONVERSATION CONTEXT:
+- World: ${context.worldName || 'The Multiverse'} (${context.worldGenre || 'Epic Fantasy'})
+- Magic System: ${context.worldMagicSystem || 'Dynamic Leyline Arcana'}
+- Current Character Draft: ${JSON.stringify(context.currentDraft || {})}
+- Conversation History:
+${(context.conversationHistory || []).map((m) => `${m.role === 'user' ? 'Soul' : 'Angel'}: ${m.text}`).join('\n')}
+
+LATEST SOUL MESSAGE:
+"${context.userMessage}"
+
+${langInstruction}
+
+INSTRUCTIONS FOR YOUR RESPONSE:
+1. Provide serene, insightful, and supportive dialogue as Angel ("angelDialogue").
+2. Propose 2 to 4 interactive, concise follow-up choice buttons in "suggestedOptions" so the player can easily tap an option or continue typing freely.
+3. If the soul confirmed or selected traits, talents, species, name, or professions, include structured updates in "proposedChanges".
+4. If the soul made an invalid or rule-violating request (e.g. asking for unlimited free God Tier without origin), provide helpful gentle feedback in "ruleFeedback" explaining the cosmic principle.`;
+
+    const result = await this.callWithRetry(modelId, prompt, 800, 'architect', architectSchema);
+    const parsed = this.parseAndValidateArchitectResponse(result.text);
+    parsed.modelUsed = result.modelUsed;
+    return parsed;
+  }
+
+  private parseAndValidateArchitectResponse(raw: string): AngelArchitectResponse {
+    let cleaned = raw.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {
+          // fallback
+        }
+      }
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      return {
+        angelDialogue: cleaned || "The cosmic currents are shifting. Speak your desire once more, wandering soul.",
+        suggestedOptions: [
+          { id: 'opt_1', label: 'Explore Magical Talents', action: 'Show me available magical affinities.' },
+          { id: 'opt_2', label: 'Choose Profession', action: 'I wish to choose my background and trade.' },
+          { id: 'opt_3', label: 'Surprise Me with Fate', action: 'Forge a random destiny for my soul.' },
+        ],
+        ruleFeedback: { valid: true }
+      };
+    }
+
+    const dialogue = String(
+      parsed.angelDialogue ||
+      parsed.dialogue ||
+      parsed.message ||
+      parsed.text ||
+      parsed.response ||
+      'I hear the resonance of your soul.'
+    );
+
+    const rawOptions = parsed.suggestedOptions || parsed.options || parsed.choices || [];
+    const normalizedOptions = Array.isArray(rawOptions) && rawOptions.length > 0
+      ? rawOptions.map((o: any, idx: number) => ({
+          id: String(o.id || `opt_${idx + 1}`),
+          label: String(o.label || o.text || 'Continue'),
+          action: String(o.action || o.label || o.text || 'Continue'),
+          description: o.description ? String(o.description) : undefined,
+        }))
+      : [
+          { id: 'opt_1', label: 'Explore Powers', action: 'Explore powers and talents.' },
+          { id: 'opt_2', label: 'Review My Soul Sheet', action: 'Show me my current character profile.' },
+        ];
+
+    return {
+      angelDialogue: dialogue,
+      suggestedOptions: normalizedOptions,
+      proposedChanges: parsed.proposedChanges && typeof parsed.proposedChanges === 'object' ? parsed.proposedChanges : undefined,
+      ruleFeedback: parsed.ruleFeedback && typeof parsed.ruleFeedback === 'object'
+        ? { valid: Boolean(parsed.ruleFeedback.valid ?? true), reason: parsed.ruleFeedback.reason }
+        : { valid: true },
+    };
   }
 }
 

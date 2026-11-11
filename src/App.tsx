@@ -25,6 +25,7 @@ import { CreateStoryWizardPage } from './pages/CreateStoryWizardPage';
 import { RoleplaySetupPage } from './pages/RoleplaySetupPage';
 import { IsekaiProloguePage } from './pages/IsekaiProloguePage';
 import { IsekaiReincarnationPage } from './pages/IsekaiReincarnationPage';
+import { SoulArchitectPage } from './pages/SoulArchitectPage';
 
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -358,6 +359,16 @@ const AppContent: React.FC = () => {
     }
 
     // 3. Isekai Reincarnation Experience & Dedicated Creation Modes
+    if (currentRoute === '#/architect' || currentRoute === '#/soul-architect') {
+      return (
+        <SoulArchitectPage
+          onBack={() => navigate('#/')}
+          onLaunchStory={handleLaunchStory}
+          isGenerating={isGeneratingStory}
+        />
+      );
+    }
+
     if (currentRoute === '#/isekai' || currentRoute === '#/prologue' || currentRoute === '#/reincarnation') {
       return (
         <IsekaiReincarnationPage

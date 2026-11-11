@@ -231,8 +231,17 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
           </div>
         </div>
 
-        {/* Secondary Controls: Library, Settings, Reset, Profile */}
+        {/* Secondary Controls: Soul Architect, Library, Settings, Reset, Profile */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={() => onNavigate('#/architect')}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-950/40 border border-violet-500/40 hover:border-violet-400 text-[11px] text-violet-300 hover:text-white transition-all shadow-sm"
+            title="AI Soul Architect & Character Creation"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden sm:inline">Soul Architect</span>
+          </button>
+
           <button
             onClick={() => onNavigate('#/library')}
             className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-dark-surface border border-dark-border hover:border-brand-primary/50 text-[11px] text-dark-muted hover:text-white transition-all shadow-sm"

@@ -1,8 +1,9 @@
 import { openDB, IDBPDatabase } from 'idb';
 import { StoryDocument } from '../../types/story';
+import { CharacterPreset } from '../../types/talent';
 
 const DB_NAME = 'branchverse_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface BranchVerseDBSchema {
   stories: {
@@ -21,6 +22,13 @@ export interface BranchVerseDBSchema {
       updatedAt: number;
     };
   };
+  character_presets: {
+    key: string;
+    value: CharacterPreset;
+    indexes: {
+      'by-updatedAt': number;
+    };
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<BranchVerseDBSchema>> | null = null;
@@ -37,6 +45,13 @@ export function getDB(): Promise<IDBPDatabase<BranchVerseDBSchema>> {
 
           // Drafts store
           db.createObjectStore('drafts', { keyPath: 'key' });
+        }
+        if (oldVersion < 2) {
+          // Character presets store
+          if (!db.objectStoreNames.contains('character_presets')) {
+            const presetStore = db.createObjectStore('character_presets', { keyPath: 'id' });
+            presetStore.createIndex('by-updatedAt', 'updatedAt');
+          }
         }
       },
       blocked() {

@@ -178,6 +178,88 @@ app.post('/api/narrative/turn', authMiddleware, async (req: AuthenticatedRequest
   }
 });
 
+// Angel: Online AI Character Architect
+app.post('/api/character/architect', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  if (!geminiService.isConfigured()) {
+    console.warn('[Character Architect API] Requested but GEMINI_API_KEY is not configured.');
+    res.status(503).json({
+      error: 'Character Architect service temporarily unavailable.',
+      message: 'Unable to commune with Angel right now. Please tap Retry.'
+    });
+    return;
+  }
+
+  const userId = req.userId!;
+  const modelId = CONFIG.GEMINI_TURN_MODEL || 'gemini-3.1-flash-lite';
+
+  // Rate Limiting & Concurrency Guard
+  const slot = rateLimiter.acquireSlot(userId, modelId);
+  if (!slot.allowed) {
+    res.status(429).json({
+      error: slot.reason,
+      retryAfterMs: slot.retryAfterMs
+    });
+    return;
+  }
+
+  const startTime = Date.now();
+  console.log(`[Character Architect API] [Start] User: ${userId}, Model: ${modelId}`);
+
+  try {
+    const architectResponse = await geminiService.generateAngelArchitectTurn(req.body);
+    const actualModelUsed = architectResponse.modelUsed || modelId;
+    const elapsed = Date.now() - startTime;
+    console.log(`[Character Architect API] [Success] User: ${userId}, Model: ${actualModelUsed}, Elapsed: ${elapsed}ms`);
+    res.json({
+      success: true,
+      modelUsed: actualModelUsed,
+      response: architectResponse
+    });
+  } catch (err: any) {
+    const elapsed = Date.now() - startTime;
+    const msg = err?.message || String(err);
+    const isTimeout =
+      msg.toLowerCase().includes('timed out') ||
+      msg.toLowerCase().includes('timeout') ||
+      msg.toLowerCase().includes('aborted') ||
+      err?.name === 'AbortError' ||
+      err?.name === 'APIUserAbortError' ||
+      err?.name === 'APIConnectionTimeoutError';
+    const isQuota =
+      msg.includes('quota') ||
+      msg.includes('RESOURCE_EXHAUSTED') ||
+      err?.status === 429;
+
+    if (isTimeout) {
+      console.warn(`[Character Architect API] [Timeout] User: ${userId}, Elapsed: ${elapsed}ms`);
+      res.status(504).json({
+        error: 'Angel communion timed out.',
+        message: 'The celestial realm took longer than expected to respond. Please check your connection and tap Retry.',
+        timedOut: true
+      });
+      return;
+    }
+
+    if (isQuota) {
+      console.warn(`[Character Architect API] [Quota Exhausted] User: ${userId}, Elapsed: ${elapsed}ms`);
+      res.status(429).json({
+        error: 'AI model quota exceeded.',
+        message: msg,
+        quotaExhausted: true
+      });
+      return;
+    }
+
+    console.error(`[Character Architect API] [Error] User: ${userId}, Elapsed: ${elapsed}ms, Error: ${msg}`);
+    res.status(500).json({
+      error: 'Failed to commune with Angel.',
+      message: 'Unable to continue character creation right now. Please tap Retry.'
+    });
+  } finally {
+    slot.release?.();
+  }
+});
+
 if (process.env.NODE_ENV !== 'test') {
   app.listen(CONFIG.PORT, () => {
     console.log(`[BranchVerse Server] Running on http://localhost:${CONFIG.PORT}`);

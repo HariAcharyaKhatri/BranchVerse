@@ -1,4 +1,5 @@
 import { PowerTierCode } from '../features/character/tierSystem';
+import type { CharacterTalent, CharacterAbility, CharacterAttributes } from './talent';
 
 export type MoralAlignment =
   | 'Lawful Good'
@@ -41,8 +42,16 @@ export interface HeroProfile {
   powers: string[];
   weapons: string[];
   weaknesses: string[];
-  powerLevel: number; // 1 to 100
-  tier?: PowerTierCode;
+  powerLevel: number; // 1 to 100 acquired level (kept for backward compatibility)
+  characterLevel?: number; // Explicit acquired progression level (1 to 100)
+  tier?: PowerTierCode; // Highest/primary innate talent tier
+  talents?: CharacterTalent[]; // Specific innate talents, each with independent tier!
+  abilitiesList?: CharacterAbility[]; // Specific unlocked capabilities
+  attributes?: CharacterAttributes; // Attributes (1-100)
+  professions?: string[]; // Combat or non-combat professions
+  bloodline?: string;
+  socialStatus?: string;
+  specialGifts?: string[];
   goals: string[];
   motivations: string[];
   fears: string[];
@@ -56,3 +65,5 @@ export interface PartialHeroDraft extends Partial<Omit<HeroProfile, 'appearance'
   appearance?: Partial<CharacterAppearance>;
   relationships?: CharacterRelationship[];
 }
+
+export * from './talent';
