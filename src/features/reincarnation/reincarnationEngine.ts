@@ -245,6 +245,60 @@ export const extractReincarnationPreferences = (
     updates.preferences.primaryThemes = createField(detectedThemes, 'confirmed');
   }
 
+  // 7. Calling & Profession
+  const professionKeywords: Array<{ keywords: string[]; name: string }> = [
+    { keywords: ['warrior', 'blademaster', 'योद्धा'], name: 'Warrior / Blademaster' },
+    { keywords: ['knight', 'paladin', 'नाइट'], name: 'Knight / Paladin' },
+    { keywords: ['swordsman', 'spellblade', 'तलवार'], name: 'Swordsman / Spellblade' },
+    { keywords: ['mage', 'elementalist', 'जादूगर'], name: 'Mage / Elementalist' },
+    { keywords: ['archmage', 'arcanist'], name: 'Archmage / Arcanist' },
+    { keywords: ['healer', 'cleric', 'उपचारक'], name: 'Healer / Cleric' },
+    { keywords: ['archer', 'ranger', 'धनुर्धर'], name: 'Ranger / Sharpshooter' },
+    { keywords: ['assassin', 'infiltrator', 'हत्यारा'], name: 'Shadow Assassin / Infiltrator' },
+    { keywords: ['merchant', 'trader', 'व्यापारी'], name: 'Merchant / Trade Magnate' },
+    { keywords: ['blacksmith', 'smith', 'लोहार'], name: 'Blacksmith / Weaponsmith' },
+    { keywords: ['alchemist', 'apothecary', 'रसायनज्ञ'], name: 'Alchemist / Apothecary' },
+    { keywords: ['scholar', 'researcher', 'विद्वान'], name: 'Scholar / Sage / Researcher' },
+    { keywords: ['engineer', 'mechanist', 'इंजीनियर'], name: 'Arcane Engineer / Mechanist' },
+    { keywords: ['farmer', 'agronomist', 'किसान'], name: 'Agronomist / Master Farmer' },
+    { keywords: ['doctor', 'physician', 'चिकित्सक'], name: 'Physician / Master Doctor' },
+  ];
+
+  for (const pk of professionKeywords) {
+    if (pk.keywords.some((k) => lower.includes(k))) {
+      extractedFields.push(`Profession: ${pk.name}`);
+      updates.abilities = updates.abilities || { ...currentProfile.abilities };
+      const current = currentProfile.abilities.skills.value || [];
+      const updated = current.includes(pk.name) ? current : [...current, pk.name];
+      updates.abilities.skills = createField(updated, 'confirmed');
+      break;
+    }
+  }
+
+  // 8. World Destination
+  const worldKeywords: Array<{ keywords: string[]; name: string; genre: string }> = [
+    { keywords: ['aethelgard', 'crystal citadel', 'high realm'], name: 'Aethelgard High Realm', genre: 'fantasy' },
+    { keywords: ['neokyoto', 'neo-kyoto', 'cyberpunk', '2099'], name: 'Neo-Kyoto 2099', genre: 'cyberpunk' },
+    { keywords: ['kunlun', 'mount kunlun', 'xianxia', 'cultivation peak'], name: 'Mount Kunlun Sects', genre: 'cultivation' },
+    { keywords: ['lumina', 'arcane citadel', 'magic academy'], name: 'Grand Arcane Citadel of Lumina', genre: 'school_life' },
+    { keywords: ['sylvaneth', 'elderwood', 'beastkin forest'], name: 'Sylvaneth Primordial Elderwood', genre: 'adventure' },
+    { keywords: ['elysian', 'divine zenith', 'celestial heaven'], name: 'Elysian Heavens & Divine Zenith', genre: 'fantasy' },
+    { keywords: ['valgora', 'infernal scorch', 'demon realm'], name: 'Infernal Scorchlands of Valgora', genre: 'fantasy' },
+    { keywords: ['abyss', 'endless labyrinth', 'megadungeon'], name: 'The Endless Labyrinth & Black Rift', genre: 'fantasy' },
+    { keywords: ['valen', 'trade coast', 'merchant valley'], name: 'Valen Free Republic & Trade Coast', genre: 'adventure' },
+    { keywords: ['ironspire', 'steampunk', 'airship empire'], name: 'Steam-Gilded Empire of Ironspire', genre: 'fantasy' },
+  ];
+
+  for (const wk of worldKeywords) {
+    if (wk.keywords.some((k) => lower.includes(k))) {
+      extractedFields.push(`Destination World: ${wk.name}`);
+      updates.world = updates.world || { ...currentProfile.world };
+      updates.world.name = createField(wk.name, 'confirmed');
+      updates.world.genre = createField(wk.genre, 'confirmed');
+      break;
+    }
+  }
+
   return {
     extractedUpdates: updates,
     extractedName,

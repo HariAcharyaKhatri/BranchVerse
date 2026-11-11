@@ -252,8 +252,11 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
   };
 
   const handleUpdateProfileField = (category: keyof ReincarnationProfile, field: string, value: any) => {
-    const nextSession = updateProfileFieldManually(session, category, field, value);
-    setSession(nextSession);
+    setSession((prev) => {
+      const nextSession = updateProfileFieldManually(prev, category, field, value);
+      saveReincarnationSession(nextSession);
+      return nextSession;
+    });
   };
 
   // Reset Session
@@ -846,13 +849,13 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                         return (
                           <button
                             key={s.id}
+                            type="button"
                             onClick={() => {
                               handleUpdateProfileField('character', 'race', s.name);
-                              handleQuickInquiry(`I choose the ${s.name} race.`);
                             }}
                             className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
                               isSelected
-                                ? 'bg-violet-950/40 border-violet-400 text-white shadow-md'
+                                ? 'bg-violet-950/40 border-violet-400 text-white shadow-md ring-1 ring-violet-400/50'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-violet-500/30'
                             }`}
                           >
@@ -911,13 +914,13 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                         return (
                           <button
                             key={b.id}
+                            type="button"
                             onClick={() => {
                               handleUpdateProfileField('character', 'socialStatus', b.name);
-                              handleQuickInquiry(`My background is ${b.name}.`);
                             }}
                             className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
                               isSelected
-                                ? 'bg-amber-950/40 border-amber-400 text-white shadow-md'
+                                ? 'bg-amber-950/40 border-amber-400 text-white shadow-md ring-1 ring-amber-400/50'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-amber-500/30'
                             }`}
                           >
@@ -946,25 +949,41 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       <span className="text-[10px] font-mono text-amber-300 font-bold uppercase tracking-wider block">
                         Decision 4 of 8 • Calling & Discipline
                       </span>
-                      <h2 className="text-base sm:text-lg font-bold text-white font-serif mt-0.5">
-                        Will you walk the path of steel, or govern through trade & wisdom?
-                      </h2>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <h2 className="text-base sm:text-lg font-bold text-white font-serif">
+                          Will you walk the path of steel, or govern through trade & wisdom?
+                        </h2>
+                        <span className="text-xs font-mono font-bold text-violet-300 bg-violet-400/10 px-2 py-0.5 rounded-full border border-violet-400/20 shrink-0">
+                          {PROFESSIONS_CATALOGUE.length} Callings
+                        </span>
+                      </div>
+                      <p className="text-xs text-dark-muted mt-1">
+                        Active Callings: <strong className="text-violet-300">{(session.profile.abilities.skills.value || []).join(', ') || 'None selected'}</strong>
+                        <span className="text-[10px] text-dark-muted/80 ml-2">(Select up to 3 dual-class callings)</span>
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
                       {PROFESSIONS_CATALOGUE.map((p) => {
-                        const isSelected = session.profile.abilities.skills.value?.includes(p.name);
-                        const isNonCombat = ['Merchant', 'Agronomist', 'Blacksmith', 'Scholar', 'Architect', 'Diplomat'].some((nc) => p.name.includes(nc));
+                        const currentSkills = session.profile.abilities.skills.value || [];
+                        const isSelected = currentSkills.includes(p.name);
+                        const isNonCombat = !['warrior', 'knight', 'swordsman', 'mage', 'archmage', 'healer', 'archer', 'assassin', 'rogue', 'berserker', 'necromancer', 'summoner', 'monk', 'spearman'].some(cr => p.id.includes(cr));
                         return (
                           <button
                             key={p.id}
+                            type="button"
                             onClick={() => {
-                              handleUpdateProfileField('abilities', 'skills', [p.name]);
-                              handleQuickInquiry(`My profession is ${p.name}.`);
+                              let updated: string[];
+                              if (isSelected) {
+                                updated = currentSkills.filter((s: string) => s !== p.name);
+                              } else {
+                                updated = currentSkills.length >= 3 ? [...currentSkills.slice(1), p.name] : [...currentSkills, p.name];
+                              }
+                              handleUpdateProfileField('abilities', 'skills', updated.length > 0 ? updated : [p.name]);
                             }}
                             className={`p-3 rounded-xl text-left border transition-all flex flex-col justify-between ${
                               isSelected
-                                ? 'bg-violet-950/40 border-violet-400 text-white shadow-md'
+                                ? 'bg-violet-950/40 border-violet-400 text-white shadow-md ring-1 ring-violet-400/50'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-violet-500/30'
                             }`}
                           >
@@ -1197,25 +1216,40 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       <span className="text-[10px] font-mono text-amber-300 font-bold uppercase tracking-wider block">
                         Decision 7 of 8 • Destination Horizon
                       </span>
-                      <h2 className="text-base sm:text-lg font-bold text-white font-serif mt-0.5">
-                        Choose your destination realm in the multiverse
-                      </h2>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <h2 className="text-base sm:text-lg font-bold text-white font-serif">
+                          Choose your destination realm in the multiverse
+                        </h2>
+                        <span className="text-xs font-mono font-bold text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 shrink-0">
+                          {WORLD_CATALOG.length} Multiverse Realms
+                        </span>
+                      </div>
+                      <p className="text-xs text-dark-muted mt-1">
+                        Chosen Destination: <strong className="text-amber-300">{session.profile.world.name.value || 'None selected'}</strong>
+                        {session.profile.world.genre.value && (
+                          <span className="text-[10px] font-mono text-amber-400/80 ml-2">({session.profile.world.genre.value})</span>
+                        )}
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[52vh] overflow-y-auto touch-scroll pr-1">
                       {WORLD_CATALOG.map((w) => {
                         const isSelected = session.profile.world.name.value === w.name;
                         return (
                           <button
                             key={w.id}
+                            type="button"
                             onClick={() => {
-                              handleUpdateProfileField('world', 'name', w.name);
-                              handleUpdateProfileField('world', 'genre', w.primaryGenreId);
-                              handleQuickInquiry(`I select the realm of ${w.name}.`);
+                              setSession((prev) => {
+                                let next = updateProfileFieldManually(prev, 'world', 'name', w.name);
+                                next = updateProfileFieldManually(next, 'world', 'genre', w.primaryGenreId);
+                                saveReincarnationSession(next);
+                                return next;
+                              });
                             }}
                             className={`rounded-2xl text-left border transition-all overflow-hidden flex flex-col justify-between group ${
                               isSelected
-                                ? 'bg-amber-950/30 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/40'
+                                ? 'bg-amber-950/40 border-amber-400 text-white shadow-xl ring-2 ring-amber-400/70 scale-[1.01]'
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:border-amber-500/40 hover:bg-dark-elevated'
                             }`}
                           >
