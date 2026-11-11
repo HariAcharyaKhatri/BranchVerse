@@ -81,6 +81,54 @@ export const LOCAL_ASSET_MANIFEST: AssetManifest = {
       license: 'CC0 1.0 Universal'
     },
     {
+      id: 'human_male_adventurer',
+      name: 'Alden (Human Adventurer)',
+      category: 'protagonists',
+      gender: 'Male',
+      defaultPath: '/assets/characters/human/human-male-portrait.png',
+      tags: ['human', 'adventurer', 'warrior', 'male'],
+      genres: ['fantasy', 'isekai', 'adventure'],
+      creator: 'Ravenmore',
+      source: 'https://opengameart.org/content/700-rpg-character-portraits',
+      license: 'CC-BY 3.0'
+    },
+    {
+      id: 'elf_female_sorceress',
+      name: 'Lyra (High Elf Sorceress)',
+      category: 'protagonists',
+      gender: 'Female',
+      defaultPath: '/assets/characters/elf/elf-female-portrait.png',
+      tags: ['elf', 'sorceress', 'mage', 'female'],
+      genres: ['fantasy', 'isekai', 'adventure'],
+      creator: 'Ravenmore',
+      source: 'https://opengameart.org/content/700-rpg-character-portraits',
+      license: 'CC-BY 3.0'
+    },
+    {
+      id: 'dwarf_male_guardian',
+      name: 'Thrum (Dwarf Guardian)',
+      category: 'protagonists',
+      gender: 'Male',
+      defaultPath: '/assets/characters/dwarf/dwarf-male-portrait.png',
+      tags: ['dwarf', 'guardian', 'smith', 'male'],
+      genres: ['fantasy', 'isekai', 'adventure'],
+      creator: 'Ravenmore',
+      source: 'https://opengameart.org/content/700-rpg-character-portraits',
+      license: 'CC-BY 3.0'
+    },
+    {
+      id: 'orc_warrior_champion',
+      name: 'Gorg (Orc Champion)',
+      category: 'protagonists',
+      gender: 'Male',
+      defaultPath: '/assets/characters/orc/orc-warrior-portrait.png',
+      tags: ['orc', 'warrior', 'berserker', 'male'],
+      genres: ['fantasy', 'isekai', 'adventure'],
+      creator: 'm7600',
+      source: 'https://opengameart.org/',
+      license: 'CC0 1.0 Universal'
+    },
+    {
       id: 'mentor_shen',
       name: 'Master Shen',
       category: 'supporting',

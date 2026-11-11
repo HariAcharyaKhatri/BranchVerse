@@ -18,11 +18,11 @@ export const IdentityStep: React.FC<IdentityStepProps> = ({ hero, onChange }) =>
         <label className="block text-xs font-semibold text-dark-muted mb-1.5">
           Protagonist Appearance & Avatar
         </label>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
           {avatars.map((av) => {
-            const isSelected = hero.gender?.toLowerCase() === av.gender?.toLowerCase() ||
-              (av.id === 'hari_swordsman' && (!hero.gender || hero.gender === 'Male')) ||
-              (av.id === 'aria_spellblade' && hero.gender === 'Female');
+            const isSelected = hero.avatarPath === av.defaultPath ||
+              (!hero.avatarPath && av.id === 'hari_swordsman' && (!hero.gender || hero.gender === 'Male')) ||
+              (!hero.avatarPath && av.id === 'aria_spellblade' && hero.gender === 'Female');
 
             return (
               <button
@@ -31,6 +31,7 @@ export const IdentityStep: React.FC<IdentityStepProps> = ({ hero, onChange }) =>
                 onClick={() => {
                   onChange({
                     gender: av.gender,
+                    avatarPath: av.defaultPath,
                     appearance: {
                       ...(hero.appearance || { clothing: '', distinguishingFeatures: '' }),
                       hair: av.id === 'hari_swordsman' ? 'White spiked hair' : 'Long raven hair with bangs',

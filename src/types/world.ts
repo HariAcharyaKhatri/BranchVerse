@@ -37,6 +37,8 @@ export interface WorldDefinition {
   name: string;
   primaryGenreId: string;
   synopsis: string;
+  imagePath?: string;
+  coverImage?: string;
   locations: LocationDefinition[];
   factions: FactionDefinition[];
   magicSystem: MagicSystemDefinition;

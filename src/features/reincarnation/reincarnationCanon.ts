@@ -16,6 +16,8 @@ export const CANON_ANGEL = {
   epithet: 'Guardian of Transmigration & Rebirth',
   description: 'A radiant angelic presence crowned with a luminous golden halo, draped in starlight silk, and possessing four folded prismatic wings of celestial light.',
   dialogueStyle: 'Serene, compassionate, noble, and deeply attentive.',
+  portraitPath: '/assets/characters/angel/celestial-seraphina-angel.svg',
+  crestPath: '/assets/characters/angel/angel-crest.svg',
   initialGreeting: 'Welcome, lost soul, mortal traveler of Earth. The storms of your former world have settled, yet your thread is not ended. Before we speak of the infinite horizons awaiting you... tell me, what should I call you?',
   nameInquiry: 'Before we speak of the infinite horizons awaiting you... tell me, what is your name?',
   farewellBlessing: 'May your will carve constellations across the firmament, and may your deeds echo with honor across the tapestry of worlds. Go forth, and live truly.',

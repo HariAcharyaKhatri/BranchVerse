@@ -32,6 +32,7 @@ export interface HeroProfile {
   name: string;
   age: string;
   gender: string;
+  avatarPath?: string;
   appearance: CharacterAppearance;
   personality: string[];
   race: string;

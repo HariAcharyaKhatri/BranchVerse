@@ -36,34 +36,49 @@ export const SelectWorldPage: React.FC<SelectWorldPageProps> = ({ onSelectWorld,
             <div
               key={world.id}
               onClick={() => setSelectedWorldId(world.id)}
-              className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+              className={`rounded-2xl border cursor-pointer transition-all overflow-hidden ${
                 isSelected
                   ? 'bg-dark-surface border-brand-primary shadow-glow-sm'
                   : 'bg-dark-surface/60 border-dark-border hover:border-dark-muted'
               }`}
             >
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-bold text-sm text-dark-text flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-brand-primary" /> {world.name}
-                </h3>
-                {isSelected && (
-                  <Badge variant="primary" size="sm" className="gap-1">
-                    <Check className="w-3 h-3" /> Selected
-                  </Badge>
-                )}
-              </div>
-
-              <p className="text-xs text-dark-muted leading-relaxed line-clamp-2 mt-1">
-                {world.synopsis}
-              </p>
-
-              {/* World Lore Details Preview */}
-              <div className="mt-3 pt-2.5 border-t border-dark-border/40 grid grid-cols-2 gap-2 text-[11px]">
-                <div className="text-dark-muted truncate">
-                  <span className="font-semibold text-dark-text">Magic:</span> {world.magicSystem.name}
+              {world.imagePath && (
+                <div className="w-full h-24 relative overflow-hidden bg-dark-bg">
+                  <img
+                    src={world.imagePath}
+                    alt={world.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-dark-surface via-dark-surface/30 to-transparent" />
                 </div>
-                <div className="text-dark-muted truncate">
-                  <span className="font-semibold text-dark-text">Factions:</span> {world.factions.length} Major
+              )}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-bold text-sm text-dark-text flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-brand-primary" /> {world.name}
+                  </h3>
+                  {isSelected && (
+                    <Badge variant="primary" size="sm" className="gap-1">
+                      <Check className="w-3 h-3" /> Selected
+                    </Badge>
+                  )}
+                </div>
+
+                <p className="text-xs text-dark-muted leading-relaxed line-clamp-2 mt-1">
+                  {world.synopsis}
+                </p>
+
+                {/* World Lore Details Preview */}
+                <div className="mt-3 pt-2.5 border-t border-dark-border/40 grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="text-dark-muted truncate">
+                    <span className="font-semibold text-dark-text">Magic:</span> {world.magicSystem.name}
+                  </div>
+                  <div className="text-dark-muted truncate">
+                    <span className="font-semibold text-dark-text">Factions:</span> {world.factions.length} Major
+                  </div>
                 </div>
               </div>
             </div>

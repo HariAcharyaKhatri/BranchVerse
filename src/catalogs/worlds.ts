@@ -6,6 +6,8 @@ export const WORLD_CATALOG: WorldDefinition[] = [
     name: 'Aethelgard High Realm',
     primaryGenreId: 'fantasy',
     synopsis: 'A continent of floating crystal citadels, whispering elderwoods, and slumbering colossal dragons guarded by the Silver Vanguard.',
+    imagePath: '/assets/worlds/kingdoms/aethelgard-high-realm.jpg',
+    coverImage: '/assets/worlds/kingdoms/aethelgard-high-realm.jpg',
     locations: [
       { id: 'silver_spire', name: 'The Silver Spire', type: 'citadel', description: 'Seat of the Archmagi where leylines converge in a pillar of starlight.', dangerLevel: 'Safe' },
       { id: 'whisperwood', name: 'The Whisperwood', type: 'sanctuary', description: 'Ancient bioluminescent forest where spirits offer riddles and forbidden remedies.', dangerLevel: 'Moderate' },
@@ -35,6 +37,8 @@ export const WORLD_CATALOG: WorldDefinition[] = [
     name: 'Neo-Kyoto 2099',
     primaryGenreId: 'cyberpunk',
     synopsis: 'A towering vertical megalopolis where megacorporations rule the sky-penthouses while chromed cyber-runners navigate rainy neon back-alleys.',
+    imagePath: '/assets/worlds/environments/neokyoto-megalopolis.png',
+    coverImage: '/assets/worlds/environments/neokyoto-megalopolis.png',
     locations: [
       { id: 'shinjuku_undercity', name: 'District 4 Underbelly', type: 'wasteland', description: 'Subterranean black markets lit by flickering hologram advertisements and steam pipes.', dangerLevel: 'Hazardous' },
       { id: 'araka_tower', name: 'Arakawa Megacorp Plaza', type: 'citadel', description: 'Gleaming 200-story monolith bristling with corporate counter-ICE and autonomous security drones.', dangerLevel: 'Lethal' },
@@ -63,6 +67,8 @@ export const WORLD_CATALOG: WorldDefinition[] = [
     name: 'Mount Kunlun Sects',
     primaryGenreId: 'cultivation',
     synopsis: 'Floating jade peaks where immortal cultivators swallow pills, tame divine beasts, and shatter mountain ranges with a single sword intent.',
+    imagePath: '/assets/worlds/environments/kunlun-mist-peaks.jpg',
+    coverImage: '/assets/worlds/environments/kunlun-mist-peaks.jpg',
     locations: [
       { id: 'azure_peak', name: 'Azure Cloud Sword Pavilion', type: 'academy', description: 'Pinnacle sect where outer disciples sweep steps and inner disciples practice nine-sword formations.', dangerLevel: 'Safe' },
       { id: 'demon_beast_valley', name: 'Ten-Thousand Demon Ravine', type: 'dungeon', description: 'Mist-shrouded gorge populated by millennial spirit serpents and blood-eating ginseng herbs.', dangerLevel: 'Hazardous' },

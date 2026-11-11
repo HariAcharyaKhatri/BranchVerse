@@ -9,6 +9,7 @@ export interface PowerDefinition {
   defaultTier: PowerTierCode;
   rarity: 'Common' | 'Uncommon' | 'Rare' | 'Very Rare' | 'Mythic' | 'Divine Origin';
   icon: string;
+  svgPath?: string;
   description: string;
   applications: string[];
   strengths: string[];
@@ -16,6 +17,73 @@ export interface PowerDefinition {
   specializations: string[];
   compatibleWith?: string[];
   isCombat: boolean;
+}
+
+export const POWER_SVG_MAP: Record<string, string> = {
+  elem_fire: '/assets/powers/elemental/fire-magic.svg',
+  elem_water: '/assets/powers/elemental/water-magic.svg',
+  elem_earth: '/assets/powers/elemental/earth-magic.svg',
+  elem_wind: '/assets/powers/elemental/wind-magic.svg',
+  elem_lightning: '/assets/powers/elemental/lightning-magic.svg',
+  elem_thunder: '/assets/powers/elemental/thunder-magic.svg',
+  elem_ice: '/assets/powers/elemental/ice-magic.svg',
+  elem_frost: '/assets/powers/elemental/frost-magic.svg',
+  elem_snow: '/assets/powers/elemental/snow-magic.svg',
+  elem_steam: '/assets/powers/elemental/steam-magic.svg',
+  elem_lava: '/assets/powers/elemental/lava-magic.svg',
+  elem_metal: '/assets/powers/elemental/metal-magic.svg',
+  elem_nature: '/assets/powers/elemental/nature-magic.svg',
+  elem_sand: '/assets/powers/elemental/sand-magic.svg',
+  elem_crystal: '/assets/powers/elemental/crystal-magic.svg',
+  elem_poison: '/assets/powers/elemental/poison-magic.svg',
+  elem_gravity: '/assets/powers/elemental/gravity-magic.svg',
+  elem_magnetism: '/assets/powers/elemental/magnetism-magic.svg',
+  elem_light: '/assets/powers/elemental/light-magic.svg',
+  elem_shadow: '/assets/powers/elemental/shadow-magic.svg',
+  elem_plasma: '/assets/powers/elemental/lightning-magic.svg',
+  elem_void: '/assets/powers/conceptual/void-magic.svg',
+  elem_sound: '/assets/powers/elemental/sound-magic.svg',
+  elem_mist: '/assets/powers/elemental/mist-magic.svg',
+  elem_ash: '/assets/powers/elemental/ash-magic.svg',
+  elem_smoke: '/assets/powers/elemental/smoke-magic.svg',
+  elem_mud: '/assets/powers/elemental/mud-magic.svg',
+  elem_wood: '/assets/powers/elemental/wood-magic.svg',
+  elem_blizzard: '/assets/powers/elemental/snow-magic.svg',
+  elem_meteor: '/assets/powers/conceptual/destruction-wave.svg',
+  elem_aurora: '/assets/powers/divine/divine-light.svg',
+  elem_tectonic: '/assets/powers/elemental/earth-magic.svg',
+  elem_corrosion: '/assets/powers/elemental/acid-magic.svg',
+  div_healing: '/assets/powers/divine/healing-magic.svg',
+  div_holy: '/assets/powers/divine/holy-magic.svg',
+  div_barrier: '/assets/powers/divine/barrier-magic.svg',
+  div_resurrection: '/assets/powers/divine/resurrection.svg',
+  dark_necromancy: '/assets/powers/dark/necromancy.svg',
+  dark_curse: '/assets/powers/dark/curse-magic.svg',
+  dark_life_drain: '/assets/powers/dark/soul-magic.svg',
+  sp_teleport: '/assets/powers/space-time/teleportation.svg',
+  sp_time: '/assets/powers/space-time/time-manipulation.svg',
+  con_fate: '/assets/powers/conceptual/fate-weaving.svg',
+  con_void: '/assets/powers/conceptual/void-magic.svg',
+  com_swordsmanship: '/assets/professions/combat/swordsman.svg',
+  com_archery: '/assets/professions/combat/archer.svg',
+  com_unarmed: '/assets/professions/combat/warrior.svg',
+  com_stealth: '/assets/professions/combat/assassin.svg',
+  race_dragon: '/assets/creatures/dragons/dragon.svg',
+  race_regen: '/assets/powers/divine/restoration.svg',
+  prod_business: '/assets/professions/non-combat/merchant.svg',
+  prod_alchemy: '/assets/professions/non-combat/alchemist.svg',
+  prod_blacksmith: '/assets/professions/non-combat/blacksmith.svg',
+  prod_farming: '/assets/professions/non-combat/farmer.svg',
+  prod_engineering: '/assets/professions/non-combat/engineer.svg',
+  int_genius: '/assets/powers/conceptual/memory-weave.svg',
+  int_appraisal: '/assets/icons/ui-book.svg',
+  uniq_jack_of_all_trades: '/assets/powers/conceptual/jack-of-all-trades.svg',
+  uniq_skill_copy: '/assets/powers/conceptual/illusion-veil.svg',
+  uniq_system_interface: '/assets/icons/ui-dice.svg',
+};
+
+export function getPowerSvgPath(powerId: string): string | undefined {
+  return POWER_SVG_MAP[powerId];
 }
 
 export interface PowerCombinationRule {
@@ -1078,7 +1146,10 @@ export const ALL_POWER_DEFINITIONS: PowerDefinition[] = [
   ...PRODUCTION_POWERS,
   ...INTELLECTUAL_POWERS,
   ...UNIQUE_POWERS,
-];
+].map((p) => ({
+  ...p,
+  svgPath: p.svgPath || POWER_SVG_MAP[p.id],
+}));
 
 /**
  * POWER COMBINATIONS REGISTRY

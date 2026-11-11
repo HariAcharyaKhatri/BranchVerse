@@ -237,8 +237,21 @@ export const PowerCatalogueModal: React.FC<PowerCatalogueModalProps> = ({
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-base">{power.icon}</span>
+                      <div className="flex items-center gap-2">
+                        {power.svgPath ? (
+                          <div className="w-7 h-7 rounded-lg bg-black/60 border border-dark-border/80 p-1 flex items-center justify-center shrink-0">
+                            <img
+                              src={power.svgPath}
+                              alt=""
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-base">{power.icon}</span>
+                        )}
                         <div>
                           <h4 className="font-bold text-xs sm:text-sm text-white font-serif leading-tight">
                             {power.name}

@@ -53,22 +53,29 @@ export const AngelChatPane: React.FC<AngelChatPaneProps> = ({
       {/* Header with Celestial Online Indicator */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-dark-border/50 bg-dark-elevated/40">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-amber-400 p-0.5 shadow-sm">
-            <div className="w-full h-full bg-dark-surface rounded-[7px] flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-400 to-violet-600 p-0.5 shadow-md shrink-0">
+            <div className="w-full h-full bg-dark-surface rounded-[10px] overflow-hidden flex items-center justify-center">
+              <img
+                src="/assets/characters/angel/celestial-seraphina-angel.svg"
+                alt="Angel Seraphina"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <h3 className="text-xs sm:text-sm font-bold text-white font-serif tracking-wide">
-                Angel
+                Angel Seraphina
               </h3>
               <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">
                 Soul Architect
               </span>
             </div>
             <p className="text-[10px] text-dark-muted font-sans">
-              Online AI Character Architect
+              Divine Guide & Character Architect
             </p>
           </div>
         </div>
@@ -90,13 +97,24 @@ export const AngelChatPane: React.FC<AngelChatPaneProps> = ({
               className={`flex items-start gap-2.5 ${isAngel ? '' : 'flex-row-reverse'}`}
             >
               <div
-                className={`w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-xs shadow-sm ${
+                className={`w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-xs shadow-sm overflow-hidden ${
                   isAngel
-                    ? 'bg-gradient-to-tr from-violet-500 to-amber-400 text-white'
+                    ? 'bg-amber-400/20 border border-amber-400/50 text-amber-300'
                     : 'bg-dark-elevated border border-dark-border text-dark-text'
                 }`}
               >
-                {isAngel ? <Sparkles className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                {isAngel ? (
+                  <img
+                    src="/assets/characters/angel/celestial-seraphina-angel.svg"
+                    alt="Seraphina"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <User className="w-3 h-3" />
+                )}
               </div>
 
               <div

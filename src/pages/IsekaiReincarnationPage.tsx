@@ -686,10 +686,17 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
             <aside className="w-full lg:w-80 xl:w-96 flex flex-col bg-dark-surface/80 border border-dark-border/70 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-lg shrink-0 max-h-[38vh] lg:max-h-none overflow-hidden">
               {/* Angel Presence Card */}
               <div className="flex items-center justify-between pb-2.5 border-b border-dark-border/40 shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-amber-400 p-0.5 shadow-sm">
-                    <div className="w-full h-full bg-dark-surface rounded-[10px] flex items-center justify-center">
-                      <Sparkles className="w-4 h-4 text-amber-300" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 to-violet-600 p-0.5 shadow-md shrink-0">
+                    <div className="w-full h-full bg-dark-surface rounded-[9px] overflow-hidden flex items-center justify-center">
+                      <img
+                        src={CANON_ANGEL.portraitPath}
+                        alt={CANON_ANGEL.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                     </div>
                   </div>
                   <div>
@@ -849,9 +856,23 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-violet-500/30'
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-xs font-bold text-white font-serif">{s.name}</span>
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border text-amber-300">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {(s.portraitPath || s.iconPath) && (
+                                  <div className="w-7 h-7 rounded-lg overflow-hidden bg-black/60 border border-dark-border shrink-0 flex items-center justify-center p-0.5">
+                                    <img
+                                      src={s.portraitPath || s.iconPath}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                <span className="text-xs font-bold text-white font-serif truncate">{s.name}</span>
+                              </div>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border text-amber-300 shrink-0">
                                 {s.rarity}
                               </span>
                             </div>
@@ -947,10 +968,24 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                                 : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:text-white hover:border-violet-500/30'
                             }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-white font-serif">{p.name.split('/')[0]}</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {(p.iconPath || p.portraitPath) && (
+                                  <div className="w-6 h-6 rounded-md overflow-hidden bg-black/60 border border-dark-border shrink-0 p-0.5 flex items-center justify-center">
+                                    <img
+                                      src={p.iconPath || p.portraitPath}
+                                      alt=""
+                                      className="w-full h-full object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                <span className="text-xs font-bold text-white font-serif truncate">{p.name.split('/')[0]}</span>
+                              </div>
                               {isNonCombat && (
-                                <span className="text-[9px] font-mono text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                <span className="text-[9px] font-mono text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
                                   Trade/Civic
                                 </span>
                               )}
@@ -1051,9 +1086,25 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                             }`}
                           >
                             <div className="flex items-start justify-between gap-1.5">
-                              <div>
-                                <span className="text-xs font-bold text-white font-serif">{p.name}</span>
-                                <span className="text-[9px] text-dark-muted block">Cat: {p.category.replace('_', ' ')}</span>
+                              <div className="flex items-center gap-2 min-w-0">
+                                {p.svgPath ? (
+                                  <div className="w-6 h-6 rounded-md overflow-hidden bg-black/60 border border-dark-border/80 p-0.5 flex items-center justify-center shrink-0">
+                                    <img
+                                      src={p.svgPath}
+                                      alt=""
+                                      className="w-full h-full object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="text-sm shrink-0">{p.icon}</span>
+                                )}
+                                <div className="min-w-0">
+                                  <span className="text-xs font-bold text-white font-serif truncate block">{p.name}</span>
+                                  <span className="text-[9px] text-dark-muted block">Cat: {p.category.replace('_', ' ')}</span>
+                                </div>
                               </div>
                               <button
                                 type="button"
@@ -1151,7 +1202,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
                       {WORLD_CATALOG.map((w) => {
                         const isSelected = session.profile.world.name.value === w.name;
                         return (
@@ -1162,24 +1213,39 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                               handleUpdateProfileField('world', 'genre', w.primaryGenreId);
                               handleQuickInquiry(`I select the realm of ${w.name}.`);
                             }}
-                            className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between ${
+                            className={`rounded-2xl text-left border transition-all overflow-hidden flex flex-col justify-between group ${
                               isSelected
-                                ? 'bg-amber-950/30 border-amber-400 text-white shadow-md'
-                                : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:border-amber-500/30'
+                                ? 'bg-amber-950/30 border-amber-400 text-white shadow-lg ring-1 ring-amber-400/40'
+                                : 'bg-dark-elevated/70 border-dark-border/70 text-dark-muted hover:border-amber-500/40 hover:bg-dark-elevated'
                             }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs sm:text-sm font-bold text-white font-serif">{w.name}</span>
-                              <span className="text-[9px] font-mono font-bold text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-                                {w.primaryGenreId}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-dark-muted mt-1 leading-relaxed line-clamp-2">
-                              {w.synopsis}
-                            </p>
-                            <div className="mt-2 pt-2 border-t border-dark-border/40 text-[10px] text-dark-muted font-mono flex items-center justify-between">
-                              <span>Magic: {w.magicSystem?.name || 'Leylines'}</span>
-                              <span>Threat: {w.threats?.[0] || 'Monsters'}</span>
+                            {w.imagePath && (
+                              <div className="w-full h-24 sm:h-28 relative overflow-hidden bg-dark-surface">
+                                <img
+                                  src={w.imagePath}
+                                  alt={w.name}
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-dark-surface via-dark-surface/40 to-transparent" />
+                                <span className="absolute top-2 right-2 text-[9px] font-mono font-bold text-amber-300 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-amber-400/30">
+                                  {w.primaryGenreId}
+                                </span>
+                              </div>
+                            )}
+                            <div className="p-3 flex-1 flex flex-col justify-between">
+                              <div>
+                                <span className="text-xs sm:text-sm font-bold text-white font-serif block">{w.name}</span>
+                                <p className="text-[11px] text-dark-muted mt-1 leading-relaxed line-clamp-2">
+                                  {w.synopsis}
+                                </p>
+                              </div>
+                              <div className="mt-2.5 pt-2 border-t border-dark-border/40 text-[10px] text-dark-muted font-mono flex items-center justify-between">
+                                <span>Magic: {w.magicSystem?.name || 'Leylines'}</span>
+                                <span>Threat: {w.threats?.[0] || 'Monsters'}</span>
+                              </div>
                             </div>
                           </button>
                         );
