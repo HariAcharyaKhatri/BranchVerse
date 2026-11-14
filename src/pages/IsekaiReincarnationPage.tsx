@@ -148,7 +148,16 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
   const [isInspectModalOpen, setIsInspectModalOpen] = useState<boolean>(false);
   const [isAngelThinking, setIsAngelThinking] = useState<boolean>(false);
 
+  // Mobile Segmented View Mode ('build' = active decision cards, 'angel' = full chat, 'sheet' = character sheet)
+  const [mobileTab, setMobileTab] = useState<'build' | 'angel' | 'sheet'>('build');
+
   const dialogueEndRef = useRef<HTMLDivElement>(null);
+
+  // Latest message from Seraphina for the compact mobile banner
+  const latestAngelMessage = useMemo(() => {
+    const msgs = session.dialogueHistory.filter((m) => m.speaker === 'angel');
+    return msgs.length > 0 ? msgs[msgs.length - 1].text : '';
+  }, [session.dialogueHistory]);
 
   // Synchronize user display name if changed
   useEffect(() => {
@@ -767,10 +776,67 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
             onSkipToReview={handleProceedToReview}
           />
 
+          {/* Mobile Segmented View Mode Switcher (Visible only on < lg screens) */}
+          <div className="lg:hidden px-3 py-1.5 bg-dark-bg/95 border-b border-dark-border/60 flex items-center justify-between gap-1.5 shrink-0 z-10">
+            <div className="grid grid-cols-3 gap-1.5 w-full">
+              <button
+                type="button"
+                onClick={() => setMobileTab('build')}
+                className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                  mobileTab === 'build'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-md shadow-amber-500/25 ring-1 ring-amber-400 font-extrabold'
+                    : 'bg-dark-surface/70 text-dark-muted hover:text-white border border-dark-border/50'
+                }`}
+                aria-pressed={mobileTab === 'build'}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Build ({guidedStep}/8)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMobileTab('angel')}
+                className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                  mobileTab === 'angel'
+                    ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-700 text-white shadow-md shadow-violet-500/25 ring-1 ring-violet-400 font-extrabold'
+                    : 'bg-dark-surface/70 text-dark-muted hover:text-white border border-dark-border/50'
+                }`}
+                aria-pressed={mobileTab === 'angel'}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Angel Chat</span>
+                {session.dialogueHistory.length > 0 && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMobileTab('sheet')}
+                className={`py-2 px-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+                  mobileTab === 'sheet'
+                    ? 'bg-gradient-to-r from-purple-700 via-indigo-700 to-violet-800 text-white shadow-md shadow-purple-500/25 ring-1 ring-purple-400 font-extrabold'
+                    : 'bg-dark-surface/70 text-dark-muted hover:text-white border border-dark-border/50'
+                }`}
+                aria-pressed={mobileTab === 'sheet'}
+              >
+                <Shield className="w-3.5 h-3.5 text-violet-300" />
+                <span>Soul Sheet</span>
+                <span className="text-[10px] font-mono px-1 rounded bg-black/40 text-amber-300 font-bold">
+                  Lv.{characterLevel}
+                </span>
+              </button>
+            </div>
+          </div>
+
           {/* Main Layout: Mobile Single-Column / Desktop 3-Panel */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row max-w-7xl mx-auto w-full p-2.5 sm:p-4 gap-3 sm:gap-4 overflow-hidden">
-            {/* PANEL A: ANGEL SERAPHINA LIVE COMMUNION (LEFT ON DESKTOP) */}
-            <aside className="w-full lg:w-80 xl:w-96 flex flex-col bg-dark-surface/80 border border-dark-border/70 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-lg shrink-0 max-h-[38vh] lg:max-h-none overflow-hidden">
+            {/* PANEL A: ANGEL SERAPHINA LIVE COMMUNION (LEFT ON DESKTOP, TAB ON MOBILE) */}
+            <aside
+              className={`${
+                mobileTab === 'angel' ? 'flex flex-1 h-full' : 'hidden'
+              } lg:flex lg:flex-none w-full lg:w-80 xl:w-96 flex-col bg-dark-surface/90 border border-dark-border/70 rounded-2xl p-3 sm:p-4 backdrop-blur-md shadow-lg shrink-0 overflow-hidden`}
+            >
               {/* Angel Presence Card */}
               <div className="flex items-center justify-between pb-2.5 border-b border-dark-border/40 shrink-0">
                 <div className="flex items-center gap-2.5">
@@ -879,8 +945,41 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
             </aside>
 
             {/* PANEL B: ACTIVE SEQUENTIAL STEP (CENTER / PRIMARY) */}
-            <main className="flex-1 min-h-0 flex flex-col justify-between bg-dark-surface/90 border border-dark-border/70 rounded-2xl p-3 sm:p-5 backdrop-blur-md shadow-lg overflow-y-auto touch-scroll">
+            <main
+              className={`${
+                mobileTab === 'build' ? 'flex' : 'hidden'
+              } lg:flex flex-1 min-h-0 flex-col justify-between bg-dark-surface/90 border border-dark-border/70 rounded-2xl p-3 sm:p-5 backdrop-blur-md shadow-lg overflow-y-auto touch-scroll`}
+            >
               <div className="space-y-4">
+                {/* Mobile Compact Angel Oracle Banner (Shown only in build tab on mobile) */}
+                <div className="lg:hidden p-2.5 rounded-xl bg-gradient-to-r from-violet-950/70 via-dark-surface to-dark-elevated border border-violet-500/35 flex items-center justify-between gap-2 shadow-md">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-black/60 border border-amber-400/30 shrink-0">
+                      <img
+                        src={CANON_ANGEL.portraitPath}
+                        alt={CANON_ANGEL.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold text-amber-300 block">{CANON_ANGEL.name}</span>
+                      <p className="text-[11px] text-dark-muted italic truncate">
+                        {latestAngelMessage || "Seraphina is communing with your soul..."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('angel')}
+                    className="px-2.5 py-1.5 rounded-lg bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-[11px] font-bold text-amber-300 whitespace-nowrap shrink-0 flex items-center gap-1 active:scale-95 transition-all shadow-sm"
+                  >
+                    <span>Ask 💬</span>
+                  </button>
+                </div>
+
                 {/* STEP 1: SOUL NAME & IDENTITY */}
                 {guidedStep === 1 && (
                   <div className="space-y-4 animate-in fade-in">
@@ -898,6 +997,54 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       )}
                     </div>
 
+                    {/* Direct Name Input Box */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-dark-muted block font-medium">Enter or Confirm Soul Name:</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={session.userNameChosen || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSession((prev) => {
+                              const next = {
+                                ...prev,
+                                userNameChosen: val,
+                                profile: {
+                                  ...prev.profile,
+                                  character: {
+                                    ...prev.profile.character,
+                                    name: {
+                                      value: val,
+                                      confidence: 'high' as const,
+                                      source: 'user_stated' as const,
+                                      status: 'confirmed' as const,
+                                    },
+                                  },
+                                },
+                              };
+                              saveReincarnationSession(next);
+                              return next;
+                            });
+                          }}
+                          placeholder="Type your True Name (e.g. Hari Khatri)..."
+                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-dark-bg border border-dark-border text-xs sm:text-sm text-white placeholder-dark-muted focus:outline-none focus:border-amber-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (session.userNameChosen?.trim()) {
+                              handleQuickInquiry(`My name is ${session.userNameChosen.trim()}.`);
+                              setGuidedStep(2);
+                            }
+                          }}
+                          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all shadow-sm shrink-0"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Quick Suggestion Chips */}
                     <div className="space-y-1.5">
                       <span className="text-[11px] text-dark-muted block">Quick Archetype Suggestions:</span>
@@ -909,7 +1056,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                               handleQuickInquiry(`My name is ${nm}.`);
                               setGuidedStep(2);
                             }}
-                            className="px-3 py-1 rounded-xl bg-dark-elevated border border-dark-border hover:border-amber-400 text-xs text-amber-300 hover:text-white transition-all font-medium"
+                            className="px-3 py-1.5 rounded-xl bg-dark-elevated border border-dark-border hover:border-amber-400 text-xs text-amber-300 hover:text-white transition-all font-medium active:scale-95"
                           >
                             "{nm}"
                           </button>
@@ -938,7 +1085,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 lg:max-h-[52vh] lg:overflow-y-auto touch-scroll pr-1">
                       {SPECIES_CATALOGUE.map((s) => {
                         const isSelected = session.profile.character.race.value === s.name;
                         return (
@@ -1038,7 +1185,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 lg:max-h-[52vh] lg:overflow-y-auto touch-scroll pr-1">
                       {SOCIAL_BACKGROUNDS.map((b) => {
                         const isSelected = session.profile.character.socialStatus.value === b.name;
                         return (
@@ -1125,7 +1272,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[50vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 lg:max-h-[52vh] lg:overflow-y-auto touch-scroll pr-1">
                       {PROFESSIONS_CATALOGUE.map((p) => {
                         const currentSkills = session.profile.abilities.skills.value || [];
                         const isSelected = currentSkills.includes(p.name);
@@ -1291,7 +1438,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                     </div>
 
                     {/* Power Cards Grid (Paginated) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[38vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 lg:max-h-[44vh] lg:overflow-y-auto touch-scroll pr-1">
                       {pagedPowers.map((p) => {
                         const isSelected = selectedTalents.some((t) => t.id === p.id);
                         const talentEntry = selectedTalents.find((t) => t.id === p.id);
@@ -1457,7 +1604,7 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[52vh] overflow-y-auto touch-scroll pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:max-h-[52vh] lg:overflow-y-auto touch-scroll pr-1">
                       {WORLD_CATALOG.map((w) => {
                         const isSelected = session.profile.world.name.value === w.name;
                         return (
@@ -1595,8 +1742,12 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
               />
             </main>
 
-            {/* PANEL C: LIVE CHARACTER DOSSIER BLUEPRINT (RIGHT ON DESKTOP) */}
-            <aside className="hidden xl:flex w-80 flex-col bg-dark-surface/80 border border-dark-border/70 rounded-2xl p-4 backdrop-blur-md shadow-lg shrink-0 space-y-3.5 overflow-y-auto touch-scroll">
+            {/* PANEL C: LIVE CHARACTER DOSSIER BLUEPRINT (RIGHT ON DESKTOP, TAB ON MOBILE) */}
+            <aside
+              className={`${
+                mobileTab === 'sheet' ? 'flex flex-1 h-full' : 'hidden'
+              } xl:flex xl:flex-none w-full xl:w-80 flex-col bg-dark-surface/90 border border-dark-border/70 rounded-2xl p-4 backdrop-blur-md shadow-lg shrink-0 space-y-3.5 overflow-y-auto touch-scroll`}
+            >
               <div className="flex items-center justify-between pb-2 border-b border-dark-border/40">
                 <span className="text-xs font-bold text-white font-serif flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5 text-violet-400" />
@@ -1605,13 +1756,13 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                 <TierBadge tier={session.profile.abilities.powerTier?.value || 'B'} size="xs" />
               </div>
 
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2.5 text-xs">
                 <div>
                   <span className="text-[10px] text-dark-muted block">Name:</span>
                   <strong className="text-white font-serif text-sm">{session.userNameChosen || 'Wandering Soul'}</strong>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-dark-border/40">
+                <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-dark-border/40">
                   <div>
                     <span className="text-[10px] text-dark-muted block">Species:</span>
                     <span className="text-violet-300 font-medium">{session.profile.character.race.value}</span>
@@ -1622,19 +1773,62 @@ export const IsekaiReincarnationPage: React.FC<IsekaiReincarnationPageProps> = (
                   </div>
                 </div>
 
-                <div className="pt-1 border-t border-dark-border/40">
-                  <span className="text-[10px] text-dark-muted block">Profession:</span>
-                  <span className="text-white">{session.profile.abilities.skills.value?.[0] || 'Adventurer'}</span>
+                <div className="pt-1.5 border-t border-dark-border/40">
+                  <span className="text-[10px] text-dark-muted block">Calling / Profession:</span>
+                  <span className="text-white font-medium">{(session.profile.abilities.skills.value || []).join(', ') || 'Adventurer'}</span>
                 </div>
 
-                <div className="pt-1 border-t border-dark-border/40">
+                <div className="pt-1.5 border-t border-dark-border/40">
                   <span className="text-[10px] text-dark-muted block">Destination Realm:</span>
                   <span className="text-amber-300 font-semibold">{session.profile.world.name.value}</span>
                 </div>
 
-                <div className="pt-1 border-t border-dark-border/40">
-                  <span className="text-[10px] text-dark-muted block">Combat Rating:</span>
-                  <span className="text-amber-300 font-mono font-black text-sm">{combatEffectiveness}</span>
+                <div className="pt-1.5 border-t border-dark-border/40 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-dark-muted block">Combat Rating:</span>
+                    <span className="text-amber-300 font-mono font-black text-sm">{combatEffectiveness}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-dark-muted block">Innate Gifts:</span>
+                    <span className="text-violet-300 font-mono font-bold text-xs">{selectedTalents.length} active</span>
+                  </div>
+                </div>
+
+                {/* Innate Talents with Tier Badges */}
+                <div className="pt-2 border-t border-dark-border/40 space-y-1.5">
+                  <span className="text-[10px] text-dark-muted block font-mono uppercase tracking-wider">Configured Talents:</span>
+                  <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto touch-scroll">
+                    {selectedTalents.map((t) => (
+                      <span
+                        key={t.id}
+                        className="px-2 py-0.5 rounded-lg bg-dark-elevated border border-dark-border/70 text-[10px] text-white flex items-center gap-1"
+                      >
+                        <span className="truncate max-w-[120px]">{t.name}</span>
+                        <TierBadge tier={t.tier} size="xs" />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-dark-border/40 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSavePreset}
+                    className="w-full py-2 px-3 rounded-xl bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/40 text-violet-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-sm"
+                  >
+                    <BookmarkPlus className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Save Preset to Soul Codex</span>
+                  </button>
+
+                  {/* Mobile Back to Build button */}
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('build')}
+                    className="lg:hidden w-full py-2 px-3 rounded-xl bg-dark-elevated border border-dark-border text-dark-text text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Back to Step Decisions</span>
+                  </button>
                 </div>
               </div>
             </aside>

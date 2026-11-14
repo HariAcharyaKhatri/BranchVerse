@@ -9,28 +9,31 @@ export default {
     extend: {
       colors: {
         dark: {
-          bg: '#0a0d14',
-          surface: '#111726',
-          elevated: '#182138',
-          border: '#233052',
-          text: '#f1f5f9',
-          muted: '#94a3b8',
+          bg: '#07050e',        // Cosmic Deep Obsidian
+          surface: '#110d22',   // Astral Twilight Glass
+          elevated: '#17122e',  // Luminous Void Chamber
+          border: '#291f48',    // Ethereal Amethyst Leyline Border
+          text: '#f8fafc',      // Starlight White
+          muted: '#cbd5e1',     // High-Contrast Astral Lavender/Silver
+          subtle: '#94a3b8',    // Soft Celestial Secondary
         },
         light: {
-          bg: '#f8fafc',
-          surface: '#ffffff',
-          elevated: '#f1f5f9',
-          border: '#e2e8f0',
-          text: '#0f172a',
-          muted: '#64748b',
+          bg: '#07050e',        // Locked dark fantasy mode for consistent immersion
+          surface: '#110d22',
+          elevated: '#17122e',
+          border: '#291f48',
+          text: '#f8fafc',
+          muted: '#cbd5e1',
         },
         brand: {
-          primary: '#6366f1', // Indigo
-          accent: '#f59e0b',  // Amber
-          glow: '#818cf8',
+          primary: '#8b5cf6',   // Royal Celestial Violet
+          accent: '#f59e0b',    // Radiant Starlight Amber / Gold
+          gold: '#fbbf24',      // Divine Zenith Gold
+          glow: '#a78bfa',
           success: '#10b981',
           danger: '#ef4444',
           warning: '#f59e0b',
+          cyan: '#38bdf8',
         }
       },
       fontFamily: {

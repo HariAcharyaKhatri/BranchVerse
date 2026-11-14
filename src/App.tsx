@@ -494,11 +494,19 @@ const AppContent: React.FC = () => {
   };
 
   const isReaderActive = currentRoute.startsWith('#/reader/');
+  const isImmersiveFlow =
+    isReaderActive ||
+    currentRoute === '#/' ||
+    currentRoute === '#/isekai' ||
+    currentRoute === '#/prologue' ||
+    currentRoute === '#/reincarnation' ||
+    currentRoute === '#/architect' ||
+    currentRoute === '#/soul-architect';
 
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-dark-bg text-dark-text relative overflow-hidden font-sans">
       {/* Active Screen View */}
-      <main className={`flex-1 min-h-0 relative overflow-hidden flex flex-col ${!isReaderActive ? 'pb-16' : ''}`}>
+      <main className={`flex-1 min-h-0 relative overflow-hidden flex flex-col ${!isImmersiveFlow ? 'pb-16' : ''}`}>
         {renderCurrentScreen()}
       </main>
 
@@ -527,12 +535,14 @@ const AppContent: React.FC = () => {
         />
       )}
 
-      {/* Persistent Bottom Navigation Bar (rendered only for authenticated users) */}
-      <BottomNav
-        currentPath={currentRoute}
-        onNavigate={navigate}
-        storyCount={storyCount}
-      />
+      {/* Persistent Bottom Navigation Bar (rendered on secondary screens) */}
+      {!isImmersiveFlow && (
+        <BottomNav
+          currentPath={currentRoute}
+          onNavigate={navigate}
+          storyCount={storyCount}
+        />
+      )}
     </div>
   );
 };
